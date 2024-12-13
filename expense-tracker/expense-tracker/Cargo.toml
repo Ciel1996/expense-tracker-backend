@@ -1,0 +1,13 @@
+[package]
+name = "expense-tracker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+expense-tracker-api = { path = "../expense-tracker-api" }
+axum = "0.7.9"
+#diesel = "2"
+tokio = { version = "1.0", features = ["full"] }
+utoipa-swagger-ui = { version = "8", features = ["axum"] }
+utoipa = "5.2.0"
+utoipa-axum = "0.1"

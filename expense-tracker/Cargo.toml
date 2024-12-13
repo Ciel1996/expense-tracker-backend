@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "expense-tracker",
+    "expense-tracker-api"
+]
