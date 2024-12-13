@@ -2,5 +2,6 @@
 
 members = [
     "expense-tracker",
-    "expense-tracker-api"
+    "expense-tracker-api",
+    "expense-tracker-db"
 ]
