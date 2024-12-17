@@ -1,25 +1,25 @@
-pub mod api {
-    use axum::http::StatusCode;
-    use axum::response::IntoResponse;
-    use utoipa_axum::router::OpenApiRouter;
-    use utoipa_axum::routes;
+mod health;
+mod users;
 
-    pub fn router() -> OpenApiRouter {
+pub mod api {
+    use expense_tracker_db::setup::DbConnectionPool;
+    use axum::http::StatusCode;
+    use utoipa_axum::router::OpenApiRouter;
+    use crate::health::health_api;
+    use crate::users::user_api;
+
+    pub fn router(pool: DbConnectionPool) -> OpenApiRouter {
         OpenApiRouter::new()
-            .routes(routes!(health_check))
+            .nest("", health_api::register(pool.clone()))
+            .nest("", user_api::register(pool.clone()))
     }
 
-    /// HealthCheck Url
-    #[utoipa::path(
-        get,
-        path = "/health",
-        tag = "Health",
-        responses(
-            (status = 200, description = "If this can be reached, the API is available.")
-        )
-    )]
-
-    pub async fn health_check() -> impl IntoResponse {
-        (StatusCode::OK, "Ok").into_response()
+    /// Utility function for mapping any error into a `500 Internal Server Error`
+    /// response.
+    pub fn internal_error<E>(err: E) -> (StatusCode, String)
+    where
+        E: std::error::Error,
+    {
+        (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
     }
 }

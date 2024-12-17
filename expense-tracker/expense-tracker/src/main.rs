@@ -1,17 +1,19 @@
 use std::net::SocketAddr;
-use axum::ServiceExt;
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_swagger_ui::SwaggerUi;
 use expense_tracker_api::api;
+use expense_tracker_db::setup::setup_db;
 
 #[derive(OpenApi)]
 struct ApiDoc;
 
 #[tokio::main]
 async fn main() {
+    let pool = setup_db().await;
+
     let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
-        .nest("/api", api::router())
+        .nest("/api", api::router(pool))
         .split_for_parts();
 
     let router = router
