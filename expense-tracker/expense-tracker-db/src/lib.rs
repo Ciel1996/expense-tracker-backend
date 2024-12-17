@@ -202,13 +202,14 @@
 pub mod setup {
     use deadpool_diesel::Pool;
     use deadpool_diesel::postgres::{Manager, Object};
+    use diesel::PgConnection;
     use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
     /// The exact type of the DbPool in this application.
     pub type DbPool = deadpool_diesel::postgres::Pool;
 
     /// The exact type of the connection pool that is used in this application.
-    pub type DbConnectionPool = Pool<Manager>;
+    pub type DbConnectionPool = Pool<Manager, Object>;
 
     const MIGRATIONS : EmbeddedMigrations = embed_migrations!("../migrations/");
 
