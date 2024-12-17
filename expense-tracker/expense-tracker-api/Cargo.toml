@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+expense-tracker-db = { path = "../expense-tracker-db" }
 axum = "0.7.9"
 #diesel = "2"
 tokio = { version = "1.0", features = ["full"] }
@@ -12,3 +13,4 @@ utoipa-axum = "0.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 hyper = { version = "1.0.1", features = ["full"] }
+diesel = "2.2.6"
