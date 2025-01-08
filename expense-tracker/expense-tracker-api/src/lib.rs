@@ -1,12 +1,12 @@
-mod health;
-mod users;
+mod health_api;
+mod user_api;
 
 pub mod api {
-    use expense_tracker_db::setup::DbConnectionPool;
     use axum::http::StatusCode;
     use utoipa_axum::router::OpenApiRouter;
-    use crate::health::health_api;
-    use crate::users::user_api;
+    use expense_tracker_db::setup::DbConnectionPool;
+    use crate::health_api::health_api;
+    use crate::user_api::user_api;
 
     pub fn router(pool: DbConnectionPool) -> OpenApiRouter {
         OpenApiRouter::new()
