@@ -1,14 +1,17 @@
 pub mod expenses {
-    use diesel::{Insertable, Queryable, Selectable};
+    use diesel::{Associations, Insertable, Queryable, Selectable};
     use serde::{Deserialize, Serialize};
     use crate::schema::expenses;
+    use crate::pots::pots::Pot;
 
     /// An expense is an amount of money paid, as well as associated information by a user.
     /// An expense can either be paid or unpaid. Unpaid expenses should be considered for
     /// the sum other users have to pay.
-    #[derive(Serialize, Selectable, Queryable)]
+    #[derive(Serialize, Selectable, Queryable, Associations)]
+    #[diesel(belongs_to(Pot))]
     pub struct Expense {
         id: i32,
+        pot_id: i32,
         owner_id: i32,
         description: String,
         amount: f64,
@@ -30,21 +33,28 @@ pub mod expenses {
     impl Expense {
         /// Constructor for Expense
         pub fn new(
-            owner_id: i32,
             id: i32,
+            pot_id: i32,
+            owner_id: i32,
             description: String,
             amount: f64,
             currency_id: i32,
             is_paid: bool,
         ) -> Expense {
             Expense {
-                owner_id,
                 id,
+                pot_id,
+                owner_id,
                 description,
                 amount,
                 currency_id,
                 is_paid,
             }
+        }
+
+        /// Getter for pot_id.
+        pub fn pot_id(&self) -> i32 {
+            self.pot_id
         }
 
         /// Marks this Expense as paid.

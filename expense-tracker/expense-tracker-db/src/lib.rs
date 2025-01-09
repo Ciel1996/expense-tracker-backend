@@ -1,8 +1,8 @@
-mod schema;
-mod currency;
-mod expenses;
-mod pots;
-mod users;
+pub mod schema;
+pub mod currencies;
+pub mod expenses;
+pub mod pots;
+pub mod users;
 
 pub mod setup {
     use deadpool_diesel::postgres::{Manager, Object};
