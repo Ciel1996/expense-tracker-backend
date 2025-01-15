@@ -29,7 +29,7 @@ CREATE TABLE expenses
     currency_id INTEGER REFERENCES currencies (id) NOT NULL
 );
 
-CREATE TABLE splits
+CREATE TABLE expense_splits
 (
     expense_id INTEGER REFERENCES expenses (id) NOT NULL,
     user_id    INTEGER REFERENCES users (id)    NOT NULL,
