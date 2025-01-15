@@ -14,9 +14,7 @@ pub mod expenses {
         pot_id: i32,
         owner_id: i32,
         description: String,
-        amount: f64,
         currency_id: i32,
-        is_paid: bool,
     }
 
     /// This struct is used to create a new expense in the database.
@@ -25,9 +23,7 @@ pub mod expenses {
     pub struct NewExpense {
         owner_id: i32,
         description: String,
-        amount: f64,
-        currency_id: i32,
-        is_paid: bool,
+        currency_id: i32
     }
 
     impl Expense {
@@ -37,18 +33,14 @@ pub mod expenses {
             pot_id: i32,
             owner_id: i32,
             description: String,
-            amount: f64,
-            currency_id: i32,
-            is_paid: bool,
+            currency_id: i32
         ) -> Expense {
             Expense {
                 id,
                 pot_id,
                 owner_id,
                 description,
-                amount,
-                currency_id,
-                is_paid,
+                currency_id
             }
         }
 
@@ -56,22 +48,7 @@ pub mod expenses {
         pub fn pot_id(&self) -> i32 {
             self.pot_id
         }
-
-        /// Marks this Expense as paid.
-        pub fn pay(&mut self) {
-            self.is_paid = true
-        }
-
-        /// Getter for amount
-        pub fn amount(&self) -> f64 {
-            self.amount
-        }
-
-        /// Getter for is_paid
-        pub fn is_paid(&self) -> bool {
-            self.is_paid
-        }
-
+        
         /// Getter for description
         pub fn description(&self) -> &str {
             &self.description
