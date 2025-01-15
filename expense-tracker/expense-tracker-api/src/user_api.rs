@@ -8,7 +8,8 @@ pub mod user_api {
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
     use expense_tracker_db::setup::{DbConnectionPool, DbPool};
-    use expense_tracker_db::users::{users, NewUser, User};
+    use expense_tracker_db::schema as expense_tracker_db_schema;
+    use expense_tracker_db::users::users::{NewUser, User};
     use crate::api::internal_error;
 
     /// Registers all functions of the Users API.
@@ -64,7 +65,7 @@ pub mod user_api {
 
         let res = conn
             .interact(move |conn| {
-                diesel::insert_into(users::table)
+                diesel::insert_into(expense_tracker_db_schema::users::table)
                     .values(new_user.to_db())
                     .returning(User::as_returning())
                     .get_result::<User>(conn)
