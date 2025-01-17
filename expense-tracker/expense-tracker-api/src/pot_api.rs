@@ -2,21 +2,22 @@ pub mod pot_api {
     use axum::extract::State;
     use axum::http::StatusCode;
     use axum::Json;
-    use diesel::{RunQueryDsl, SelectableHelper};
+    use diesel::{CombineDsl, Insertable, QueryDsl, Queryable, RunQueryDsl, Selectable, SelectableHelper};
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
     use expense_tracker_db::pots::pots::{NewPot, Pot};
     use expense_tracker_db::schema as expense_tracker_db_schema;
+    use expense_tracker_db::schema::pots::dsl::pots;
     use expense_tracker_db::setup::{DbConnectionPool, DbPool};
-    use expense_tracker_db::users::users::User;
     use crate::api::internal_error;
 
     /// Registers all functions of the Pot API.
     pub fn register(pool : DbConnectionPool) -> OpenApiRouter {
         OpenApiRouter::new()
             .routes(routes!(create_pot))
+            .routes(routes!(get_pots))
             .with_state(pool)
     }
 
@@ -38,6 +39,17 @@ pub mod pot_api {
                 name: pot.name().to_string(),
                 default_currency_id: pot.default_currency_id()
             }
+        }
+
+        /// Create a vec<PotDTO> from a vec<Pot>.
+        pub fn from_vec(pot_vec : Vec<Pot>) -> Vec<Self> {
+            let mut dtos : Vec<PotDTO> = vec![];
+
+            for pot in pot_vec {
+                dtos.push(PotDTO::from(pot))
+            }
+
+            dtos
         }
     }
 
@@ -88,5 +100,27 @@ pub mod pot_api {
             .map_err(internal_error)?;
 
         Ok(Json(PotDTO::from(res)))
+    }
+
+    /// Gets the list of all pots.
+    #[utoipa::path(
+        get,
+        path = "/pots"
+    )]
+    pub async fn get_pots(
+        State(pool): State<DbPool>
+    ) -> Result<Json<Vec<PotDTO>>, (StatusCode, String)> {
+        let mut conn = pool.get().await.map_err(internal_error)?;
+
+        let loaded_pots = conn
+            .interact(|conn| pots
+                    .select(Pot::as_select())
+                    .load::<Pot>(conn)
+            )
+            .await
+            .map_err(internal_error)?
+            .map_err(internal_error)?;
+
+        Ok(Json(PotDTO::from_vec(loaded_pots)))
     }
 }
