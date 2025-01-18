@@ -2,16 +2,21 @@ pub mod pot_api {
     use axum::extract::State;
     use axum::http::StatusCode;
     use axum::Json;
-    use diesel::{CombineDsl, Insertable, QueryDsl, Queryable, RunQueryDsl, Selectable, SelectableHelper};
+    use diesel::{ExpressionMethods, Insertable, QueryDsl, Queryable, RunQueryDsl, SelectableHelper};
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
+    use expense_tracker_db::currencies::currencies::Currency;
     use expense_tracker_db::pots::pots::{NewPot, Pot};
     use expense_tracker_db::schema as expense_tracker_db_schema;
+    use expense_tracker_db::schema::currencies::dsl::currencies;
+    use expense_tracker_db::schema::currencies::id;
     use expense_tracker_db::schema::pots::dsl::pots;
     use expense_tracker_db::setup::{DbConnectionPool, DbPool};
     use crate::api::internal_error;
+    use crate::currency_api;
+    use crate::currency_api::currency_api::CurrencyDTO;
 
     /// Registers all functions of the Pot API.
     pub fn register(pool : DbConnectionPool) -> OpenApiRouter {
@@ -27,26 +32,32 @@ pub mod pot_api {
         id: i32,
         owner_id: i32,
         name: String,
-        default_currency_id: i32,
+        default_currency: CurrencyDTO,
     }
 
     impl PotDTO {
         /// Creates a new PotDTO from a db Pot.
-        pub fn from(pot : Pot) -> Self {
+        pub fn from(pot : Pot, default_currency : CurrencyDTO) -> Self {
             PotDTO {
                 id: pot.id(),
                 owner_id: pot.owner_id(),
                 name: pot.name().to_string(),
-                default_currency_id: pot.default_currency_id()
+                default_currency
             }
         }
 
         /// Create a vec<PotDTO> from a vec<Pot>.
-        pub fn from_vec(pot_vec : Vec<Pot>) -> Vec<Self> {
+        pub fn from_vec(pot_vec : Vec<Pot>, currency_vec : Vec<CurrencyDTO>) -> Vec<Self> {
             let mut dtos : Vec<PotDTO> = vec![];
 
             for pot in pot_vec {
-                dtos.push(PotDTO::from(pot))
+                let pot_currency = currency_vec
+                    .iter()
+                    .find(|c| c.id() == pot.default_currency_id());
+
+                if let Some(pot_currency) = pot_currency {
+                    dtos.push(PotDTO::from(pot, (*pot_currency).clone()))
+                }
             }
 
             dtos
@@ -78,7 +89,7 @@ pub mod pot_api {
         path = "/pots",
         tag = "Pots",
         responses(
-            (status = 201, description = "The pot has been created"),
+            (status = 201, description = "The pot has been created", body = PotDTO),
         ),
         request_body = NewPotDTO
     )]
@@ -99,13 +110,29 @@ pub mod pot_api {
             .map_err(internal_error)?
             .map_err(internal_error)?;
 
-        Ok(Json(PotDTO::from(res)))
+        let loaded_pot_currency_id = res.default_currency_id().clone();
+
+        // TODO: will most likely need some kind of service layer for stuff like this!
+        let currency = conn
+            .interact(move |conn| currencies
+                .filter(id.eq(loaded_pot_currency_id))
+                .first::<Currency>(conn)
+            )
+            .await
+            .map_err(internal_error)?
+            .map_err(internal_error)?;
+
+        Ok(Json(PotDTO::from(res, CurrencyDTO::from(currency))))
     }
 
     /// Gets the list of all pots.
     #[utoipa::path(
         get,
-        path = "/pots"
+        path = "/pots",
+        tag = "Pots",
+        responses(
+            (status = 200, description = "The list of known pots.", body = Vec<PotDTO>)
+        )
     )]
     pub async fn get_pots(
         State(pool): State<DbPool>
@@ -121,6 +148,10 @@ pub mod pot_api {
             .map_err(internal_error)?
             .map_err(internal_error)?;
 
-        Ok(Json(PotDTO::from_vec(loaded_pots)))
+        // TODO: this must be replace by call to a service layer.
+        let loaded_currencies =
+            currency_api::currency_api::get_currencies(State(pool)).await?.0;
+
+        Ok(Json(PotDTO::from_vec(loaded_pots, loaded_currencies)))
     }
 }

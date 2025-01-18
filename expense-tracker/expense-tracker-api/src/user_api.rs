@@ -53,7 +53,7 @@ pub mod user_api {
             path = "/users",
             tag = "Users",
             responses(
-                (status = 200, description = "The user")
+                (status = 200, description = "The user", body = UserDTO)
             ),
             request_body = NewUserDTO
     )]

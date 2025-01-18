@@ -13,11 +13,38 @@ pub mod currencies {
         symbol: String,
     }
 
+    impl Currency {
+        pub fn id(&self) -> i32 {
+            self.id
+        }
+
+        pub fn name(&self) -> &str {
+            &self.name
+        }
+
+        pub fn symbol(&self) -> &str {
+            &self.symbol
+        }
+    }
+
     /// This struct is used to define a new currency.
     #[derive(Deserialize, Insertable)]
     #[diesel(table_name = currencies)]
     pub struct NewCurrency {
         name: String,
         symbol: String,
+    }
+
+    impl NewCurrency {
+        /// Create a new NewCurrency struct instance.
+        pub fn new(
+            name: String,
+            symbol: String,
+        ) -> Self {
+            NewCurrency {
+                name,
+                symbol
+            }
+        }
     }
 }
