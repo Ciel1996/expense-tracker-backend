@@ -3,5 +3,6 @@
 members = [
     "expense-tracker",
     "expense-tracker-api",
-    "expense-tracker-db"
+    "expense-tracker-db",
+    "expense-tracker-services"
 ]

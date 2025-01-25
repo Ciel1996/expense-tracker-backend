@@ -63,4 +63,10 @@ pub mod splits {
         amount : f64,
         is_paid: bool
     }
+
+    impl NewSplit {
+        pub fn new(expense_id: i32, user_id: i32, amount: f64, is_paid: bool) -> Self {
+            Self { expense_id, user_id, amount, is_paid }
+        }
+    }
 }

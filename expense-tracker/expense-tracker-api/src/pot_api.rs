@@ -1,28 +1,35 @@
 pub mod pot_api {
-    use axum::extract::State;
+    use crate::api::internal_error;
+    use crate::currency_api;
+    use crate::currency_api::currency_api::CurrencyDTO;
+    use crate::user_api::user_api::UserDTO;
+    use axum::extract::{Path, State};
     use axum::http::StatusCode;
     use axum::Json;
-    use diesel::{ExpressionMethods, Insertable, QueryDsl, Queryable, RunQueryDsl, SelectableHelper};
+    use diesel::{
+        ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper,
+    };
+    use expense_tracker_db::currencies::currencies::Currency;
+    use expense_tracker_db::expenses::expenses::{Expense, NewExpense};
+    use expense_tracker_db::pots::pots::{NewPot, Pot};
+    use expense_tracker_db::schema as expense_tracker_db_schema;
+    use expense_tracker_db::schema::currencies::dsl::currencies;
+    use expense_tracker_db::schema::pots::dsl::pots;
+    use expense_tracker_db::setup::{DbConnectionPool, DbPool};
+    use expense_tracker_db::splits::splits::{NewSplit, Split};
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
-    use expense_tracker_db::currencies::currencies::Currency;
-    use expense_tracker_db::pots::pots::{NewPot, Pot};
-    use expense_tracker_db::schema as expense_tracker_db_schema;
-    use expense_tracker_db::schema::currencies::dsl::currencies;
-    use expense_tracker_db::schema::currencies::id;
-    use expense_tracker_db::schema::pots::dsl::pots;
-    use expense_tracker_db::setup::{DbConnectionPool, DbPool};
-    use crate::api::internal_error;
-    use crate::currency_api;
-    use crate::currency_api::currency_api::CurrencyDTO;
+    use expense_tracker_db::schema::currencies::id as currency_id;
+    use expense_tracker_db::schema::pots::id as pots_id;
 
     /// Registers all functions of the Pot API.
-    pub fn register(pool : DbConnectionPool) -> OpenApiRouter {
+    pub fn register(pool: DbConnectionPool) -> OpenApiRouter {
         OpenApiRouter::new()
             .routes(routes!(create_pot))
             .routes(routes!(get_pots))
+            .routes(routes!(add_expense))
             .with_state(pool)
     }
 
@@ -37,18 +44,18 @@ pub mod pot_api {
 
     impl PotDTO {
         /// Creates a new PotDTO from a db Pot.
-        pub fn from(pot : Pot, default_currency : CurrencyDTO) -> Self {
+        pub fn from(pot: Pot, default_currency: CurrencyDTO) -> Self {
             PotDTO {
                 id: pot.id(),
                 owner_id: pot.owner_id(),
                 name: pot.name().to_string(),
-                default_currency
+                default_currency,
             }
         }
 
         /// Create a vec<PotDTO> from a vec<Pot>.
-        pub fn from_vec(pot_vec : Vec<Pot>, currency_vec : Vec<CurrencyDTO>) -> Vec<Self> {
-            let mut dtos : Vec<PotDTO> = vec![];
+        pub fn from_vec(pot_vec: Vec<Pot>, currency_vec: Vec<CurrencyDTO>) -> Vec<Self> {
+            let mut dtos: Vec<PotDTO> = vec![];
 
             for pot in pot_vec {
                 let pot_currency = currency_vec
@@ -75,11 +82,108 @@ pub mod pot_api {
     impl NewPotDTO {
         /// Converts the DTO to the db object.
         fn to_db(&self) -> NewPot {
-            NewPot::new(
+            NewPot::new(self.owner_id, self.name.clone(), self.default_currency_id)
+        }
+    }
+
+    /// DTO used when working with existing Expenses.
+    #[derive(ToSchema, Serialize)]
+    pub struct ExpenseDTO {
+        id: i32,
+        pot_id: i32,
+        owner_id: i32,
+        description: String,
+        currency: CurrencyDTO,
+        splits: Vec<SplitDTO>,
+    }
+
+    impl ExpenseDTO {
+        fn from(expense: Expense, currency: CurrencyDTO, splits: Vec<SplitDTO>) -> Self {
+            Self {
+                id: expense.id(),
+                description: expense.description().to_string(),
+                pot_id: expense.pot_id(),
+                currency,
+                owner_id: expense.owner_id(),
+                splits,
+            }
+        }
+    }
+
+    /// DTO used when working with splits.
+    #[derive(Clone, ToSchema, Serialize, Deserialize)]
+    pub struct SplitDTO {
+        user_id: i32,
+        amount: f64,
+        is_paid: bool,
+    }
+
+    impl SplitDTO {
+        /// Turns this SplitDTO into a db Split.
+        fn to_new_db(&self, expense_id: i32) -> NewSplit {
+            NewSplit::new(expense_id, self.user_id, self.amount, self.is_paid)
+        }
+
+        fn from(split : Split) -> Self {
+            Self {
+                user_id: split.user_id(),
+                is_paid: split.is_paid(),
+                amount: split.amount(),
+            }
+        }
+
+        fn from_vec_split(splits : Vec<Split>) -> Vec<SplitDTO> {
+            let mut dtos: Vec<SplitDTO> = vec![];
+
+            for split in splits {
+                dtos.push(SplitDTO::from(split))
+            }
+
+            dtos
+        }
+    }
+
+    /// DTO used when creating a new expense for the given pot.
+    #[derive(ToSchema, Serialize, Deserialize)]
+    pub struct NewExpenseDTO {
+        owner_id: i32,
+        description: String,
+        currency_id: i32,
+        splits: Vec<SplitDTO>,
+    }
+
+    impl NewExpenseDTO {
+        /// Turns this NewExpenseDTO into a NewExpense.
+        fn to_db(&self, owning_pot_id: i32) -> NewExpense {
+            NewExpense::new(
                 self.owner_id,
-                self.name.clone(),
-                self.default_currency_id
+                owning_pot_id,
+                self.description.clone(),
+                self.currency_id,
             )
+        }
+
+        /// Turns the Vec<SplitDTO> into a Vec<NewSplit>.
+        fn splits_to_new_db(&self, expense_id: i32) -> Vec<NewSplit> {
+            let mut splits: Vec<NewSplit> = vec![];
+
+            for split in &self.splits {
+                let db_split = split.to_new_db(expense_id);
+                splits.push(db_split);
+            }
+
+            splits
+        }
+    }
+
+    impl Clone for NewExpenseDTO {
+        fn clone(&self) -> Self {
+            Self {
+                owner_id: self.owner_id,
+                description: self.description.clone(),
+                currency_id: self.currency_id,
+                splits: self.splits.clone()
+            }
         }
     }
 
@@ -94,8 +198,8 @@ pub mod pot_api {
         request_body = NewPotDTO
     )]
     pub async fn create_pot(
-        State(pool) : State<DbPool>,
-        Json(new_pot) : Json<NewPotDTO>
+        State(pool): State<DbPool>,
+        Json(new_pot): Json<NewPotDTO>,
     ) -> Result<Json<PotDTO>, (StatusCode, String)> {
         let conn = pool.get().await.map_err(internal_error)?;
 
@@ -114,10 +218,11 @@ pub mod pot_api {
 
         // TODO: will most likely need some kind of service layer for stuff like this!
         let currency = conn
-            .interact(move |conn| currencies
-                .filter(id.eq(loaded_pot_currency_id))
-                .first::<Currency>(conn)
-            )
+            .interact(move |conn| {
+                currencies
+                    .filter(currency_id.eq(loaded_pot_currency_id))
+                    .first::<Currency>(conn)
+            })
             .await
             .map_err(internal_error)?
             .map_err(internal_error)?;
@@ -135,23 +240,102 @@ pub mod pot_api {
         )
     )]
     pub async fn get_pots(
-        State(pool): State<DbPool>
+        State(pool): State<DbPool>,
     ) -> Result<Json<Vec<PotDTO>>, (StatusCode, String)> {
-        let mut conn = pool.get().await.map_err(internal_error)?;
+        let conn = pool.get().await.map_err(internal_error)?;
 
         let loaded_pots = conn
-            .interact(|conn| pots
-                    .select(Pot::as_select())
-                    .load::<Pot>(conn)
-            )
+            .interact(|conn| pots.select(Pot::as_select()).load::<Pot>(conn))
             .await
             .map_err(internal_error)?
             .map_err(internal_error)?;
 
         // TODO: this must be replace by call to a service layer.
-        let loaded_currencies =
-            currency_api::currency_api::get_currencies(State(pool)).await?.0;
+        let loaded_currencies = currency_api::currency_api::get_currencies(State(pool))
+            .await?
+            .0;
 
         Ok(Json(PotDTO::from_vec(loaded_pots, loaded_currencies)))
+    }
+
+    #[utoipa::path(
+        post,
+        path = "/pots/{pot_id}",
+        tag = "Pots",
+        responses(
+            (status = 201, description = "Indicates that the expense has been created for the given pot.", body = ExpenseDTO),
+            (status = 404, description = "Indicates that the pot for this expense does not exist.")
+        ),
+        request_body = NewExpenseDTO,
+        params(
+            ("pot_id" = i32, Path, description = "Pot database id for the pot.")
+        )
+    )]
+    pub async fn add_expense(
+        State(pool): State<DbPool>,
+        Path(pot_id): Path<i32>,
+        Json(new_expense): Json<NewExpenseDTO>,
+    ) -> Result<Json<ExpenseDTO>, (StatusCode, String)> {
+        let conn = pool.get().await.map_err(internal_error)?;
+
+        let cloned_request_id = pot_id.clone();
+
+        let loaded_pot = conn
+            .interact(move |conn| pots
+                .filter(pots_id.eq(cloned_request_id))
+                .first::<Pot>(conn))
+            .await
+            .map_err(internal_error)?;
+
+        if !loaded_pot.is_ok() {
+            return Err((
+                StatusCode::NOT_FOUND,
+                format!("No pot for id {} exists.", pot_id),
+            ));
+        }
+
+        let new_expense_clone = new_expense.clone();
+        let cloned_request_id = pot_id.clone();
+
+        let res = conn
+            .interact(move |conn| {
+                diesel::insert_into(expense_tracker_db_schema::expenses::table)
+                    .values(new_expense_clone.to_db(cloned_request_id))
+                    .returning(Expense::as_returning())
+                    .get_result::<Expense>(conn)
+            })
+            .await
+            .map_err(internal_error)?
+            .map_err(internal_error)?;
+
+        let expense_id = res.id();
+        let new_expense_clone = new_expense.clone();
+
+        let splits = conn.interact(move |conn| {
+            diesel::insert_into(expense_tracker_db_schema::expense_splits::table)
+                .values(&new_expense_clone.splits_to_new_db(expense_id))
+                .returning(Split::as_returning())
+                .get_results::<Split>(conn)
+        })
+        .await
+        .map_err(internal_error)?
+        .map_err(internal_error)?;
+
+        let currency = new_expense.currency_id;
+
+        // TODO: will most likely need some kind of service layer for stuff like this!
+        let currency = conn
+            .interact(move |conn| {
+                currencies
+                    .filter(currency_id.eq(currency))
+                    .first::<Currency>(conn)
+            })
+            .await
+            .map_err(internal_error)?
+            .map_err(internal_error)?;
+
+        let splits = SplitDTO::from_vec_split(splits);
+
+        Ok(Json(ExpenseDTO::from(res, CurrencyDTO::from(currency), splits)))
     }
 }

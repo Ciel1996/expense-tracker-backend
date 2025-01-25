@@ -4,7 +4,7 @@ pub mod currency_api {
     use axum::Json;
     use diesel::{QueryDsl, RunQueryDsl, SelectableHelper, ExpressionMethods};
     use serde::{Deserialize, Serialize};
-    use utoipa::{OpenApi, ToSchema};
+    use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
     use expense_tracker_db::currencies::currencies::{Currency, NewCurrency};
@@ -150,7 +150,7 @@ pub mod currency_api {
     pub async fn get_currencies(
         State(pool): State<DbPool>
     ) -> Result<Json<Vec<CurrencyDTO>>, (StatusCode, String)> {
-        let mut conn  = pool.get().await.map_err(internal_error)?;
+        let conn  = pool.get().await.map_err(internal_error)?;
 
         let loaded_currencies = conn
             .interact(|conn| currencies

@@ -22,6 +22,7 @@ pub mod expenses {
     #[diesel(table_name = expenses)]
     pub struct NewExpense {
         owner_id: i32,
+        pot_id: i32,
         description: String,
         currency_id: i32
     }
@@ -62,6 +63,12 @@ pub mod expenses {
         /// Getter for id
         pub fn id(&self) -> i32 {
             self.id
+        }
+    }
+
+    impl NewExpense {
+        pub fn new(owner_id: i32, pot_id: i32, description: String, currency_id: i32) -> Self {
+            Self { owner_id, pot_id, description, currency_id }
         }
     }
 }

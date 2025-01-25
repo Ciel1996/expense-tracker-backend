@@ -3,7 +3,7 @@ pub mod currencies;
 pub mod expenses;
 pub mod pots;
 pub mod users;
-mod splits;
+pub mod splits;
 
 pub mod setup {
     use deadpool_diesel::postgres::{Manager, Object};

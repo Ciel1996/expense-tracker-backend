@@ -32,10 +32,19 @@ pub mod user_api {
     }
 
     /// The DTO representing a user from DB.
-    #[derive(ToSchema, Serialize)]
+    #[derive(ToSchema, Serialize, Clone, Deserialize)]
     pub struct UserDTO {
         id : i32,
         name: String
+    }
+
+    impl UserDTO {
+        pub(crate) fn new(id: i32, name: String) -> UserDTO {
+            Self {
+                id,
+                name
+            }
+        }
     }
 
     impl UserDTO {
@@ -44,6 +53,14 @@ pub mod user_api {
                 id: user.id(),
                 name: user.name().to_string()
             }
+        }
+
+        pub fn id(&self) -> i32 {
+            self.id
+        }
+
+        pub fn name(&self) -> &str {
+            &self.name
         }
     }
 
