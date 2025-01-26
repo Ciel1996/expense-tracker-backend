@@ -2,7 +2,7 @@ pub mod pot_api {
     use crate::api::internal_error;
     use crate::currency_api;
     use crate::currency_api::currency_api::CurrencyDTO;
-    use crate::user_api::user_api::UserDTO;
+    
     use axum::extract::{Path, State};
     use axum::http::StatusCode;
     use axum::Json;
