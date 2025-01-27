@@ -9,5 +9,5 @@ expense-tracker-db = { path = "../expense-tracker-db" }
 axum = "0.8"
 tokio = { version = "1.0", features = ["full"] }
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
-utoipa = "5.2.0"
-utoipa-axum = "0.2.0"
+utoipa = "5.3.1"
+utoipa-axum = "0.2"
