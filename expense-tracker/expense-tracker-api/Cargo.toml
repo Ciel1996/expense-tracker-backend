@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 expense-tracker-db = { path = "../expense-tracker-db" }
-axum = "0.8.1"
+axum = "0.8"
 tokio = { version = "1.0", features = ["full"] }
 utoipa = "5.2.0"
 utoipa-axum = "0.2"
