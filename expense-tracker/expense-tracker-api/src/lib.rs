@@ -12,12 +12,14 @@ pub mod api {
     use crate::pot_api::pot_api;
     use crate::user_api::user_api;
 
+    const VERSION_ONE : &str = "/v1";
+
     pub fn router(pool: DbConnectionPool) -> OpenApiRouter {
         OpenApiRouter::new()
-            .nest("", health_api::register(pool.clone()))
-            .nest("", user_api::register(pool.clone()))
-            .nest("", pot_api::register(pool.clone()))
-            .nest("", currency_api::register(pool.clone()))
+            .nest(VERSION_ONE, health_api::register(pool.clone()))
+            .nest(VERSION_ONE, user_api::register(pool.clone()))
+            .nest(VERSION_ONE, pot_api::register(pool.clone()))
+            .nest(VERSION_ONE, currency_api::register(pool.clone()))
     }
 
     /// Utility function for mapping any error into a `500 Internal Server Error`
