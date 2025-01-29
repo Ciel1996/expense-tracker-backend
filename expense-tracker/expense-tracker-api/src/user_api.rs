@@ -10,6 +10,7 @@ pub mod user_api {
     use expense_tracker_db::users::users::{NewUser, User};
     use expense_tracker_services::user_service::user_service;
     use expense_tracker_services::user_service::user_service::UserService;
+    use crate::api::{internal_error, internal_error_new};
 
     /// Registers all functions of the Users API.
     pub fn register(pool : DbConnectionPool) -> OpenApiRouter {
@@ -80,7 +81,7 @@ pub mod user_api {
         let res = service
             .create_user(new_user.to_db())
             .await
-            .unwrap(); // TODO: handle this error
+            .map_err(internal_error_new)?;
 
         Ok(Json(UserDTO::from(res)))
     }
