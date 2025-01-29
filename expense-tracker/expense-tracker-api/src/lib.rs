@@ -16,7 +16,7 @@ pub mod api {
 
     pub fn router(pool: DbConnectionPool) -> OpenApiRouter {
         OpenApiRouter::new()
-            .nest(VERSION_ONE, health_api::register(pool.clone()))
+            .nest(VERSION_ONE, health_api::register())
             .nest(VERSION_ONE, user_api::register(pool.clone()))
             .nest(VERSION_ONE, pot_api::register(pool.clone()))
             .nest(VERSION_ONE, currency_api::register(pool.clone()))

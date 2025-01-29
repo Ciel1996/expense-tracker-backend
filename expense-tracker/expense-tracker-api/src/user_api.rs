@@ -2,21 +2,20 @@ pub mod user_api {
     use axum::extract::State;
     use axum::http::StatusCode;
     use axum::Json;
-    use diesel::{RunQueryDsl, SelectableHelper};
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
-    use expense_tracker_db::setup::{DbConnectionPool, DbPool};
-    use expense_tracker_db::schema as expense_tracker_db_schema;
+    use expense_tracker_db::setup::DbConnectionPool;
     use expense_tracker_db::users::users::{NewUser, User};
-    use crate::api::internal_error;
+    use expense_tracker_services::user_service::user_service;
+    use expense_tracker_services::user_service::user_service::UserService;
 
     /// Registers all functions of the Users API.
     pub fn register(pool : DbConnectionPool) -> OpenApiRouter {
         OpenApiRouter::new()
             .routes(routes!(create_user))
-            .with_state(pool)
+            .with_state(user_service::create_service(pool))
     }
 
     /// The DTO representing a new user to be created.
@@ -75,21 +74,13 @@ pub mod user_api {
             request_body = NewUserDTO
     )]
     pub async fn create_user(
-        State(pool): State<DbPool>,
+        State(service): State<UserService>,
         Json(new_user): Json<NewUserDTO>
     ) -> Result<Json<UserDTO>, (StatusCode, String)> {
-        let conn = pool.get().await.map_err(internal_error)?;
-
-        let res = conn
-            .interact(move |conn| {
-                diesel::insert_into(expense_tracker_db_schema::users::table)
-                    .values(new_user.to_db())
-                    .returning(User::as_returning())
-                    .get_result::<User>(conn)
-            })
+        let res = service
+            .create_user(new_user.to_db())
             .await
-            .map_err(internal_error)?
-            .map_err(internal_error)?;
+            .unwrap(); // TODO: handle this error
 
         Ok(Json(UserDTO::from(res)))
     }
