@@ -251,11 +251,13 @@ pub mod pot_api {
             .map_err(internal_error)?;
 
         // TODO: this must be replace by call to a service layer.
-        let loaded_currencies = currency_api::currency_api::get_currencies(State(pool))
-            .await?
-            .0;
+        // let loaded_currencies = currency_api::currency_api::get_currencies(State(pool))
+        //     .await?
+        //     .0;
 
-        Ok(Json(PotDTO::from_vec(loaded_pots, loaded_currencies)))
+        // Ok(Json(PotDTO::from_vec(loaded_pots, loaded_currencies)))
+
+        Ok(Json(PotDTO::from_vec(loaded_pots, vec!())))
     }
 
     #[utoipa::path(

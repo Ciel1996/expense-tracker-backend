@@ -1,7 +1,6 @@
 pub mod user_service {
-    use std::error::Error;
     use diesel::{RunQueryDsl, SelectableHelper};
-    use expense_tracker_db::setup::{DbConnectionPool, DbPool};
+    use expense_tracker_db::setup::DbConnectionPool;
     use expense_tracker_db::schema as expense_tracker_db_schema;
     use expense_tracker_db::users::users::{NewUser, User};
     use crate::internal_error;

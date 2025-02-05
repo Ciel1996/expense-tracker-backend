@@ -2,23 +2,22 @@ pub mod currency_api {
     use axum::extract::State;
     use axum::http::StatusCode;
     use axum::Json;
-    use diesel::{QueryDsl, RunQueryDsl, SelectableHelper, ExpressionMethods};
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
     use expense_tracker_db::currencies::currencies::{Currency, NewCurrency};
-    use expense_tracker_db::schema::currencies::dsl::currencies;
-    use expense_tracker_db::schema::currencies::symbol;
-    use expense_tracker_db::setup::{DbConnectionPool, DbPool};
-    use crate::api::internal_error;
+    use expense_tracker_db::setup::DbConnectionPool;
+    use expense_tracker_services::currency_service::currency_service;
+    use expense_tracker_services::currency_service::currency_service::CurrencyService;
+    use crate::api::internal_error_new;
 
     /// Registers all functions of the Currency API.
     pub fn register(pool : DbConnectionPool) -> OpenApiRouter {
         OpenApiRouter::new()
             .routes(routes!(create_currency))
             .routes(routes!(get_currencies))
-            .with_state(pool)
+            .with_state(currency_service::new_service(pool))
     }
 
     /// DTO representing a currency.
@@ -99,41 +98,13 @@ pub mod currency_api {
         request_body = NewCurrencyDTO
     )]
     pub async fn create_currency(
-        State(pool) : State<DbPool>,
+        State(service) : State<CurrencyService>,
         Json(new_currency) : Json<NewCurrencyDTO>
     ) -> Result<Json<CurrencyDTO>, (StatusCode, String)> {
-        let conn = pool.get().await.map_err(internal_error)?;
-
-        let currency_symbol = new_currency.symbol.clone();
-
-        let res = conn
-            .interact(|conn| currencies
-                .filter(symbol.eq(currency_symbol))
-                .first::<Currency>(conn)
-            )
-            .await.map_err(internal_error)?;
-
-        // ok means, that we found a currency for the given symbol!
-        if res.is_ok() {
-            let currency_symbol = new_currency.symbol.clone();
-            return Err(
-                (
-                    StatusCode::CONFLICT,
-                    format!("There is already a currency with symbol {}", currency_symbol)
-                )
-            );
-        }
-
-        let res = conn
-            .interact(move |conn| {
-                diesel::insert_into(currencies)
-                    .values(new_currency.to_db())
-                    .returning(Currency::as_returning())
-                    .get_result::<Currency>(conn)
-            })
+        let res = service
+            .create_currency(new_currency.to_db())
             .await
-            .map_err(internal_error)?
-            .map_err(internal_error)?;
+            .map_err(internal_error_new)?;
 
         Ok(Json(CurrencyDTO::from(res)))
     }
@@ -148,18 +119,12 @@ pub mod currency_api {
         )
     )]
     pub async fn get_currencies(
-        State(pool): State<DbPool>
+        State(service) : State<CurrencyService>,
     ) -> Result<Json<Vec<CurrencyDTO>>, (StatusCode, String)> {
-        let conn  = pool.get().await.map_err(internal_error)?;
-
-        let loaded_currencies = conn
-            .interact(|conn| currencies
-                .select(Currency::as_select())
-                .load::<Currency>(conn)
-            )
+        let loaded_currencies = service
+            .get_currencies()
             .await
-            .map_err(internal_error)?
-            .map_err(internal_error)?;
+            .map_err(internal_error_new)?;
 
         Ok(Json(CurrencyDTO::from_vec(loaded_currencies)))
     }

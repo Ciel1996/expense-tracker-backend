@@ -46,5 +46,13 @@ pub mod currencies {
                 symbol
             }
         }
+
+        pub fn name(&self) -> &str {
+            &self.name
+        }
+
+        pub fn symbol(&self) -> &str {
+            &self.symbol
+        }
     }
 }
