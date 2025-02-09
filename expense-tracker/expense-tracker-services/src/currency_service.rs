@@ -3,7 +3,7 @@ pub mod currency_service {
     use expense_tracker_db::currencies::currencies::{Currency, NewCurrency};
     use expense_tracker_db::schema::currencies::dsl::currencies;
     use expense_tracker_db::setup::DbConnectionPool;
-    use expense_tracker_db::schema::currencies::symbol;
+    use expense_tracker_db::schema::currencies::{id, symbol};
     use crate::{internal_error, internal_error_str};
 
     /// The service responsible for interacting with Currency related logic.
@@ -16,7 +16,8 @@ pub mod currency_service {
         /// Gets a Currency for the given symbol.
         /// Returns either None if no Currency for the symbol could be found
         /// or the Currency that is related to the given symbol.
-        pub async fn get_currency_by_symbol(&self, currency_symbol : String) -> Result<Option<Currency>, String> {
+        pub async fn get_currency_by_symbol(&self, currency_symbol : String)
+            -> Result<Option<Currency>, String> {
             let conn = self.db_pool.get().await.map_err(internal_error)?;
 
             let res = conn
@@ -32,9 +33,30 @@ pub mod currency_service {
             }
         }
 
+        /// Gets a Currency by the given id. If no Currency with the given id
+        /// could be found, returns Ok(None).
+        pub async fn get_currency_by_id(&self, to_search: i32)
+            -> Result<Option<Currency>, String>
+        {
+            let conn = self.db_pool.get().await.map_err(internal_error)?;
+
+            let res = conn
+                .interact(move |conn| currencies
+                    .filter(id.eq(to_search))
+                    .first::<Currency>(conn)
+                )
+                .await.map_err(internal_error)?;
+
+            match res {
+                Ok(c) => Ok(Some(c)),
+                _ => Ok(None)
+            }
+        }
+
         /// Checks if the a new Currency can be created with the information provided by the given
         /// NewCurrency. If so, it is created and returned. Otherwise an error will be returned.
-        pub async fn create_currency(&self, new_currency: NewCurrency) -> Result<Currency, String> {
+        pub async fn create_currency(&self, new_currency: NewCurrency)
+            -> Result<Currency, String> {
             let existing_currency = self
                 .get_currency_by_symbol(new_currency.symbol().to_string())
                 .await

@@ -1,6 +1,8 @@
 pub mod health_service;
 pub mod user_service;
 pub mod currency_service;
+pub mod pot_service;
+pub mod expense_service;
 
 /// Internal error handling.
 fn internal_error<E>(err: E) -> String

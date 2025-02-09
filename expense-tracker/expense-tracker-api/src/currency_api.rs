@@ -48,7 +48,7 @@ pub mod currency_api {
             }
         }
 
-        /// Converts a Vec<Currency> to Vec<CurrencyDTO>.
+        /// Converts a Vec of Currency to Vec of CurrencyDTO.
         pub fn from_vec(src : Vec<Currency>) -> Vec<Self> {
             let mut dest = Vec::new();
 
@@ -101,6 +101,7 @@ pub mod currency_api {
         State(service) : State<CurrencyService>,
         Json(new_currency) : Json<NewCurrencyDTO>
     ) -> Result<Json<CurrencyDTO>, (StatusCode, String)> {
+        // TODO: return 409 conflict if already exists
         let res = service
             .create_currency(new_currency.to_db())
             .await

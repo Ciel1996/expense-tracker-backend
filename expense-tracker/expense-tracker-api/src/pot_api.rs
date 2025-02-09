@@ -1,28 +1,33 @@
 pub mod pot_api {
-    use crate::api::internal_error;
-    use crate::currency_api;
+    use crate::api::{internal_error, internal_error_new};
     use crate::currency_api::currency_api::CurrencyDTO;
     
     use axum::extract::{Path, State};
     use axum::http::StatusCode;
     use axum::Json;
     use diesel::{
-        ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper,
+       RunQueryDsl, SelectableHelper,
     };
-    use expense_tracker_db::currencies::currencies::Currency;
     use expense_tracker_db::expenses::expenses::{Expense, NewExpense};
     use expense_tracker_db::pots::pots::{NewPot, Pot};
     use expense_tracker_db::schema as expense_tracker_db_schema;
-    use expense_tracker_db::schema::currencies::dsl::currencies;
-    use expense_tracker_db::schema::pots::dsl::pots;
-    use expense_tracker_db::setup::{DbConnectionPool, DbPool};
+    use expense_tracker_db::setup::DbConnectionPool;
     use expense_tracker_db::splits::splits::{NewSplit, Split};
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
-    use expense_tracker_db::schema::currencies::id as currency_id;
-    use expense_tracker_db::schema::pots::id as pots_id;
+    use expense_tracker_services::currency_service::currency_service::CurrencyService;
+    use expense_tracker_services::expense_service::expense_service::ExpenseService;
+    use expense_tracker_services::pot_service::pot_service;
+    use expense_tracker_services::pot_service::pot_service::PotService;
+
+    // TODO: don't use a struct looking like this, try to get a "real" DI working.
+    pub struct IDontLikeThis {
+        pot_service: PotService,
+        currency_service: CurrencyService,
+        expense_service: ExpenseService
+    }
 
     /// Registers all functions of the Pot API.
     pub fn register(pool: DbConnectionPool) -> OpenApiRouter {
@@ -30,7 +35,7 @@ pub mod pot_api {
             .routes(routes!(create_pot))
             .routes(routes!(get_pots))
             .routes(routes!(add_expense))
-            .with_state(pool)
+            .with_state(pot_service::new_service(pool))
     }
 
     /// DTO used when working with existing Pots.
@@ -198,36 +203,15 @@ pub mod pot_api {
         request_body = NewPotDTO
     )]
     pub async fn create_pot(
-        State(pool): State<DbPool>,
+        State(service): State<PotService>,
         Json(new_pot): Json<NewPotDTO>,
     ) -> Result<Json<PotDTO>, (StatusCode, String)> {
-        let conn = pool.get().await.map_err(internal_error)?;
-
-        let res = conn
-            .interact(move |conn| {
-                diesel::insert_into(expense_tracker_db_schema::pots::table)
-                    .values(new_pot.to_db())
-                    .returning(Pot::as_returning())
-                    .get_result::<Pot>(conn)
-            })
+        let result = service
+            .create_pot(new_pot.to_db())
             .await
-            .map_err(internal_error)?
-            .map_err(internal_error)?;
+            .map_err(internal_error_new)?;
 
-        let loaded_pot_currency_id = res.default_currency_id().clone();
-
-        // TODO: will most likely need some kind of service layer for stuff like this!
-        let currency = conn
-            .interact(move |conn| {
-                currencies
-                    .filter(currency_id.eq(loaded_pot_currency_id))
-                    .first::<Currency>(conn)
-            })
-            .await
-            .map_err(internal_error)?
-            .map_err(internal_error)?;
-
-        Ok(Json(PotDTO::from(res, CurrencyDTO::from(currency))))
+        Ok(Json(PotDTO::from(result.0, CurrencyDTO::from(result.1))))
     }
 
     /// Gets the list of all pots.
@@ -240,24 +224,21 @@ pub mod pot_api {
         )
     )]
     pub async fn get_pots(
-        State(pool): State<DbPool>,
+        State(service): State<PotService>,
     ) -> Result<Json<Vec<PotDTO>>, (StatusCode, String)> {
-        let conn = pool.get().await.map_err(internal_error)?;
-
-        let loaded_pots = conn
-            .interact(|conn| pots.select(Pot::as_select()).load::<Pot>(conn))
+        let loaded_pots = service.get_pots()
             .await
-            .map_err(internal_error)?
-            .map_err(internal_error)?;
+            .map_err(internal_error_new)?;
 
-        // TODO: this must be replace by call to a service layer.
-        // let loaded_currencies = currency_api::currency_api::get_currencies(State(pool))
-        //     .await?
-        //     .0;
+        let all_currencies = service
+            .currency_service()
+            .get_currencies()
+            .await
+            .map_err(internal_error_new)?;
 
-        // Ok(Json(PotDTO::from_vec(loaded_pots, loaded_currencies)))
+        let all_currencies = CurrencyDTO::from_vec(all_currencies);
 
-        Ok(Json(PotDTO::from_vec(loaded_pots, vec!())))
+        Ok(Json(PotDTO::from_vec(loaded_pots, all_currencies)))
     }
 
     #[utoipa::path(
@@ -274,27 +255,16 @@ pub mod pot_api {
         )
     )]
     pub async fn add_expense(
-        State(pool): State<DbPool>,
+        State(service): State<PotService>,
+        State(expense_service) : State<ExpenseService>,
         Path(pot_id): Path<i32>,
         Json(new_expense): Json<NewExpenseDTO>,
     ) -> Result<Json<ExpenseDTO>, (StatusCode, String)> {
-        let conn = pool.get().await.map_err(internal_error)?;
-
-        let cloned_request_id = pot_id.clone();
-
-        let loaded_pot = conn
-            .interact(move |conn| pots
-                .filter(pots_id.eq(cloned_request_id))
-                .first::<Pot>(conn))
+        // TODO: make sure that a 404 is returned when no pot with given id exists
+        let loaded_pot = service
+            .get_pot_by_id(pot_id)
             .await
-            .map_err(internal_error)?;
-
-        if !loaded_pot.is_ok() {
-            return Err((
-                StatusCode::NOT_FOUND,
-                format!("No pot for id {} exists.", pot_id),
-            ));
-        }
+            .map_err(internal_error_new)?;
 
         let new_expense_clone = new_expense.clone();
         let cloned_request_id = pot_id.clone();
@@ -325,15 +295,11 @@ pub mod pot_api {
 
         let currency = new_expense.currency_id;
 
-        // TODO: will most likely need some kind of service layer for stuff like this!
-        let currency = conn
-            .interact(move |conn| {
-                currencies
-                    .filter(currency_id.eq(currency))
-                    .first::<Currency>(conn)
-            })
+        // TODO: get rid of Option
+        let currency = service
+            .currency_service()
+            .get_currency_by_id(currency)
             .await
-            .map_err(internal_error)?
             .map_err(internal_error)?;
 
         let splits = SplitDTO::from_vec_split(splits);

@@ -74,5 +74,17 @@ pub mod pots {
                 default_currency_id
             }
         }
+
+        pub fn owner_id(&self) -> i32 {
+            self.owner_id
+        }
+
+        pub fn name(&self) -> &str {
+            &self.name
+        }
+
+        pub fn default_currency_id(&self) -> i32 {
+            self.default_currency_id
+        }
     }
 }
