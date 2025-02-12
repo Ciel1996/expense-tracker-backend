@@ -17,7 +17,7 @@ pub mod currency_service {
         /// Returns either None if no Currency for the symbol could be found
         /// or the Currency that is related to the given symbol.
         pub async fn get_currency_by_symbol(&self, currency_symbol : String)
-            -> Result<Option<Currency>, String> {
+            -> Result<Currency, String> {
             let conn = self.db_pool.get().await.map_err(internal_error)?;
 
             let res = conn
@@ -25,18 +25,17 @@ pub mod currency_service {
                     .filter(symbol.eq(currency_symbol))
                     .first::<Currency>(conn)
                 )
-                .await.map_err(internal_error)?;
+                .await
+                .map_err(internal_error)?
+                .map_err(internal_error)?;
 
-            match res {
-                Ok(c) => Ok(Some(c)),
-                _ => Ok(None),
-            }
+            Ok(res)
         }
 
         /// Gets a Currency by the given id. If no Currency with the given id
         /// could be found, returns Ok(None).
         pub async fn get_currency_by_id(&self, to_search: i32)
-            -> Result<Option<Currency>, String>
+            -> Result<Currency, String>
         {
             let conn = self.db_pool.get().await.map_err(internal_error)?;
 
@@ -45,12 +44,11 @@ pub mod currency_service {
                     .filter(id.eq(to_search))
                     .first::<Currency>(conn)
                 )
-                .await.map_err(internal_error)?;
+                .await
+                .map_err(internal_error)?
+                .map_err(internal_error)?;
 
-            match res {
-                Ok(c) => Ok(Some(c)),
-                _ => Ok(None)
-            }
+            Ok(res)
         }
 
         /// Checks if the a new Currency can be created with the information provided by the given
@@ -59,10 +57,9 @@ pub mod currency_service {
             -> Result<Currency, String> {
             let existing_currency = self
                 .get_currency_by_symbol(new_currency.symbol().to_string())
-                .await
-                .map_err(internal_error_str)?;
+                .await;
 
-            if existing_currency.is_some() {
+            if existing_currency.is_ok() {
                 return Err(
                     format!(
                         "There is already a currency with symbol {}!",

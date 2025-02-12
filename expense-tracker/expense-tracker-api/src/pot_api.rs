@@ -17,13 +17,14 @@ pub mod pot_api {
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
+    use expense_tracker_services::currency_service::currency_service;
     use expense_tracker_services::currency_service::currency_service::CurrencyService;
+    use expense_tracker_services::expense_service::expense_service;
     use expense_tracker_services::expense_service::expense_service::ExpenseService;
     use expense_tracker_services::pot_service::pot_service;
     use expense_tracker_services::pot_service::pot_service::PotService;
 
-    // TODO: don't use a struct looking like this, try to get a "real" DI working.
-    pub struct IDontLikeThis {
+    pub struct PotApiState {
         pot_service: PotService,
         currency_service: CurrencyService,
         expense_service: ExpenseService
@@ -35,7 +36,11 @@ pub mod pot_api {
             .routes(routes!(create_pot))
             .routes(routes!(get_pots))
             .routes(routes!(add_expense))
-            .with_state(pot_service::new_service(pool))
+            .with_state(PotApiState {
+                pot_service: pot_service::new_service(pool.clone()),
+                currency_service: currency_service::new_service(pool.clone()),
+                expense_service: expense_service::new_service(pool.clone())
+            })
     }
 
     /// DTO used when working with existing Pots.
@@ -203,10 +208,10 @@ pub mod pot_api {
         request_body = NewPotDTO
     )]
     pub async fn create_pot(
-        State(service): State<PotService>,
+        State(PotApiState { pot_service, .. }): State<PotApiState>,
         Json(new_pot): Json<NewPotDTO>,
     ) -> Result<Json<PotDTO>, (StatusCode, String)> {
-        let result = service
+        let result = pot_service
             .create_pot(new_pot.to_db())
             .await
             .map_err(internal_error_new)?;
@@ -224,14 +229,13 @@ pub mod pot_api {
         )
     )]
     pub async fn get_pots(
-        State(service): State<PotService>,
+        State(PotApiState { pot_service, currency_service, .. }): State<PotApiState>,
     ) -> Result<Json<Vec<PotDTO>>, (StatusCode, String)> {
-        let loaded_pots = service.get_pots()
+        let loaded_pots = pot_service.get_pots()
             .await
             .map_err(internal_error_new)?;
 
-        let all_currencies = service
-            .currency_service()
+        let all_currencies = currency_service
             .get_currencies()
             .await
             .map_err(internal_error_new)?;
@@ -255,13 +259,12 @@ pub mod pot_api {
         )
     )]
     pub async fn add_expense(
-        State(service): State<PotService>,
-        State(expense_service) : State<ExpenseService>,
+        State(PotApiState { pot_service, currency_service, expense_service }): State<PotApiState>,
         Path(pot_id): Path<i32>,
         Json(new_expense): Json<NewExpenseDTO>,
     ) -> Result<Json<ExpenseDTO>, (StatusCode, String)> {
         // TODO: make sure that a 404 is returned when no pot with given id exists
-        let loaded_pot = service
+        let loaded_pot = pot_service
             .get_pot_by_id(pot_id)
             .await
             .map_err(internal_error_new)?;
@@ -296,8 +299,7 @@ pub mod pot_api {
         let currency = new_expense.currency_id;
 
         // TODO: get rid of Option
-        let currency = service
-            .currency_service()
+        let currency = currency_service
             .get_currency_by_id(currency)
             .await
             .map_err(internal_error)?;

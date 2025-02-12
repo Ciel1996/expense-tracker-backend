@@ -31,11 +31,6 @@ pub mod pot_service {
                 .await
                 .map_err(internal_error_str)?;
 
-            let currency = match currency {
-                Some(currency) => currency,
-                _ => return Err(String::from("Currency not found"))?
-            };
-
             let res = conn
                 .interact(move |conn| {
                     diesel::insert_into(pots)
@@ -84,10 +79,6 @@ pub mod pot_service {
                 .await
                 .map_err(internal_error)?
                 .map_err(internal_error)?
-        }
-
-        pub fn currency_service(&self) -> &CurrencyService {
-            &self.currency_service
         }
     }
 
