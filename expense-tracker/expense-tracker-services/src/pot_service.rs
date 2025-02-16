@@ -1,5 +1,6 @@
 pub mod pot_service {
-    use diesel::{QueryDsl, RunQueryDsl, SelectableHelper};
+    use std::error::Error;
+    use diesel::{QueryDsl, RunQueryDsl, SelectableHelper, ExpressionMethods};
     use expense_tracker_db::currencies::currencies::Currency;
     use expense_tracker_db::pots::pots::{NewPot, Pot};
     use expense_tracker_db::setup::DbConnectionPool;
@@ -7,7 +8,7 @@ pub mod pot_service {
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
     use expense_tracker_db::schema::pots::id as pots_id;
-    use crate::{internal_error, internal_error_str};
+    use crate::{internal_error, internal_error_new, internal_error_str, not_found_error};
 
     /// A service offering interfaces related to Pots.
     #[derive(Clone)]
@@ -66,19 +67,19 @@ pub mod pot_service {
         pub async fn get_pot_by_id(
             &self,
             to_search : i32
-        ) -> Result<Pot, String> {
+        ) -> Result<Pot, dyn Error> {
             let conn = self.db_pool.get()
                 .await
-                .map_err(internal_error)?;
+                .map_err(internal_error_new)?;
 
-            conn
+           conn
                 .interact(move |conn| pots
                     .filter(pots_id.eq(to_search))
                     .first::<Pot>(conn)
                 )
                 .await
-                .map_err(internal_error)?
-                .map_err(internal_error)?
+                .map_err(internal_error_new)?
+                .map_err(not_found_error)
         }
     }
 

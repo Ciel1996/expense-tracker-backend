@@ -1,5 +1,6 @@
 pub mod pot_api {
-    use crate::api::{internal_error, internal_error_new};
+    use std::sync::Arc;
+    use crate::api::{check_error, internal_error, internal_error_new};
     use crate::currency_api::currency_api::CurrencyDTO;
     
     use axum::extract::{Path, State};
@@ -12,7 +13,7 @@ pub mod pot_api {
     use expense_tracker_db::pots::pots::{NewPot, Pot};
     use expense_tracker_db::schema as expense_tracker_db_schema;
     use expense_tracker_db::setup::DbConnectionPool;
-    use expense_tracker_db::splits::splits::{NewSplit, Split};
+    use expense_tracker_db::splits::splits::{NewExpenseSplit, NewSplit, Split};
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
@@ -24,7 +25,8 @@ pub mod pot_api {
     use expense_tracker_services::pot_service::pot_service;
     use expense_tracker_services::pot_service::pot_service::PotService;
 
-    pub struct PotApiState {
+    /// Holds the App State for the PotAPI.
+    struct PotApiState {
         pot_service: PotService,
         currency_service: CurrencyService,
         expense_service: ExpenseService
@@ -32,15 +34,17 @@ pub mod pot_api {
 
     /// Registers all functions of the Pot API.
     pub fn register(pool: DbConnectionPool) -> OpenApiRouter {
+        let shared_state = Arc::new(PotApiState {
+            pot_service: pot_service::new_service(pool.clone()),
+            currency_service: currency_service::new_service(pool.clone()),
+            expense_service: expense_service::new_service(pool.clone())
+        });
+
         OpenApiRouter::new()
             .routes(routes!(create_pot))
             .routes(routes!(get_pots))
             .routes(routes!(add_expense))
-            .with_state(PotApiState {
-                pot_service: pot_service::new_service(pool.clone()),
-                currency_service: currency_service::new_service(pool.clone()),
-                expense_service: expense_service::new_service(pool.clone())
-            })
+            .with_state(shared_state)
     }
 
     /// DTO used when working with existing Pots.
@@ -129,9 +133,9 @@ pub mod pot_api {
     }
 
     impl SplitDTO {
-        /// Turns this SplitDTO into a db Split.
-        fn to_new_db(&self, expense_id: i32) -> NewSplit {
-            NewSplit::new(expense_id, self.user_id, self.amount, self.is_paid)
+        /// Turns this SplitDTO into a db NewExpenseSplit.
+        fn to_new_db(&self) -> NewExpenseSplit {
+            NewExpenseSplit::new(self.user_id, self.amount, self.is_paid)
         }
 
         fn from(split : Split) -> Self {
@@ -173,12 +177,12 @@ pub mod pot_api {
             )
         }
 
-        /// Turns the Vec<SplitDTO> into a Vec<NewSplit>.
-        fn splits_to_new_db(&self, expense_id: i32) -> Vec<NewSplit> {
-            let mut splits: Vec<NewSplit> = vec![];
+        /// Turns the `Vec<SplitDTO>` into a `Vec<NewExpenseSplit>`.
+        fn splits_to_new_db(&self) -> Vec<NewExpenseSplit> {
+            let mut splits = vec!();
 
             for split in &self.splits {
-                let db_split = split.to_new_db(expense_id);
+                let db_split = split.to_new_db();
                 splits.push(db_split);
             }
 
@@ -208,10 +212,10 @@ pub mod pot_api {
         request_body = NewPotDTO
     )]
     pub async fn create_pot(
-        State(PotApiState { pot_service, .. }): State<PotApiState>,
+        State(potApiState): State<Arc<PotApiState>>,
         Json(new_pot): Json<NewPotDTO>,
     ) -> Result<Json<PotDTO>, (StatusCode, String)> {
-        let result = pot_service
+        let result = potApiState.pot_service
             .create_pot(new_pot.to_db())
             .await
             .map_err(internal_error_new)?;
@@ -229,13 +233,16 @@ pub mod pot_api {
         )
     )]
     pub async fn get_pots(
-        State(PotApiState { pot_service, currency_service, .. }): State<PotApiState>,
+        State(potApiState): State<Arc<PotApiState>>,
     ) -> Result<Json<Vec<PotDTO>>, (StatusCode, String)> {
-        let loaded_pots = pot_service.get_pots()
+        let loaded_pots = potApiState
+            .pot_service
+            .get_pots()
             .await
             .map_err(internal_error_new)?;
 
-        let all_currencies = currency_service
+        let all_currencies = potApiState
+            .currency_service
             .get_currencies()
             .await
             .map_err(internal_error_new)?;
@@ -250,62 +257,53 @@ pub mod pot_api {
         path = "/pots/{pot_id}",
         tag = "Pots",
         responses(
-            (status = 201, description = "Indicates that the expense has been created for the given pot.", body = ExpenseDTO),
-            (status = 404, description = "Indicates that the pot for this expense does not exist.")
+            (
+                status = 201,
+                description = "Indicates that the expense has been created for the given pot.",
+                body = ExpenseDTO
+            ),
+            (
+                status = 404,
+                description = "Indicates that the pot for this expense does not exist."
+            )
         ),
         request_body = NewExpenseDTO,
         params(
-            ("pot_id" = i32, Path, description = "Pot database id for the pot.")
+            ("pot_id" = i32, Path, description = "Pot database id for the pot.  ")
         )
     )]
     pub async fn add_expense(
-        State(PotApiState { pot_service, currency_service, expense_service }): State<PotApiState>,
+        State(potApiState): State<Arc<PotApiState>>,
         Path(pot_id): Path<i32>,
         Json(new_expense): Json<NewExpenseDTO>,
     ) -> Result<Json<ExpenseDTO>, (StatusCode, String)> {
         // TODO: make sure that a 404 is returned when no pot with given id exists
-        let loaded_pot = pot_service
+        let loaded_pot = potApiState.
+            pot_service
             .get_pot_by_id(pot_id)
+            .await
+            .map_err(check_error)?;
+
+        let expense_splits_result = potApiState
+            .expense_service
+            .create_expense(
+                new_expense.to_db(loaded_pot.id()),
+                new_expense.splits_to_new_db()
+            )
             .await
             .map_err(internal_error_new)?;
 
-        let new_expense_clone = new_expense.clone();
-        let cloned_request_id = pot_id.clone();
+        let expense = expense_splits_result.0;
+        let splits = expense_splits_result.1;
 
-        let res = conn
-            .interact(move |conn| {
-                diesel::insert_into(expense_tracker_db_schema::expenses::table)
-                    .values(new_expense_clone.to_db(cloned_request_id))
-                    .returning(Expense::as_returning())
-                    .get_result::<Expense>(conn)
-            })
+        let currency = potApiState
+            .currency_service
+            .get_currency_by_id(expense.currency_id())
             .await
-            .map_err(internal_error)?
-            .map_err(internal_error)?;
-
-        let expense_id = res.id();
-        let new_expense_clone = new_expense.clone();
-
-        let splits = conn.interact(move |conn| {
-            diesel::insert_into(expense_tracker_db_schema::expense_splits::table)
-                .values(&new_expense_clone.splits_to_new_db(expense_id))
-                .returning(Split::as_returning())
-                .get_results::<Split>(conn)
-        })
-        .await
-        .map_err(internal_error)?
-        .map_err(internal_error)?;
-
-        let currency = new_expense.currency_id;
-
-        // TODO: get rid of Option
-        let currency = currency_service
-            .get_currency_by_id(currency)
-            .await
-            .map_err(internal_error)?;
+            .map_err(internal_error_new)?;
 
         let splits = SplitDTO::from_vec_split(splits);
 
-        Ok(Json(ExpenseDTO::from(res, CurrencyDTO::from(currency), splits)))
+        Ok(Json(ExpenseDTO::from(expense, CurrencyDTO::from(currency), splits)))
     }
 }

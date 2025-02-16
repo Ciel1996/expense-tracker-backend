@@ -1,12 +1,11 @@
 pub mod expense_service {
-    use std::rc::Rc;
     use diesel::{RunQueryDsl, SelectableHelper};
     use expense_tracker_db::expenses::expenses::{Expense, NewExpense};
-    use expense_tracker_db::pots::pots::Pot;
+    use expense_tracker_db::schema::expense_splits::dsl::expense_splits;
     use expense_tracker_db::schema::expenses::dsl::expenses;
     use expense_tracker_db::setup::DbConnectionPool;
-    use expense_tracker_db::splits::splits::{NewSplit, Split};
-    use crate::{internal_error, internal_error_str};
+    use expense_tracker_db::splits::splits::{NewExpenseSplit, NewSplit, Split};
+    use crate::internal_error;
 
     /// Struct working with Expense related logic.
     pub struct ExpenseService {
@@ -18,15 +17,15 @@ pub mod expense_service {
         pub async fn create_expense(
             &self,
             new_expense : NewExpense,
-            splits : Vec<NewSplit>
+            splits : Vec<NewExpenseSplit>
         )
-            -> Result<Expense, String> {
+            -> Result<(Expense, Vec<Split>), String> {
             let conn = self.db_pool.get().await.map_err(internal_error)?;
 
             let new_expense_clone = new_expense.clone();
 
-            // TODO: these two operations should be transactional
-            let res = conn
+            // TODO: find out how to run a transaction with diesel + deadpool or replace deadpool
+            let expense = conn
                 .interact(move |conn| {
                     diesel::insert_into(expenses)
                         .values(new_expense_clone)
@@ -37,22 +36,16 @@ pub mod expense_service {
                 .map_err(internal_error)?
                 .map_err(internal_error)?;
 
-            let split_res = self.create_splits(&res, &splits)
-                .await
-                .map_err(internal_error_str)?;
+            let splits = NewExpenseSplit::splits_from_vector_with_id(
+                    splits,
+                    expense.id()
+            );
 
-            Ok(res)
-        }
-
-        /// Creates the splits for the given Expense.
-        pub async fn create_splits(&self, expense : &Expense, splits : &Vec<NewSplit>)
-            -> Result<Vec<Split>, String> {
-            let conn = self.db_pool.get().await.map_err(internal_error)?;
-
-            let res = conn
+            let splits = conn
                 .interact(move |conn| {
-                    diesel::insert_into(splits)
-                        .values(splits)
+                    // TODO: transaction
+                    diesel::insert_into(expense_splits)
+                        .values(&splits)
                         .returning(Split::as_returning())
                         .get_results::<Split>(conn)
                 })
@@ -60,10 +53,9 @@ pub mod expense_service {
                 .map_err(internal_error)?
                 .map_err(internal_error)?;
 
-            Ok(res)
+            Ok((expense, splits))
         }
     }
-
 
     /// Creates a new ExpenseService with the given DbConnectionPool.
     pub fn new_service(pool : DbConnectionPool) -> ExpenseService {

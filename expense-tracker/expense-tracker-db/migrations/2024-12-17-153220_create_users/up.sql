@@ -31,8 +31,8 @@ CREATE TABLE expenses
 
 CREATE TABLE expense_splits
 (
-    expense_id INTEGER REFERENCES expenses (id) NOT NULL,
-    user_id    INTEGER REFERENCES users (id)    NOT NULL,
+    expense_id INTEGER REFERENCES expenses (id) ON DELETE CASCADE NOT NULL ,
+    user_id    INTEGER REFERENCES users (id)    ON DELETE CASCADE NOT NULL,
     amount     DOUBLE PRECISION                 NOT NULL,
     is_paid    BOOLEAN                          NOT NULL,
     PRIMARY KEY (expense_id, user_id)

@@ -64,6 +64,10 @@ pub mod expenses {
         pub fn id(&self) -> i32 {
             self.id
         }
+
+        pub fn currency_id(&self) -> i32 {
+            self.currency_id
+        }
     }
 
     impl NewExpense {
