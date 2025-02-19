@@ -1,9 +1,10 @@
 pub mod user_service {
+    use std::error::Error;
     use diesel::{RunQueryDsl, SelectableHelper};
     use expense_tracker_db::setup::DbConnectionPool;
     use expense_tracker_db::schema as expense_tracker_db_schema;
     use expense_tracker_db::users::users::{NewUser, User};
-    use crate::internal_error;
+    use crate::{internal_error, not_found_error, ExpenseError};
 
     /// A service to interact with user context.
     #[derive(Clone)]
@@ -13,7 +14,7 @@ pub mod user_service {
 
     impl UserService {
         /// Creates a new user given the new_user data.
-        pub async fn create_user(&self, new_user: NewUser) -> Result<User, String> {
+        pub async fn create_user(&self, new_user: NewUser) -> Result<User, ExpenseError> {
             let conn = self.db_pool.get().await.map_err(internal_error)?;
 
             let res = conn
@@ -25,7 +26,7 @@ pub mod user_service {
                 })
                 .await
                 .map_err(internal_error)?
-                .map_err(internal_error)?;
+                .map_err(not_found_error)?;
 
             Ok(res)
         }

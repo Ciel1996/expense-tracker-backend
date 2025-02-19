@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::fmt::Display;
 
 pub mod health_service;
 pub mod user_service;
@@ -6,55 +6,37 @@ pub mod currency_service;
 pub mod pot_service;
 pub mod expense_service;
 
-/// Internal error handling.
-fn internal_error<E>(err: E) -> String
-where
-    E: std::error::Error,
-{
-    err.to_string()
+
+#[derive(Debug)]
+/// An enumeration defining all errors of the application.
+pub enum ExpenseError {
+    /// Indicates that the requested resource could not be found.
+    NotFound(String),
+    /// Indicates an unspecific error.
+    Internal(String),
+    /// Indicates a conflict, thus resulting in cancelation of the task.
+    Conflict(String),
 }
 
-/// Internal error handling if working with nested function calls.
-fn internal_error_str(err: String) -> String
-{
+/// Produces a `NotFound` from the given `err`.
+fn not_found_error<E>(err : E)  -> ExpenseError
+where E: std::error::Error {
+    ExpenseError::NotFound(err.to_string())
+}
+
+/// Produces a `Internal` from the given `err`.
+fn internal_error<E>(err : E) -> ExpenseError
+where E: std::error::Error {
+    ExpenseError::Internal(err.to_string())
+}
+
+/// Produces a `Conflict` from the given `err`.
+fn conflict_error<E>(err : E) -> ExpenseError
+where E: std::error::Error {
+    ExpenseError::Conflict(err.to_string())
+}
+
+/// A helper used when unwrapping in case of an error.
+fn check_error(err : ExpenseError) -> ExpenseError {
     err
-}
-
-#[derive(Debug)]
-pub struct NotFoundError {
-    message: String
-}
-
-impl Display for NotFoundError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        self.message.fmt(f)
-    }
-}
-
-impl std::error::Error for NotFoundError {}
-
-fn not_found_error(message : String) -> NotFoundError {
-    NotFoundError{
-        message,
-    }
-}
-
-#[derive(Debug)]
-pub struct InternalError {
-    message : String,
-}
-
-impl Display for InternalError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        self.message.fmt(f)
-    }
-}
-
-impl std::error::Error for InternalError {}
-
-// TODO: rename
-fn internal_error_new<E>(err : E) -> InternalError {
-    InternalError {
-        message: err.to_string()
-    }
 }

@@ -10,7 +10,7 @@ pub mod currency_api {
     use expense_tracker_db::setup::DbConnectionPool;
     use expense_tracker_services::currency_service::currency_service;
     use expense_tracker_services::currency_service::currency_service::CurrencyService;
-    use crate::api::internal_error_new;
+    use crate::api::check_error;
 
     /// Registers all functions of the Currency API.
     pub fn register(pool : DbConnectionPool) -> OpenApiRouter {
@@ -105,7 +105,7 @@ pub mod currency_api {
         let res = service
             .create_currency(new_currency.to_db())
             .await
-            .map_err(internal_error_new)?;
+            .map_err(check_error)?;
 
         Ok(Json(CurrencyDTO::from(res)))
     }
@@ -125,7 +125,7 @@ pub mod currency_api {
         let loaded_currencies = service
             .get_currencies()
             .await
-            .map_err(internal_error_new)?;
+            .map_err(check_error)?;
 
         Ok(Json(CurrencyDTO::from_vec(loaded_currencies)))
     }

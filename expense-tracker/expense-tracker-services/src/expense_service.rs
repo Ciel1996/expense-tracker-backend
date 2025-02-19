@@ -4,8 +4,8 @@ pub mod expense_service {
     use expense_tracker_db::schema::expense_splits::dsl::expense_splits;
     use expense_tracker_db::schema::expenses::dsl::expenses;
     use expense_tracker_db::setup::DbConnectionPool;
-    use expense_tracker_db::splits::splits::{NewExpenseSplit, NewSplit, Split};
-    use crate::internal_error;
+    use expense_tracker_db::splits::splits::{NewExpenseSplit, Split};
+    use crate::{internal_error, not_found_error, ExpenseError};
 
     /// Struct working with Expense related logic.
     pub struct ExpenseService {
@@ -19,7 +19,7 @@ pub mod expense_service {
             new_expense : NewExpense,
             splits : Vec<NewExpenseSplit>
         )
-            -> Result<(Expense, Vec<Split>), String> {
+            -> Result<(Expense, Vec<Split>), ExpenseError> {
             let conn = self.db_pool.get().await.map_err(internal_error)?;
 
             let new_expense_clone = new_expense.clone();
@@ -34,7 +34,7 @@ pub mod expense_service {
                 })
                 .await
                 .map_err(internal_error)?
-                .map_err(internal_error)?;
+                .map_err(not_found_error)?;
 
             let splits = NewExpenseSplit::splits_from_vector_with_id(
                     splits,
@@ -51,7 +51,7 @@ pub mod expense_service {
                 })
                 .await
                 .map_err(internal_error)?
-                .map_err(internal_error)?;
+                .map_err(not_found_error)?;
 
             Ok((expense, splits))
         }

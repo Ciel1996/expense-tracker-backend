@@ -4,7 +4,8 @@ pub mod currency_service {
     use expense_tracker_db::schema::currencies::dsl::currencies;
     use expense_tracker_db::setup::DbConnectionPool;
     use expense_tracker_db::schema::currencies::{id, symbol};
-    use crate::{internal_error, internal_error_str};
+    use crate::{internal_error, not_found_error, ExpenseError};
+    use crate::ExpenseError::Conflict;
 
     /// The service responsible for interacting with Currency related logic.
     #[derive(Clone)]
@@ -17,7 +18,7 @@ pub mod currency_service {
         /// Returns either None if no Currency for the symbol could be found
         /// or the Currency that is related to the given symbol.
         pub async fn get_currency_by_symbol(&self, currency_symbol : String)
-            -> Result<Currency, String> {
+            -> Result<Currency, ExpenseError> {
             let conn = self.db_pool.get().await.map_err(internal_error)?;
 
             let res = conn
@@ -27,7 +28,7 @@ pub mod currency_service {
                 )
                 .await
                 .map_err(internal_error)?
-                .map_err(internal_error)?;
+                .map_err(not_found_error)?;
 
             Ok(res)
         }
@@ -35,7 +36,7 @@ pub mod currency_service {
         /// Gets a Currency by the given id. If no Currency with the given id
         /// could be found, returns Ok(None).
         pub async fn get_currency_by_id(&self, to_search: i32)
-            -> Result<Currency, String>
+            -> Result<Currency, ExpenseError>
         {
             let conn = self.db_pool.get().await.map_err(internal_error)?;
 
@@ -46,26 +47,26 @@ pub mod currency_service {
                 )
                 .await
                 .map_err(internal_error)?
-                .map_err(internal_error)?;
+                .map_err(not_found_error)?;
 
             Ok(res)
         }
 
-        /// Checks if the a new Currency can be created with the information provided by the given
-        /// NewCurrency. If so, it is created and returned. Otherwise an error will be returned.
+        /// Checks if the new Currency can be created with the information provided by the given
+        /// NewCurrency. If so, it is created and returned. Otherwise, an error will be returned.
         pub async fn create_currency(&self, new_currency: NewCurrency)
-            -> Result<Currency, String> {
+            -> Result<Currency, ExpenseError> {
             let existing_currency = self
                 .get_currency_by_symbol(new_currency.symbol().to_string())
                 .await;
 
             if existing_currency.is_ok() {
-                return Err(
+                return Err(Conflict(
                     format!(
                         "There is already a currency with symbol {}!",
                         new_currency.symbol().to_string()
                     )
-                );
+                ));
             }
 
             let conn = self.db_pool.get().await.map_err(internal_error)?;
@@ -79,13 +80,13 @@ pub mod currency_service {
                 })
                 .await
                 .map_err(internal_error)?
-                .map_err(internal_error)?;
+                .map_err(not_found_error)?;
 
             Ok(res)
         }
 
         /// Gets all currencies.
-        pub async fn get_currencies(&self) -> Result<Vec<Currency>, String> {
+        pub async fn get_currencies(&self) -> Result<Vec<Currency>, ExpenseError> {
             let conn  = self.db_pool.get().await.map_err(internal_error)?;
 
             let loaded_currencies = conn
@@ -95,7 +96,7 @@ pub mod currency_service {
                 )
                 .await
                 .map_err(internal_error)?
-                .map_err(internal_error)?;
+                .map_err(not_found_error)?;
 
             Ok(loaded_currencies)
         }

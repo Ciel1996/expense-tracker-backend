@@ -8,7 +8,7 @@ pub mod pot_service {
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
     use expense_tracker_db::schema::pots::id as pots_id;
-    use crate::{internal_error, internal_error_new, internal_error_str, not_found_error};
+    use crate::{check_error, internal_error, not_found_error, ExpenseError};
 
     /// A service offering interfaces related to Pots.
     #[derive(Clone)]
@@ -22,7 +22,7 @@ pub mod pot_service {
         pub async fn create_pot(
             &self,
             new_pot : NewPot
-        ) -> Result<(Pot, Currency), String> {
+        ) -> Result<(Pot, Currency), ExpenseError> {
             let conn = self.db_pool.get().await.map_err(internal_error)?;
 
             let loaded_pot_currency_id = new_pot.default_currency_id().clone();
@@ -30,7 +30,7 @@ pub mod pot_service {
             let currency = self.currency_service
                 .get_currency_by_id(loaded_pot_currency_id)
                 .await
-                .map_err(internal_error_str)?;
+                .map_err(check_error)?;
 
             let res = conn
                 .interact(move |conn| {
@@ -41,7 +41,7 @@ pub mod pot_service {
                 })
                 .await
                 .map_err(internal_error)?
-                .map_err(internal_error)?;
+                .map_err(not_found_error)?;
 
 
             Ok((res, currency))
@@ -50,7 +50,7 @@ pub mod pot_service {
         /// Gets a Vector of all Pots.
         pub async fn get_pots(
             &self
-        ) -> Result<Vec<Pot>, String> {
+        ) -> Result<Vec<Pot>, ExpenseError> {
             let conn = self.db_pool.get().await.map_err(internal_error)?;
 
             let loaded_pots = conn
@@ -58,7 +58,7 @@ pub mod pot_service {
                     .load::<Pot>(conn))
                 .await
                 .map_err(internal_error)?
-                .map_err(internal_error)?;
+                .map_err(not_found_error)?;
 
             Ok(loaded_pots)
         }
@@ -67,10 +67,10 @@ pub mod pot_service {
         pub async fn get_pot_by_id(
             &self,
             to_search : i32
-        ) -> Result<Pot, dyn Error> {
+        ) -> Result<Pot, ExpenseError> {
             let conn = self.db_pool.get()
                 .await
-                .map_err(internal_error_new)?;
+                .map_err(internal_error)?;
 
            conn
                 .interact(move |conn| pots
@@ -78,7 +78,7 @@ pub mod pot_service {
                     .first::<Pot>(conn)
                 )
                 .await
-                .map_err(internal_error_new)?
+                .map_err(internal_error)?
                 .map_err(not_found_error)
         }
     }
