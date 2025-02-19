@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-diesel = "2"
-deadpool-diesel = { version = "0.6.1", features = ["postgres"] }
-diesel_migrations = "2"
+diesel = "2.2"
+diesel-async = { version = "0.5.2", features = ["postgres", "pool", "deadpool"] }
+diesel_migrations = "2.2"
 serde = { version = "1.0.216", features = ["derive"] }

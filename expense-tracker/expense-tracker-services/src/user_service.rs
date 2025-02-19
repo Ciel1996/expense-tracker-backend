@@ -1,5 +1,4 @@
 pub mod user_service {
-    use std::error::Error;
     use diesel::{RunQueryDsl, SelectableHelper};
     use expense_tracker_db::setup::DbConnectionPool;
     use expense_tracker_db::schema as expense_tracker_db_schema;

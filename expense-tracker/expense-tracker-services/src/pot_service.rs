@@ -51,11 +51,18 @@ pub mod pot_service {
         pub async fn get_pots(
             &self
         ) -> Result<Vec<Pot>, ExpenseError> {
-            let conn = self.db_pool.get().await.map_err(internal_error)?;
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
-            let loaded_pots = conn
-                .interact(|conn| pots.select(Pot::as_select())
-                    .load::<Pot>(conn))
+            // let loaded_pots = conn
+            //     .interact(|conn| pots.select(Pot::as_select())
+            //         .load::<Pot>(conn))
+            //     .await
+            //     .map_err(internal_error)?
+            //     .map_err(not_found_error)?;
+
+            let loaded_pots = pots
+                .select(Pot::as_select())
+                .load(&mut conn)
                 .await
                 .map_err(internal_error)?
                 .map_err(not_found_error)?;
