@@ -10,7 +10,7 @@ pub mod user_api {
     use expense_tracker_db::users::users::{NewUser, User};
     use expense_tracker_services::user_service::user_service;
     use expense_tracker_services::user_service::user_service::UserService;
-    use crate::api::check_error;
+    use crate::api::{check_error, ApiResponse};
 
     /// Registers all functions of the Users API.
     pub fn register(pool : DbPool) -> OpenApiRouter {
@@ -70,19 +70,20 @@ pub mod user_api {
             path = "/users",
             tag = "Users",
             responses(
-                (status = 200, description = "The user", body = UserDTO)
+                (status = 201, description = "The user", body = UserDTO),
+                (status = 500, description = "The server error")
             ),
             request_body = NewUserDTO
     )]
     pub async fn create_user(
         State(service): State<UserService>,
         Json(new_user): Json<NewUserDTO>
-    ) -> Result<Json<UserDTO>, (StatusCode, String)> {
+    ) -> Result<ApiResponse<UserDTO>, ApiResponse<String>> {
         let res = service
             .create_user(new_user.to_db())
             .await
             .map_err(check_error)?;
 
-        Ok(Json(UserDTO::from(res)))
+        Ok((StatusCode::CREATED, Json(UserDTO::from(res))))
     }
 }

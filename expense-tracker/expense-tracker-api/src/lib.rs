@@ -5,6 +5,7 @@ mod currency_api;
 
 pub mod api {
     use axum::http::StatusCode;
+    use axum::Json;
     use utoipa_axum::router::OpenApiRouter;
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_services::ExpenseError;
@@ -12,6 +13,9 @@ pub mod api {
     use crate::health_api::health_api;
     use crate::pot_api::pot_api;
     use crate::user_api::user_api;
+
+    /// The generic response that is returned by APIs.
+    pub type ApiResponse<T> = (StatusCode, Json<T>);
 
     const VERSION_ONE: &str = "/v1";
 
@@ -28,12 +32,21 @@ pub mod api {
     /// - 404
     /// - 409
     /// - 500
-    pub fn check_error(err: ExpenseError) -> (StatusCode, String)
+    pub fn check_error(err: ExpenseError) -> ApiResponse<String>
     {
         match err {
-            ExpenseError::NotFound(message) => (StatusCode::NOT_FOUND, message.to_string()),
-            ExpenseError::Internal(message) => (StatusCode::INTERNAL_SERVER_ERROR, message),
-            ExpenseError::Conflict(message) => (StatusCode::CONFLICT, message),
+            ExpenseError::NotFound(message) => (
+                StatusCode::NOT_FOUND,
+                Json(message)
+            ),
+            ExpenseError::Internal(message) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(message)
+            ),
+            ExpenseError::Conflict(message) => (
+                StatusCode::CONFLICT,
+                Json(message)
+            ),
         }
     }
 }

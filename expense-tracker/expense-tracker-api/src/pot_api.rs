@@ -1,6 +1,6 @@
 pub mod pot_api {
     use std::sync::Arc;
-    use crate::api::check_error;
+    use crate::api::{check_error, ApiResponse};
     use crate::currency_api::currency_api::CurrencyDTO;
     
     use axum::extract::{Path, State};
@@ -210,13 +210,13 @@ pub mod pot_api {
     pub async fn create_pot(
         State(pot_api_state): State<Arc<PotApiState>>,
         Json(new_pot): Json<NewPotDTO>,
-    ) -> Result<Json<PotDTO>, (StatusCode, String)> {
+    ) -> Result<ApiResponse<PotDTO>, ApiResponse<String>> {
         let result = pot_api_state.pot_service
             .create_pot(new_pot.to_db())
             .await
             .map_err(check_error)?;
 
-        Ok(Json(PotDTO::from(result.0, CurrencyDTO::from(result.1))))
+        Ok((StatusCode::CREATED, Json(PotDTO::from(result.0, CurrencyDTO::from(result.1)))))
     }
 
     /// Gets the list of all pots.
@@ -230,7 +230,7 @@ pub mod pot_api {
     )]
     pub async fn get_pots(
         State(pot_api_state): State<Arc<PotApiState>>,
-    ) -> Result<Json<Vec<PotDTO>>, (StatusCode, String)> {
+    ) -> Result<ApiResponse<Vec<PotDTO>>, ApiResponse<String>> {
         let loaded_pots = pot_api_state
             .pot_service
             .get_pots()
@@ -245,7 +245,7 @@ pub mod pot_api {
 
         let all_currencies = CurrencyDTO::from_vec(all_currencies);
 
-        Ok(Json(PotDTO::from_vec(loaded_pots, all_currencies)))
+        Ok((StatusCode::OK, Json(PotDTO::from_vec(loaded_pots, all_currencies))))
     }
 
     #[utoipa::path(
@@ -272,8 +272,7 @@ pub mod pot_api {
         State(pot_api_state): State<Arc<PotApiState>>,
         Path(pot_id): Path<i32>,
         Json(new_expense): Json<NewExpenseDTO>,
-    ) -> Result<Json<ExpenseDTO>, (StatusCode, String)> {
-        // TODO: make sure that a 404 is returned when no pot with given id exists
+    ) -> Result<ApiResponse<ExpenseDTO>, ApiResponse<String>> {
         let loaded_pot = pot_api_state.
             pot_service
             .get_pot_by_id(pot_id)
@@ -300,7 +299,9 @@ pub mod pot_api {
 
         let splits = SplitDTO::from_vec_split(splits);
 
-        // TODO: return 201 not 200
-        Ok(Json(ExpenseDTO::from(expense, CurrencyDTO::from(currency), splits)))
+        Ok((
+                StatusCode::CREATED,
+                Json(ExpenseDTO::from(expense, CurrencyDTO::from(currency), splits))
+            ))
     }
 }

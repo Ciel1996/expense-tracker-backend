@@ -2,6 +2,7 @@ pub mod currency_api {
     use axum::extract::State;
     use axum::http::StatusCode;
     use axum::Json;
+    use axum::response::IntoResponse;
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
@@ -10,7 +11,8 @@ pub mod currency_api {
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_services::currency_service::currency_service;
     use expense_tracker_services::currency_service::currency_service::CurrencyService;
-    use crate::api::check_error;
+    use crate::api::{check_error, ApiResponse};
+    use crate::user_api::user_api::UserDTO;
 
     /// Registers all functions of the Currency API.
     pub fn register(pool : DbPool) -> OpenApiRouter {
@@ -92,7 +94,7 @@ pub mod currency_api {
         path = "/currencies",
         tag  = "Currency",
         responses(
-            (status = 200, description = "The currency has been created", body = NewCurrencyDTO),
+            (status = 201, description = "The currency has been created", body = NewCurrencyDTO),
             (status = 409, description = "Detected a conflict, as the symbol is already known.")
         ),
         request_body = NewCurrencyDTO
@@ -100,14 +102,13 @@ pub mod currency_api {
     pub async fn create_currency(
         State(service) : State<CurrencyService>,
         Json(new_currency) : Json<NewCurrencyDTO>
-    ) -> Result<Json<CurrencyDTO>, (StatusCode, String)> {
-        // TODO: return 409 conflict if already exists
+    ) -> Result<ApiResponse<CurrencyDTO>, ApiResponse<String>> {
         let res = service
             .create_currency(new_currency.to_db())
             .await
             .map_err(check_error)?;
 
-        Ok(Json(CurrencyDTO::from(res)))
+        Ok((StatusCode::CREATED, Json(CurrencyDTO::from(res))))
     }
 
     /// Gets a list of all currently known currencies.
@@ -121,12 +122,12 @@ pub mod currency_api {
     )]
     pub async fn get_currencies(
         State(service) : State<CurrencyService>,
-    ) -> Result<Json<Vec<CurrencyDTO>>, (StatusCode, String)> {
+    ) -> Result<ApiResponse<Vec<CurrencyDTO>>, ApiResponse<String>> {
         let loaded_currencies = service
             .get_currencies()
             .await
             .map_err(check_error)?;
 
-        Ok(Json(CurrencyDTO::from_vec(loaded_currencies)))
+        Ok((StatusCode::OK, Json(CurrencyDTO::from_vec(loaded_currencies))))
     }
 }
