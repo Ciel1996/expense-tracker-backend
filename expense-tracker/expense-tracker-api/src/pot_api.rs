@@ -8,7 +8,7 @@ pub mod pot_api {
     use axum::Json;
     use expense_tracker_db::expenses::expenses::{Expense, NewExpense};
     use expense_tracker_db::pots::pots::{NewPot, Pot};
-    use expense_tracker_db::setup::DbConnectionPool;
+    use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::splits::splits::{NewExpenseSplit, Split};
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
@@ -29,7 +29,7 @@ pub mod pot_api {
     }
 
     /// Registers all functions of the Pot API.
-    pub fn register(pool: DbConnectionPool) -> OpenApiRouter {
+    pub fn register(pool: DbPool) -> OpenApiRouter {
         let shared_state = Arc::new(PotApiState {
             pot_service: pot_service::new_service(pool.clone()),
             currency_service: currency_service::new_service(pool.clone()),
@@ -300,6 +300,7 @@ pub mod pot_api {
 
         let splits = SplitDTO::from_vec_split(splits);
 
+        // TODO: return 201 not 200
         Ok(Json(ExpenseDTO::from(expense, CurrencyDTO::from(currency), splits)))
     }
 }

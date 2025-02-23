@@ -6,7 +6,7 @@ mod currency_api;
 pub mod api {
     use axum::http::StatusCode;
     use utoipa_axum::router::OpenApiRouter;
-    use expense_tracker_db::setup::DbConnectionPool;
+    use expense_tracker_db::setup::DbPool;
     use expense_tracker_services::ExpenseError;
     use crate::currency_api::currency_api;
     use crate::health_api::health_api;
@@ -15,7 +15,7 @@ pub mod api {
 
     const VERSION_ONE: &str = "/v1";
 
-    pub fn router(pool: DbConnectionPool) -> OpenApiRouter {
+    pub fn router(pool: DbPool) -> OpenApiRouter {
         OpenApiRouter::new()
             .nest(VERSION_ONE, health_api::register())
             .nest(VERSION_ONE, user_api::register(pool.clone()))

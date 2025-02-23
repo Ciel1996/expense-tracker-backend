@@ -7,13 +7,13 @@ pub mod currency_api {
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
     use expense_tracker_db::currencies::currencies::{Currency, NewCurrency};
-    use expense_tracker_db::setup::DbConnectionPool;
+    use expense_tracker_db::setup::DbPool;
     use expense_tracker_services::currency_service::currency_service;
     use expense_tracker_services::currency_service::currency_service::CurrencyService;
     use crate::api::check_error;
 
     /// Registers all functions of the Currency API.
-    pub fn register(pool : DbConnectionPool) -> OpenApiRouter {
+    pub fn register(pool : DbPool) -> OpenApiRouter {
         OpenApiRouter::new()
             .routes(routes!(create_currency))
             .routes(routes!(get_currencies))

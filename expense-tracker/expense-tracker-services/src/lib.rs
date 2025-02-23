@@ -1,5 +1,3 @@
-use std::fmt::Display;
-
 pub mod health_service;
 pub mod user_service;
 pub mod currency_service;

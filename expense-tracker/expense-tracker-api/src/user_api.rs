@@ -6,14 +6,14 @@ pub mod user_api {
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
-    use expense_tracker_db::setup::DbConnectionPool;
+    use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::users::users::{NewUser, User};
     use expense_tracker_services::user_service::user_service;
     use expense_tracker_services::user_service::user_service::UserService;
     use crate::api::check_error;
 
     /// Registers all functions of the Users API.
-    pub fn register(pool : DbConnectionPool) -> OpenApiRouter {
+    pub fn register(pool : DbPool) -> OpenApiRouter {
         OpenApiRouter::new()
             .routes(routes!(create_user))
             .with_state(user_service::create_service(pool))

@@ -1,8 +1,9 @@
 pub mod currency_service {
-    use diesel::{QueryDsl, RunQueryDsl, SelectableHelper, ExpressionMethods};
+    use diesel::{QueryDsl, ExpressionMethods, SelectableHelper};
+    use diesel_async::RunQueryDsl;
     use expense_tracker_db::currencies::currencies::{Currency, NewCurrency};
     use expense_tracker_db::schema::currencies::dsl::currencies;
-    use expense_tracker_db::setup::DbConnectionPool;
+    use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::schema::currencies::{id, symbol};
     use crate::{internal_error, not_found_error, ExpenseError};
     use crate::ExpenseError::Conflict;
@@ -10,7 +11,7 @@ pub mod currency_service {
     /// The service responsible for interacting with Currency related logic.
     #[derive(Clone)]
     pub struct CurrencyService {
-        db_pool: DbConnectionPool,
+        db_pool: DbPool,
     }
 
     impl CurrencyService {
@@ -19,15 +20,12 @@ pub mod currency_service {
         /// or the Currency that is related to the given symbol.
         pub async fn get_currency_by_symbol(&self, currency_symbol : String)
             -> Result<Currency, ExpenseError> {
-            let conn = self.db_pool.get().await.map_err(internal_error)?;
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
-            let res = conn
-                .interact(|conn| currencies
-                    .filter(symbol.eq(currency_symbol))
-                    .first::<Currency>(conn)
-                )
+            let res = currencies
+                .filter(symbol.eq(currency_symbol))
+                .first::<Currency>(&mut conn)
                 .await
-                .map_err(internal_error)?
                 .map_err(not_found_error)?;
 
             Ok(res)
@@ -38,15 +36,13 @@ pub mod currency_service {
         pub async fn get_currency_by_id(&self, to_search: i32)
             -> Result<Currency, ExpenseError>
         {
-            let conn = self.db_pool.get().await.map_err(internal_error)?;
+            let mut conn =
+                self.db_pool.get().await.map_err(internal_error)?;
 
-            let res = conn
-                .interact(move |conn| currencies
-                    .filter(id.eq(to_search))
-                    .first::<Currency>(conn)
-                )
+            let res = currencies
+                .filter(id.eq(to_search))
+                .first::<Currency>(&mut conn)
                 .await
-                .map_err(internal_error)?
                 .map_err(not_found_error)?;
 
             Ok(res)
@@ -69,17 +65,13 @@ pub mod currency_service {
                 ));
             }
 
-            let conn = self.db_pool.get().await.map_err(internal_error)?;
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
-            let res = conn
-                .interact(move |conn| {
-                    diesel::insert_into(currencies)
-                        .values(new_currency)
-                        .returning(Currency::as_returning())
-                        .get_result::<Currency>(conn)
-                })
+            let res = diesel::insert_into(currencies)
+                .values(new_currency)
+                .returning(Currency::as_returning())
+                .get_result::<Currency>(&mut conn)
                 .await
-                .map_err(internal_error)?
                 .map_err(not_found_error)?;
 
             Ok(res)
@@ -87,15 +79,12 @@ pub mod currency_service {
 
         /// Gets all currencies.
         pub async fn get_currencies(&self) -> Result<Vec<Currency>, ExpenseError> {
-            let conn  = self.db_pool.get().await.map_err(internal_error)?;
+            let mut conn  = self.db_pool.get().await.map_err(internal_error)?;
 
-            let loaded_currencies = conn
-                .interact(|conn| currencies
-                    .select(Currency::as_select())
-                    .load::<Currency>(conn)
-                )
+            let loaded_currencies = currencies
+                .select(Currency::as_select())
+                .load::<Currency>(&mut conn)
                 .await
-                .map_err(internal_error)?
                 .map_err(not_found_error)?;
 
             Ok(loaded_currencies)
@@ -103,7 +92,7 @@ pub mod currency_service {
     }
 
     /// Creates a new instance of CurrencyService.
-    pub fn new_service(pool : DbConnectionPool) -> CurrencyService {
+    pub fn new_service(pool : DbPool) -> CurrencyService {
         CurrencyService{
             db_pool : pool
         }

@@ -1,9 +1,9 @@
 pub mod pot_service {
-    use std::error::Error;
-    use diesel::{QueryDsl, RunQueryDsl, SelectableHelper, ExpressionMethods};
+    use diesel::{QueryDsl, ExpressionMethods, SelectableHelper};
+    use diesel_async::RunQueryDsl;
     use expense_tracker_db::currencies::currencies::Currency;
     use expense_tracker_db::pots::pots::{NewPot, Pot};
-    use expense_tracker_db::setup::DbConnectionPool;
+    use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::schema::pots::dsl::pots;
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
@@ -13,7 +13,7 @@ pub mod pot_service {
     /// A service offering interfaces related to Pots.
     #[derive(Clone)]
     pub struct PotService {
-        db_pool : DbConnectionPool,
+        db_pool : DbPool,
         currency_service : CurrencyService
     }
 
@@ -23,26 +23,22 @@ pub mod pot_service {
             &self,
             new_pot : NewPot
         ) -> Result<(Pot, Currency), ExpenseError> {
-            let conn = self.db_pool.get().await.map_err(internal_error)?;
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
             let loaded_pot_currency_id = new_pot.default_currency_id().clone();
 
+            // TODO: do these 2 make sense in a single transaction?
             let currency = self.currency_service
                 .get_currency_by_id(loaded_pot_currency_id)
                 .await
                 .map_err(check_error)?;
 
-            let res = conn
-                .interact(move |conn| {
-                    diesel::insert_into(pots)
-                        .values(new_pot)
-                        .returning(Pot::as_returning())
-                        .get_result::<Pot>(conn)
-                })
+            let res = diesel::insert_into(pots)
+                .values(new_pot)
+                .returning(Pot::as_returning())
+                .get_result::<Pot>(&mut conn)
                 .await
-                .map_err(internal_error)?
                 .map_err(not_found_error)?;
-
 
             Ok((res, currency))
         }
@@ -53,18 +49,10 @@ pub mod pot_service {
         ) -> Result<Vec<Pot>, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
-            // let loaded_pots = conn
-            //     .interact(|conn| pots.select(Pot::as_select())
-            //         .load::<Pot>(conn))
-            //     .await
-            //     .map_err(internal_error)?
-            //     .map_err(not_found_error)?;
-
             let loaded_pots = pots
                 .select(Pot::as_select())
                 .load(&mut conn)
                 .await
-                .map_err(internal_error)?
                 .map_err(not_found_error)?;
 
             Ok(loaded_pots)
@@ -75,23 +63,20 @@ pub mod pot_service {
             &self,
             to_search : i32
         ) -> Result<Pot, ExpenseError> {
-            let conn = self.db_pool.get()
+            let mut conn = self.db_pool.get()
                 .await
                 .map_err(internal_error)?;
 
-           conn
-                .interact(move |conn| pots
-                    .filter(pots_id.eq(to_search))
-                    .first::<Pot>(conn)
-                )
+            pots
+                .filter(pots_id.eq(to_search))
+                .first::<Pot>(&mut conn)
                 .await
-                .map_err(internal_error)?
                 .map_err(not_found_error)
         }
     }
 
     /// Creates a new PotService with the given DbConnectionPool.
-    pub fn new_service(pool : DbConnectionPool)
+    pub fn new_service(pool : DbPool)
         -> PotService {
         PotService {
             db_pool : pool.clone(),
