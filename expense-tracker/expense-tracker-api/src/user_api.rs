@@ -16,6 +16,7 @@ pub mod user_api {
     pub fn register(pool : DbPool) -> OpenApiRouter {
         OpenApiRouter::new()
             .routes(routes!(create_user))
+            .routes(routes!(get_users))
             .with_state(user_service::create_service(pool))
     }
 
@@ -55,6 +56,16 @@ pub mod user_api {
             }
         }
 
+        pub fn from_vec(users : Vec<User>) -> Vec<UserDTO> {
+            let mut dtos = vec!();
+
+            for user in users {
+                dtos.push(UserDTO::from(user));
+            }
+
+            dtos
+        }
+
         pub fn id(&self) -> i32 {
             self.id
         }
@@ -85,5 +96,20 @@ pub mod user_api {
             .map_err(check_error)?;
 
         Ok((StatusCode::CREATED, Json(UserDTO::from(res))))
+    }
+
+    #[utoipa::path(
+        get,
+        path = "/users",
+        tag = "Users",
+        responses(
+            (status = 200, description = "All users in the database", body = Vec<UserDTO>),
+        )
+    )]
+    pub async fn get_users(
+        State(service) : State<UserService>
+    ) -> Result<ApiResponse<Vec<UserDTO>>, ApiResponse<String>> {
+        let res = service.get_users().await.map_err(check_error)?;
+        Ok((StatusCode::OK, Json(UserDTO::from_vec(res))))
     }
 }

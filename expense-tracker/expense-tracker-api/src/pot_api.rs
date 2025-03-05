@@ -6,6 +6,7 @@ pub mod pot_api {
     use axum::extract::{Path, State};
     use axum::http::StatusCode;
     use axum::Json;
+    use hyper::service::Service;
     use expense_tracker_db::expenses::expenses::{Expense, NewExpense};
     use expense_tracker_db::pots::pots::{NewPot, Pot};
     use expense_tracker_db::setup::DbPool;
@@ -108,6 +109,7 @@ pub mod pot_api {
     }
 
     impl ExpenseDTO {
+        // TODO: make this smarter, this method sucks
         fn from(expense: Expense, currency: CurrencyDTO, splits: Vec<SplitDTO>) -> Self {
             Self {
                 id: expense.id(),
@@ -117,6 +119,16 @@ pub mod pot_api {
                 owner_id: expense.owner_id(),
                 splits,
             }
+        }
+
+        fn from_vec(expenses : Vec<Expense>) -> Vec<Self> {
+            let mut dtos: Vec<ExpenseDTO> = vec!();
+
+            for expense in expenses {
+                dtos.push(ExpenseDTO::from(expense))
+            }
+
+            dtos
         }
     }
 
@@ -303,5 +315,37 @@ pub mod pot_api {
                 StatusCode::CREATED,
                 Json(ExpenseDTO::from(expense, CurrencyDTO::from(currency), splits))
             ))
+    }
+
+    #[utoipa::path(
+        get,
+        path = "/pots/{pot_id}",
+        tag = "Pots",
+        responses(
+            (
+                status = 200,
+                description = "The expenses for the pot with the given id",
+                body = Vec<ExpenseDTO>
+            ),
+            (
+                status = 404,
+                description = "Indicates that the desired pot does not exists"
+            )
+        ),
+        params(
+            ("pot_id" = i32, Path, description = "Pot database id for the pot.  ")
+        )
+    )]
+    pub async fn get_pot_expenses(
+        State(pot_api_service) : State<Arc<PotApiState>>,
+        Path(pot_id): Path<i32>
+    ) -> Result<Vec<ExpenseDTO>, ApiResponse<String>> {
+        let result = pot_api_service
+            .expense_service
+            .get_expenses_by_pot_id(pot_id)
+            .await
+            .map_err(check_error)?;
+
+        Ok((StatusCode::OK, ExpenseDTO::from_vec(result)))
     }
 }

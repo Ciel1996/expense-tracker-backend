@@ -1,5 +1,5 @@
 pub mod user_service {
-    use diesel_async::{RunQueryDsl};
+    use diesel_async::RunQueryDsl;
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::schema as expense_tracker_db_schema;
     use expense_tracker_db::users::users::{NewUser, User};
@@ -24,6 +24,18 @@ pub mod user_service {
                 .map_err(internal_error)?;
 
             Ok(res)
+        }
+
+        /// Gets all users in the database.
+        pub async fn get_users(&self) -> Result<Vec<User>, ExpenseError> {
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+
+            let users = expense_tracker_db_schema::users::table
+                .get_results(&mut conn)
+                .await
+                .map_err(internal_error)?;
+
+            Ok(users)
         }
     }
 
