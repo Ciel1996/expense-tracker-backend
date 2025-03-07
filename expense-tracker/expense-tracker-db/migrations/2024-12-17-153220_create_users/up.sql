@@ -15,7 +15,7 @@ CREATE TABLE currencies
 CREATE TABLE pots
 (
     id                  SERIAL PRIMARY KEY,
-    owner_id            INTEGER REFERENCES users (id)      NOT NULL,
+    owner_id            INTEGER REFERENCES users (id)      ON DELETE CASCADE NOT NULL,
     name                TEXT                               NOT NULL,
     default_currency_id INTEGER REFERENCES currencies (id) NOT NULL
 );
@@ -24,7 +24,7 @@ CREATE TABLE expenses
 (
     id          SERIAL PRIMARY KEY,
     owner_id    INTEGER REFERENCES users (id)      NOT NULL,
-    pot_id      INTEGER REFERENCES pots (id)       NOT NULL,
+    pot_id      INTEGER REFERENCES pots (id)       ON DELETE CASCADE NOT NULL,
     description TEXT                               NOT NULL,
     currency_id INTEGER REFERENCES currencies (id) NOT NULL
 );

@@ -1,3 +1,5 @@
+use diesel::result::Error;
+
 pub mod health_service;
 pub mod user_service;
 pub mod currency_service;
@@ -37,4 +39,14 @@ where E: std::error::Error {
 /// A helper used when unwrapping in case of an error.
 fn check_error(err : ExpenseError) -> ExpenseError {
     err
+}
+
+
+impl From<ExpenseError> for Error {
+    fn from(value: ExpenseError) -> Self {
+        match value {
+            ExpenseError::NotFound(_) => Error::NotFound,
+            _ => panic!("Could not handle ExpenseError {:?}", value),
+        }
+    }
 }

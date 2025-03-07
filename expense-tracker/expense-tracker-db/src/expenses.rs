@@ -14,7 +14,7 @@ pub mod expenses {
         pot_id: i32,
         owner_id: i32,
         description: String,
-        currency_id: i32,
+        currency_id: i32
     }
 
     /// This struct is used to create a new expense in the database.
@@ -41,7 +41,7 @@ pub mod expenses {
                 pot_id,
                 owner_id,
                 description,
-                currency_id
+                currency_id,
             }
         }
 

@@ -1,13 +1,13 @@
 pub mod splits {
     use diesel::{Associations, Insertable, Queryable, Selectable};
-    use serde::{Deserialize, Serialize};
+    use serde::Deserialize;
     use crate::expenses::expenses::Expense;
     use crate::schema::expense_splits;
 
     /// This struct represents a split which is in turn part of an Expense
     /// but related to a user. The user is the one owing money the owner of
     /// the expense.
-    #[derive(Serialize, Selectable, Queryable, Associations)]
+    #[derive(Selectable, Queryable, Associations, Clone)]
     #[diesel(belongs_to(Expense))]
     #[diesel(table_name = expense_splits)]
     pub struct Split {

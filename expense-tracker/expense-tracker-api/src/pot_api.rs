@@ -15,10 +15,12 @@ pub mod pot_api {
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
+    use expense_tracker_db::currencies::currencies::Currency;
+    use expense_tracker_db::schema::expense_splits::dsl::expense_splits;
     use expense_tracker_services::currency_service::currency_service;
     use expense_tracker_services::currency_service::currency_service::CurrencyService;
     use expense_tracker_services::expense_service::expense_service;
-    use expense_tracker_services::expense_service::expense_service::ExpenseService;
+    use expense_tracker_services::expense_service::expense_service::{ExpenseService, JoinedExpense};
     use expense_tracker_services::pot_service::pot_service;
     use expense_tracker_services::pot_service::pot_service::PotService;
 
@@ -41,6 +43,7 @@ pub mod pot_api {
             .routes(routes!(create_pot))
             .routes(routes!(get_pots))
             .routes(routes!(add_expense))
+            .routes(routes!(get_pot_expenses))
             .with_state(shared_state)
     }
 
@@ -109,23 +112,26 @@ pub mod pot_api {
     }
 
     impl ExpenseDTO {
-        // TODO: make this smarter, this method sucks
-        fn from(expense: Expense, currency: CurrencyDTO, splits: Vec<SplitDTO>) -> Self {
+        fn from(expense: Expense, currency: Currency, splits: Vec<Split>) -> Self {
             Self {
                 id: expense.id(),
                 description: expense.description().to_string(),
                 pot_id: expense.pot_id(),
-                currency,
+                currency: CurrencyDTO::from(currency),
                 owner_id: expense.owner_id(),
-                splits,
+                splits: SplitDTO::from_vec_split(splits),
             }
         }
 
-        fn from_vec(expenses : Vec<Expense>) -> Vec<Self> {
+        fn from_vec(expenses : Vec<JoinedExpense>) -> Vec<Self> {
             let mut dtos: Vec<ExpenseDTO> = vec!();
 
-            for expense in expenses {
-                dtos.push(ExpenseDTO::from(expense))
+            for joined_expense in expenses {
+                let expense = joined_expense.0;
+                let splits = joined_expense.1;
+                let currency = joined_expense.2;
+
+                dtos.push(ExpenseDTO::from(expense, currency, splits))
             }
 
             dtos
@@ -302,19 +308,9 @@ pub mod pot_api {
 
         let expense = expense_splits_result.0;
         let splits = expense_splits_result.1;
+        let currency = expense_splits_result.2;
 
-        let currency = pot_api_state
-            .currency_service
-            .get_currency_by_id(expense.currency_id())
-            .await
-            .map_err(check_error)?;
-
-        let splits = SplitDTO::from_vec_split(splits);
-
-        Ok((
-                StatusCode::CREATED,
-                Json(ExpenseDTO::from(expense, CurrencyDTO::from(currency), splits))
-            ))
+        Ok((StatusCode::CREATED,Json(ExpenseDTO::from(expense, currency, splits))))
     }
 
     #[utoipa::path(
@@ -339,13 +335,13 @@ pub mod pot_api {
     pub async fn get_pot_expenses(
         State(pot_api_service) : State<Arc<PotApiState>>,
         Path(pot_id): Path<i32>
-    ) -> Result<Vec<ExpenseDTO>, ApiResponse<String>> {
+    ) -> Result<ApiResponse<Vec<ExpenseDTO>>, ApiResponse<String>> {
         let result = pot_api_service
             .expense_service
             .get_expenses_by_pot_id(pot_id)
             .await
             .map_err(check_error)?;
 
-        Ok((StatusCode::OK, ExpenseDTO::from_vec(result)))
+        Ok((StatusCode::OK, Json(ExpenseDTO::from_vec(result))))
     }
 }

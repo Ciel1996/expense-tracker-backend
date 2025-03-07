@@ -5,7 +5,7 @@ pub mod currencies {
     use crate::schema::currencies;
 
     /// Defines a currency with associated attributes.
-    #[derive(Serialize, Selectable, Queryable)]
+    #[derive(Serialize, Selectable, Queryable, Clone)]
     #[diesel(table_name = currencies)]
     pub struct Currency {
         id: i32,

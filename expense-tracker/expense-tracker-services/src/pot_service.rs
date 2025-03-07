@@ -2,10 +2,8 @@ pub mod pot_service {
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
     use crate::{check_error, internal_error, not_found_error, ExpenseError};
-    use diesel::result::Error;
     use diesel::{ExpressionMethods, QueryDsl, SelectableHelper};
-    use diesel_async::scoped_futures::ScopedFutureExt;
-    use diesel_async::{AsyncConnection, RunQueryDsl};
+    use diesel_async::RunQueryDsl;
     use expense_tracker_db::currencies::currencies::Currency;
     use expense_tracker_db::pots::pots::{NewPot, Pot};
     use expense_tracker_db::schema::pots::dsl::pots;
