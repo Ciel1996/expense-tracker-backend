@@ -17,6 +17,7 @@ pub mod expense_service {
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
 
+    // TODO: use something like this for a JOIN query
     // #[derive(Queryable)]
     // pub struct JoinedExpenseCurrency {
     //     expense_id: i32,
@@ -33,6 +34,7 @@ pub mod expense_service {
     pub type JoinedExpense = (Expense, Vec<Split>, Currency);
 
     /// Struct working with Expense related logic.
+    #[derive(Clone)]
     pub struct ExpenseService {
         db_pool: DbPool,
         currency_service: CurrencyService,

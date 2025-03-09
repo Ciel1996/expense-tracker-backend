@@ -7,22 +7,19 @@ pub mod pot_api {
     use axum::http::StatusCode;
     use axum::Json;
     use hyper::service::Service;
-    use expense_tracker_db::expenses::expenses::{Expense, NewExpense};
     use expense_tracker_db::pots::pots::{NewPot, Pot};
     use expense_tracker_db::setup::DbPool;
-    use expense_tracker_db::splits::splits::{NewExpenseSplit, Split};
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
-    use expense_tracker_db::currencies::currencies::Currency;
-    use expense_tracker_db::schema::expense_splits::dsl::expense_splits;
     use expense_tracker_services::currency_service::currency_service;
     use expense_tracker_services::currency_service::currency_service::CurrencyService;
     use expense_tracker_services::expense_service::expense_service;
-    use expense_tracker_services::expense_service::expense_service::{ExpenseService, JoinedExpense};
+    use expense_tracker_services::expense_service::expense_service::ExpenseService;
     use expense_tracker_services::pot_service::pot_service;
     use expense_tracker_services::pot_service::pot_service::PotService;
+    use crate::expense_api::expense_api::{ExpenseDTO, NewExpenseDTO};
 
     /// Holds the App State for the PotAPI.
     struct PotApiState {
@@ -97,121 +94,6 @@ pub mod pot_api {
         /// Converts the DTO to the db object.
         fn to_db(&self) -> NewPot {
             NewPot::new(self.owner_id, self.name.clone(), self.default_currency_id)
-        }
-    }
-
-    /// DTO used when working with existing Expenses.
-    #[derive(ToSchema, Serialize)]
-    pub struct ExpenseDTO {
-        id: i32,
-        pot_id: i32,
-        owner_id: i32,
-        description: String,
-        currency: CurrencyDTO,
-        splits: Vec<SplitDTO>,
-    }
-
-    impl ExpenseDTO {
-        fn from(expense: Expense, currency: Currency, splits: Vec<Split>) -> Self {
-            Self {
-                id: expense.id(),
-                description: expense.description().to_string(),
-                pot_id: expense.pot_id(),
-                currency: CurrencyDTO::from(currency),
-                owner_id: expense.owner_id(),
-                splits: SplitDTO::from_vec_split(splits),
-            }
-        }
-
-        fn from_vec(expenses : Vec<JoinedExpense>) -> Vec<Self> {
-            let mut dtos: Vec<ExpenseDTO> = vec!();
-
-            for joined_expense in expenses {
-                let expense = joined_expense.0;
-                let splits = joined_expense.1;
-                let currency = joined_expense.2;
-
-                dtos.push(ExpenseDTO::from(expense, currency, splits))
-            }
-
-            dtos
-        }
-    }
-
-    /// DTO used when working with splits.
-    #[derive(Clone, ToSchema, Serialize, Deserialize)]
-    pub struct SplitDTO {
-        user_id: i32,
-        amount: f64,
-        is_paid: bool,
-    }
-
-    impl SplitDTO {
-        /// Turns this SplitDTO into a db NewExpenseSplit.
-        fn to_new_db(&self) -> NewExpenseSplit {
-            NewExpenseSplit::new(self.user_id, self.amount, self.is_paid)
-        }
-
-        fn from(split : Split) -> Self {
-            Self {
-                user_id: split.user_id(),
-                is_paid: split.is_paid(),
-                amount: split.amount(),
-            }
-        }
-
-        fn from_vec_split(splits : Vec<Split>) -> Vec<SplitDTO> {
-            let mut dtos: Vec<SplitDTO> = vec![];
-
-            for split in splits {
-                dtos.push(SplitDTO::from(split))
-            }
-
-            dtos
-        }
-    }
-
-    /// DTO used when creating a new expense for the given pot.
-    #[derive(ToSchema, Serialize, Deserialize)]
-    pub struct NewExpenseDTO {
-        owner_id: i32,
-        description: String,
-        currency_id: i32,
-        splits: Vec<SplitDTO>,
-    }
-
-    impl NewExpenseDTO {
-        /// Turns this NewExpenseDTO into a NewExpense.
-        fn to_db(&self, owning_pot_id: i32) -> NewExpense {
-            NewExpense::new(
-                self.owner_id,
-                owning_pot_id,
-                self.description.clone(),
-                self.currency_id,
-            )
-        }
-
-        /// Turns the `Vec<SplitDTO>` into a `Vec<NewExpenseSplit>`.
-        fn splits_to_new_db(&self) -> Vec<NewExpenseSplit> {
-            let mut splits = vec!();
-
-            for split in &self.splits {
-                let db_split = split.to_new_db();
-                splits.push(db_split);
-            }
-
-            splits
-        }
-    }
-
-    impl Clone for NewExpenseDTO {
-        fn clone(&self) -> Self {
-            Self {
-                owner_id: self.owner_id,
-                description: self.description.clone(),
-                currency_id: self.currency_id,
-                splits: self.splits.clone()
-            }
         }
     }
 
