@@ -1,7 +1,8 @@
 [workspace]
+resolver = "2"
 
 members = [
     "expense-tracker",
     "expense-tracker-api",
     "expense-tracker-db"
-]
+, "expense-tracker-services"]

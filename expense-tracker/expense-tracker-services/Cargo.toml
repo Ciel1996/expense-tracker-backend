@@ -1,0 +1,9 @@
+[package]
+name = "expense-tracker-services"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+expense-tracker-db = { path = "../expense-tracker-db" }
+diesel = "2.2.7"
+diesel-async = "0.5.2"

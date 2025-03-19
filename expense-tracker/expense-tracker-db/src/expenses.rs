@@ -7,21 +7,22 @@ pub mod expenses {
     /// An expense is an amount of money paid, as well as associated information by a user.
     /// An expense can either be paid or unpaid. Unpaid expenses should be considered for
     /// the sum other users have to pay.
-    #[derive(Serialize, Selectable, Queryable, Associations)]
+    #[derive(Serialize, Selectable, Queryable, Associations, Clone)]
     #[diesel(belongs_to(Pot))]
     pub struct Expense {
         id: i32,
         pot_id: i32,
         owner_id: i32,
         description: String,
-        currency_id: i32,
+        currency_id: i32
     }
 
     /// This struct is used to create a new expense in the database.
-    #[derive(Deserialize, Insertable)]
+    #[derive(Deserialize, Insertable, Clone)]
     #[diesel(table_name = expenses)]
     pub struct NewExpense {
         owner_id: i32,
+        pot_id: i32,
         description: String,
         currency_id: i32
     }
@@ -40,7 +41,7 @@ pub mod expenses {
                 pot_id,
                 owner_id,
                 description,
-                currency_id
+                currency_id,
             }
         }
 
@@ -62,6 +63,16 @@ pub mod expenses {
         /// Getter for id
         pub fn id(&self) -> i32 {
             self.id
+        }
+
+        pub fn currency_id(&self) -> i32 {
+            self.currency_id
+        }
+    }
+
+    impl NewExpense {
+        pub fn new(owner_id: i32, pot_id: i32, description: String, currency_id: i32) -> Self {
+            Self { owner_id, pot_id, description, currency_id }
         }
     }
 }

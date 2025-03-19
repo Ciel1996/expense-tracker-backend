@@ -1,25 +1,55 @@
 mod health_api;
 mod user_api;
+mod pot_api;
+mod currency_api;
+mod expense_api;
 
 pub mod api {
     use axum::http::StatusCode;
+    use axum::Json;
     use utoipa_axum::router::OpenApiRouter;
-    use expense_tracker_db::setup::DbConnectionPool;
+    use expense_tracker_db::setup::DbPool;
+    use expense_tracker_services::ExpenseError;
+    use crate::currency_api::currency_api;
     use crate::health_api::health_api;
+    use crate::pot_api::pot_api;
     use crate::user_api::user_api;
+    use crate::expense_api::expense_api;
 
-    pub fn router(pool: DbConnectionPool) -> OpenApiRouter {
+    /// The generic response that is returned by APIs.
+    pub type ApiResponse<T> = (StatusCode, Json<T>);
+
+    const VERSION_ONE: &str = "/v1";
+
+    pub fn router(pool: DbPool) -> OpenApiRouter {
         OpenApiRouter::new()
-            .nest("", health_api::register(pool.clone()))
-            .nest("", user_api::register(pool.clone()))
+            .nest(VERSION_ONE, health_api::register())
+            .nest(VERSION_ONE, user_api::register(pool.clone()))
+            .nest(VERSION_ONE, pot_api::register(pool.clone()))
+            .nest(VERSION_ONE, currency_api::register(pool.clone()))
+            .nest(VERSION_ONE, expense_api::register(pool.clone()))
     }
 
-    /// Utility function for mapping any error into a `500 Internal Server Error`
-    /// response.
-    pub fn internal_error<E>(err: E) -> (StatusCode, String)
-    where
-        E: std::error::Error,
+    /// Checks the given `Error` and gets the correct error message.
+    /// Returns one of:
+    /// - 404
+    /// - 409
+    /// - 500
+    pub fn check_error(err: ExpenseError) -> ApiResponse<String>
     {
-        (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
+        match err {
+            ExpenseError::NotFound(message) => (
+                StatusCode::NOT_FOUND,
+                Json(message)
+            ),
+            ExpenseError::Internal(message) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(message)
+            ),
+            ExpenseError::Conflict(message) => (
+                StatusCode::CONFLICT,
+                Json(message)
+            ),
+        }
     }
 }

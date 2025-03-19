@@ -10,7 +10,7 @@ struct ApiDoc;
 
 #[tokio::main]
 async fn main() {
-    let pool = setup_db().await;
+    let pool = setup_db().await.expect("Failed to create pool");
 
     let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
         .nest("/api", api::router(pool))
