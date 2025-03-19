@@ -8,6 +8,8 @@ use expense_tracker_db::setup::setup_db;
 #[derive(OpenApi)]
 struct ApiDoc;
 
+// TODO: for auth look at loco_oauth2, oauth-axum, https://github.com/ramosbugs/openidconnect-rs, https://github.com/pfzetto/axum-oidc or similar libraries
+
 #[tokio::main]
 async fn main() {
     let pool = setup_db().await.expect("Failed to create pool");
