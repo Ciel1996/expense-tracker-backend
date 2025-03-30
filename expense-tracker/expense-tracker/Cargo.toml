@@ -11,3 +11,8 @@ tokio = { version = "1.0", features = ["full"] }
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
 utoipa = "5.3.1"
 utoipa-axum = "0.2"
+axum-oidc = "0.6.0"
+cookie = "0.18.1"
+time = "0.3.41"
+tower = "0.5.2"
+tower-sessions = "0.14.0"

@@ -21,7 +21,8 @@ pub mod api {
 
     const VERSION_ONE: &str = "/v1";
 
-    pub fn router(pool: DbPool) -> OpenApiRouter {
+    pub async fn router(pool: DbPool) -> OpenApiRouter {
+
         OpenApiRouter::new()
             .nest(VERSION_ONE, health_api::register())
             .nest(VERSION_ONE, user_api::register(pool.clone()))

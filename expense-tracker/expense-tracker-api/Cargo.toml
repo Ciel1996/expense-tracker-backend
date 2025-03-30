@@ -14,3 +14,4 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 hyper = { version = "1.0.1", features = ["full"] }
 diesel = "2.2.6"
+axum-oidc = "0.6.0"
