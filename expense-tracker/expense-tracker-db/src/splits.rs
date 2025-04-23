@@ -1,6 +1,7 @@
 pub mod splits {
     use diesel::{Associations, Insertable, Queryable, Selectable};
     use serde::Deserialize;
+    use uuid::Uuid;
     use crate::expenses::expenses::Expense;
     use crate::schema::expense_splits;
 
@@ -12,7 +13,7 @@ pub mod splits {
     #[diesel(table_name = expense_splits)]
     pub struct Split {
         expense_id : i32,
-        user_id : i32,
+        user_id : Uuid,
         amount : f64,
         is_paid: bool
     }
@@ -21,7 +22,7 @@ pub mod splits {
         /// Constructor for a Split.
         pub fn new(
             expense_id : i32,
-            user_id : i32,
+            user_id : Uuid,
             amount : f64,
             is_paid: bool
         ) -> Self {
@@ -39,7 +40,7 @@ pub mod splits {
         }
 
         /// Getter for user_id.
-        pub fn user_id(&self) -> i32 {
+        pub fn user_id(&self) -> Uuid {
             self.user_id
         }
 
@@ -59,26 +60,26 @@ pub mod splits {
     #[diesel(table_name = expense_splits)]
     pub struct NewSplit {
         expense_id : i32,
-        user_id : i32,
+        user_id : Uuid,
         amount : f64,
         is_paid: bool
     }
 
     impl NewSplit {
-        pub fn new(expense_id: i32, user_id: i32, amount: f64, is_paid: bool) -> Self {
+        pub fn new(expense_id: i32, user_id: Uuid, amount: f64, is_paid: bool) -> Self {
             Self { expense_id, user_id, amount, is_paid }
         }
     }
 
     /// Use this struct if you want to create a new Expense with splits.
     pub struct NewExpenseSplit {
-        user_id : i32,
+        user_id : Uuid,
         amount : f64,
         is_paid: bool
     }
 
     impl NewExpenseSplit {
-        pub fn new(user_id: i32, amount: f64, is_paid: bool) -> Self {
+        pub fn new(user_id: Uuid, amount: f64, is_paid: bool) -> Self {
             Self { user_id, amount, is_paid }
         }
 

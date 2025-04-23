@@ -4,9 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-diesel = { version = "2.2", features = ["postgres"] }
-bb8-diesel = "0.2.1"
+diesel = { version = "2.2.9", features = ["postgres", "uuid"] }
 diesel-async = { version = "0.5.2", features = ["postgres", "pool", "bb8", "async-connection-wrapper", "sync-connection-wrapper"] }
 diesel_migrations = "2.2"
-serde = { version = "1.0.216", features = ["derive"] }
-tokio = "1.43.0"
+serde = { version = "1.0.219", features = ["derive"] }
+uuid = { version = ">=0.7.0,<2.0.0", features = ["serde", "v4"] }

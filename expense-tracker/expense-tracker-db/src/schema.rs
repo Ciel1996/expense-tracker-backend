@@ -11,7 +11,7 @@ diesel::table! {
 diesel::table! {
     expense_splits (expense_id, user_id) {
         expense_id -> Int4,
-        user_id -> Int4,
+        user_id -> Uuid,
         amount -> Float8,
         is_paid -> Bool,
     }
@@ -20,7 +20,7 @@ diesel::table! {
 diesel::table! {
     expenses (id) {
         id -> Int4,
-        owner_id -> Int4,
+        owner_id -> Uuid,
         pot_id -> Int4,
         description -> Text,
         currency_id -> Int4,
@@ -30,7 +30,7 @@ diesel::table! {
 diesel::table! {
     pots (id) {
         id -> Int4,
-        owner_id -> Int4,
+        owner_id -> Uuid,
         name -> Text,
         default_currency_id -> Int4,
     }
@@ -39,13 +39,13 @@ diesel::table! {
 diesel::table! {
     pots_to_users (pot_id, user_id) {
         pot_id -> Int4,
-        user_id -> Int4,
+        user_id -> Uuid,
     }
 }
 
 diesel::table! {
     users (id) {
-        id -> Int4,
+        id -> Uuid,
         name -> Text,
     }
 }

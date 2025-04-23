@@ -38,7 +38,7 @@ async fn main() {
         .expect("valid APP_URL");
     let issuer = "http://localhost:8080/realms/expense-tracker-dev".to_string();
     let client_id = "expense-tracker".to_string();
-    let client_secret = Some("LMFX3xg0rPh3J9xpwlbxZC5LknyT185e".to_string());
+    let client_secret = Some("ebgzm9OxhLLtyamkGfC3BQpZZmxHvlcU".to_string());
     let scopes = vec![];
 
     println!("APP_URL = {uri}");

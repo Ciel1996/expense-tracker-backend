@@ -1,7 +1,7 @@
 -- Your SQL goes here
 CREATE TABLE users
 (
-    id   SERIAL PRIMARY KEY,
+    id   UUID PRIMARY KEY,
     name TEXT NOT NULL
 );
 
@@ -15,7 +15,7 @@ CREATE TABLE currencies
 CREATE TABLE pots
 (
     id                  SERIAL PRIMARY KEY,
-    owner_id            INTEGER REFERENCES users (id)      ON DELETE CASCADE NOT NULL,
+    owner_id            UUID REFERENCES users (id)      ON DELETE CASCADE NOT NULL,
     name                TEXT                               NOT NULL,
     default_currency_id INTEGER REFERENCES currencies (id) NOT NULL
 );
@@ -23,7 +23,7 @@ CREATE TABLE pots
 CREATE TABLE expenses
 (
     id          SERIAL PRIMARY KEY,
-    owner_id    INTEGER REFERENCES users (id)      NOT NULL,
+    owner_id    UUID REFERENCES users (id)      NOT NULL,
     pot_id      INTEGER REFERENCES pots (id)       ON DELETE CASCADE NOT NULL,
     description TEXT                               NOT NULL,
     currency_id INTEGER REFERENCES currencies (id) NOT NULL
@@ -32,7 +32,7 @@ CREATE TABLE expenses
 CREATE TABLE expense_splits
 (
     expense_id INTEGER REFERENCES expenses (id) ON DELETE CASCADE NOT NULL ,
-    user_id    INTEGER REFERENCES users (id)    ON DELETE CASCADE NOT NULL,
+    user_id    UUID REFERENCES users (id)    ON DELETE CASCADE NOT NULL,
     amount     DOUBLE PRECISION                 NOT NULL,
     is_paid    BOOLEAN                          NOT NULL,
     PRIMARY KEY (expense_id, user_id)
@@ -41,7 +41,7 @@ CREATE TABLE expense_splits
 CREATE TABLE pots_to_users
 (
     pot_id  INTEGER REFERENCES pots (id)  NOT NULL,
-    user_id INTEGER REFERENCES users (id) NOT NULL,
+    user_id UUID REFERENCES users (id) NOT NULL,
     PRIMARY KEY (pot_id, user_id)
 );
 

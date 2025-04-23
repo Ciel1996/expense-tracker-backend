@@ -6,12 +6,11 @@ edition = "2021"
 [dependencies]
 expense-tracker-db = { path = "../expense-tracker-db" }
 expense-tracker-services = { path = "../expense-tracker-services" }
-axum = "0.8"
-tokio = { version = "1.0", features = ["full"] }
-utoipa = "5.2.0"
+axum = "0.8.3"
+utoipa = "5.3.1"
 utoipa-axum = "0.2"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-hyper = { version = "1.0.1", features = ["full"] }
-diesel = "2.2.6"
+hyper = { version = "1.6", features = ["full"] }
+diesel = { version = "2.2.9", features = ["uuid"] }
 axum-oidc = "0.6.0"
+uuid = ">=0.7.0,<2.0.0"

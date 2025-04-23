@@ -1,6 +1,7 @@
 pub mod pots {
     use diesel::{Insertable, Queryable, Selectable};
     use serde::{Deserialize, Serialize};
+    use uuid::Uuid;
     use crate::schema::pots;
 
     /// Represents a pot. A pot is an accumulation of expenses and is owned by a single
@@ -10,7 +11,7 @@ pub mod pots {
     #[derive(Serialize, Selectable, Queryable)]
     pub struct Pot {
         id: i32,
-        owner_id: i32,
+        owner_id: Uuid,
         name: String,
         default_currency_id: i32,
     }
@@ -18,7 +19,7 @@ pub mod pots {
     impl Pot {
         pub fn new(
             id: i32,
-            owner_id: i32,
+            owner_id: Uuid,
             name: String,
             default_currency_id: i32
         ) -> Self {
@@ -36,7 +37,7 @@ pub mod pots {
         }
 
         /// Getter for owner_id.
-        pub fn owner_id(&self) -> i32 {
+        pub fn owner_id(&self) -> Uuid {
             self.owner_id
         }
 
@@ -56,7 +57,7 @@ pub mod pots {
     #[derive(Deserialize, Insertable)]
     #[diesel(table_name = pots)]
     pub struct NewPot {
-        owner_id: i32,
+        owner_id: Uuid,
         name: String,
         default_currency_id: i32,
     }
@@ -64,7 +65,7 @@ pub mod pots {
     impl NewPot {
         /// Constructor
         pub fn new(
-            owner_id: i32,
+            owner_id: Uuid,
             name: String,
             default_currency_id: i32,
         ) -> Self {
@@ -75,7 +76,7 @@ pub mod pots {
             }
         }
 
-        pub fn owner_id(&self) -> i32 {
+        pub fn owner_id(&self) -> Uuid {
             self.owner_id
         }
 

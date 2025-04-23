@@ -2,7 +2,7 @@ pub mod user_service {
     use diesel_async::RunQueryDsl;
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::schema as expense_tracker_db_schema;
-    use expense_tracker_db::users::users::{NewUser, User};
+    use expense_tracker_db::users::users::User;
     use crate::{internal_error, ExpenseError};
 
     /// A service to interact with user context.
@@ -13,7 +13,7 @@ pub mod user_service {
 
     impl UserService {
         /// Creates a new user given the new_user data.
-        pub async fn create_user(&self, new_user: NewUser) -> Result<User, ExpenseError> {
+        pub async fn create_user(&self, new_user: User) -> Result<User, ExpenseError> {
             let mut conn =
                 self.db_pool.get().await.map_err(internal_error)?;
 
