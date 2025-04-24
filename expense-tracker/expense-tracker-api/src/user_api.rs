@@ -81,8 +81,8 @@ pub mod user_api {
             )
     )]
     pub async fn check_user(
-        State(service): State<UserService>,
-        claims: OidcClaims<EmptyAdditionalClaims>
+        claims: OidcClaims<EmptyAdditionalClaims>,
+        State(service): State<UserService>
     ) -> Result<ApiResponse<UserDTO>, ApiResponse<String>> {
         let user_name =
             claims.preferred_username().expect("Username must be set!");

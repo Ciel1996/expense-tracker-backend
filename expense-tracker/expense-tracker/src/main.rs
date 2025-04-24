@@ -34,6 +34,7 @@ async fn main() {
         }))
         .layer(OidcLoginLayer::<EmptyAdditionalClaims>::new());
 
+    // TODO: read from config
     let uri = Uri::from_maybe_shared("http://localhost:3000/")
         .expect("valid APP_URL");
     let issuer = "http://localhost:8080/realms/expense-tracker-dev".to_string();
