@@ -97,6 +97,7 @@ pub mod expense_service {
             // I have to think about it a bit longer.
             let expense = expenses
                 .filter(expense_id.eq(target_id))
+                .select(Expense::as_select())
                 .get_result::<Expense>(&mut conn)
                 .await
                 .map_err(not_found_error)?;
@@ -135,6 +136,7 @@ pub mod expense_service {
 
             let pot_expenses = expenses
                 .filter(expense_pot_id.eq(target_pot_id))
+                .select(Expense::as_select())
                 .get_results::<Expense>(&mut conn)
                 .await
                 .map_err(internal_error)?;

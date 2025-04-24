@@ -13,6 +13,7 @@ pub mod pot_api {
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
+    use uuid::Uuid;
     use expense_tracker_services::currency_service::currency_service;
     use expense_tracker_services::currency_service::currency_service::CurrencyService;
     use expense_tracker_services::expense_service::expense_service;
@@ -48,7 +49,7 @@ pub mod pot_api {
     #[derive(ToSchema, Serialize)]
     pub struct PotDTO {
         id: i32,
-        owner_id: i32,
+        owner_id: Uuid,
         name: String,
         default_currency: CurrencyDTO,
     }
@@ -85,7 +86,7 @@ pub mod pot_api {
     /// DTO used when creating a new Pot.
     #[derive(ToSchema, Serialize, Deserialize)]
     pub struct NewPotDTO {
-        owner_id: i32,
+        owner_id: Uuid,
         name: String,
         default_currency_id: i32,
     }

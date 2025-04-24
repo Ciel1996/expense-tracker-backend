@@ -6,6 +6,7 @@ pub mod expense_api {
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
+    use uuid::{uuid, Uuid};
     use expense_tracker_db::currencies::currencies::Currency;
     use expense_tracker_db::expenses::expenses::{Expense, NewExpense};
     use expense_tracker_db::setup::DbPool;
@@ -20,7 +21,7 @@ pub mod expense_api {
     pub struct ExpenseDTO {
         id: i32,
         pot_id: i32,
-        owner_id: i32,
+        owner_id: Uuid,
         description: String,
         currency: CurrencyDTO,
         splits: Vec<SplitDTO>,
@@ -39,7 +40,7 @@ pub mod expense_api {
                 owner_id: expense.owner_id(),
                 splits: SplitDTO::from_vec_split(splits.clone()),
                 // TODO: viewer_id (1) must be gathered from oidc token!
-                sum: get_sum(expense.owner_id(), 2, splits)
+                sum: get_sum(expense.owner_id(), uuid!("ddc96061-81da-489c-8c97-0a578079bd43"), splits)
             }
         }
 
@@ -60,17 +61,17 @@ pub mod expense_api {
 
     /// Gets the sum the `viewer_id`'s user owes the `expense_owner_id`'s user for the given
     /// `Vec<Split>`.
-    pub fn get_sum(expense_owner_id: i32, viewer_id : i32, splits: Vec<Split>) -> f64 {
+    pub fn get_sum(expense_owner_id: Uuid, viewer_id : Uuid, splits: Vec<Split>) -> f64 {
         let mut sum = 0.0;
 
         for split in splits {
             if !split.is_paid()
-                && split.user_id() != expense_owner_id {
+                && split.user_id().ne(&expense_owner_id) {
 
                 // we only care about the money that is owed OR that WE owe the expense_owner!
                 if expense_owner_id == viewer_id {
                     sum += split.amount();
-                } else if split.user_id() == viewer_id {
+                } else if split.user_id().eq(&viewer_id) {
                     sum -= split.amount();
                 }
             }
@@ -82,7 +83,7 @@ pub mod expense_api {
     /// DTO used when working with splits.
     #[derive(Clone, ToSchema, Serialize, Deserialize)]
     pub struct SplitDTO {
-        user_id: i32,
+        user_id: Uuid,
         amount: f64,
         /// Is `true` by default, if the Split's `user_id` == the expenses `owner_id`! Otherwise
         /// `false`. This is because the owner of an expense has already paid their part!
@@ -117,7 +118,7 @@ pub mod expense_api {
     /// DTO used when creating a new expense for the given pot.
     #[derive(ToSchema, Serialize, Deserialize)]
     pub struct NewExpenseDTO {
-        owner_id: i32,
+        owner_id: Uuid,
         description: String,
         currency_id: i32,
         splits: Vec<SplitDTO>,
@@ -196,17 +197,25 @@ pub mod expense_api {
 
 #[cfg(test)]
 mod tests {
+    use uuid::{uuid, Uuid};
     use expense_tracker_db::splits::splits::Split;
     use crate::expense_api::expense_api::get_sum;
+
+    const USER_ONE : Uuid = uuid!("e6be621a-ec2d-48f3-8027-0d34cf5cbe40");
+    const USER_TWO : Uuid = uuid!("729c270f-74d1-436f-aa46-4fe6a3dcb460");
+    const USER_THREE : Uuid = uuid!("7ec9119b-10a2-48b8-be5f-d0f8ba9aad8d");
+    const USER_FOUR : Uuid = uuid!("01913042-053a-4cb2-846d-4b58153185b8");
+    const USER_FIVE : Uuid = uuid!("60755204-45d7-4f0d-96e6-bf61e6f3feda");
+    const OTHER_USER : Uuid = uuid!("95f5222d-1b50-407e-b13e-8213d39764cd");
 
     /// First case: Expense_Owner is the viewer, so sum should be 0. Only one split
     #[test]
     fn get_sum_test_expense_owner_is_viewer_one_split() {
         let splits = vec![
-            Split::new(1, 1, 42.0, true),
+            Split::new(1, USER_ONE, 42.0, true),
         ];
 
-        let sum = get_sum(1, 1, splits);
+        let sum = get_sum(USER_ONE, USER_ONE, splits);
 
         assert_eq!(sum, 0.0);
     }
@@ -216,12 +225,12 @@ mod tests {
     #[test]
     fn get_sum_test_expense_owner_is_viewer_multiple_splits_nothing_paid() {
         let splits = vec![
-            Split::new(1, 1, 42.0, true),
-            Split::new(1, 2, 42.0, false),
-            Split::new(1, 3, 42.0, false),
+            Split::new(1, USER_ONE, 42.0, true),
+            Split::new(1, USER_TWO, 42.0, false),
+            Split::new(1, USER_THREE, 42.0, false),
         ];
 
-        let sum = get_sum(1, 1, splits);
+        let sum = get_sum(USER_ONE, USER_ONE, splits);
 
         assert_eq!(sum, 84.0);
     }
@@ -231,14 +240,14 @@ mod tests {
     #[test]
     fn get_sum_test_expense_owner_is_viewer_multiple_splits_some_paid() {
         let splits = vec![
-            Split::new(1, 1, 42.0, true),
-            Split::new(1, 2, 42.0, false),
-            Split::new(1, 3, 42.0, false),
-            Split::new(1, 4, 42.0, true),
-            Split::new(1, 5, 42.0, true),
+            Split::new(1, USER_ONE, 42.0, true),
+            Split::new(1, USER_TWO, 42.0, false),
+            Split::new(1, USER_THREE, 42.0, false),
+            Split::new(1, USER_FOUR, 42.0, true),
+            Split::new(1, USER_FIVE, 42.0, true),
         ];
 
-        let sum = get_sum(1, 1, splits);
+        let sum = get_sum(USER_ONE, USER_ONE, splits);
 
         assert_eq!(sum, 84.0);
     }
@@ -248,12 +257,12 @@ mod tests {
     #[test]
     fn get_sum_test_expense_owner_is_not_viewer_multiple_splits_nothing_paid() {
         let splits = vec![
-            Split::new(1, 1, 42.0, true),
-            Split::new(1, 2, 42.0, false),
-            Split::new(1, 3, 42.0, false),
+            Split::new(1, USER_ONE, 42.0, true),
+            Split::new(1, USER_TWO, 42.0, false),
+            Split::new(1, USER_THREE, 42.0, false),
         ];
 
-        let sum = get_sum(1, 2, splits);
+        let sum = get_sum(USER_ONE, USER_TWO, splits);
 
         assert_eq!(sum, -42.0);
     }
@@ -263,12 +272,12 @@ mod tests {
     #[test]
     fn get_sum_test_expense_owner_is_not_viewer_multiple_splits_viewer_paid() {
         let splits = vec![
-            Split::new(1, 1, 42.0, true),
-            Split::new(1, 2, 42.0, true),
-            Split::new(1, 3, 42.0, false),
+            Split::new(1, USER_ONE, 42.0, true),
+            Split::new(1, USER_TWO, 42.0, true),
+            Split::new(1, USER_THREE, 42.0, false),
         ];
 
-        let sum = get_sum(1, 2, splits);
+        let sum = get_sum(USER_ONE, USER_TWO, splits);
 
         assert_eq!(sum, 0.0);
     }
@@ -278,14 +287,14 @@ mod tests {
     #[test]
     fn get_sum_test_expense_owner_is_not_viewer_multiple_splits_viewer_some_paid() {
         let splits = vec![
-            Split::new(1, 1, 42.0, true),
-            Split::new(1, 2, 42.0, true),
-            Split::new(1, 2, 42.0, false),
-            Split::new(1, 2, 42.0, false),
-            Split::new(1, 3, 42.0, false),
+            Split::new(1, USER_ONE, 42.0, true),
+            Split::new(1, USER_TWO, 42.0, true),
+            Split::new(1, USER_TWO, 42.0, false),
+            Split::new(1, USER_TWO, 42.0, false),
+            Split::new(1, USER_THREE, 42.0, false),
         ];
 
-        let sum = get_sum(1, 2, splits);
+        let sum = get_sum(USER_ONE, USER_TWO, splits);
 
         assert_eq!(sum, -84.0);
     }
@@ -296,14 +305,14 @@ mod tests {
     fn get_sum_test_expense_owner_is_not_viewer_multiple_splits_viewer_some_paid_view_is_not_debtor()
     {
         let splits = vec![
-            Split::new(1, 1, 42.0, true),
-            Split::new(1, 2, 42.0, true),
-            Split::new(1, 2, 42.0, false),
-            Split::new(1, 2, 42.0, false),
-            Split::new(1, 3, 42.0, false),
+            Split::new(1, USER_ONE, 42.0, true),
+            Split::new(1, USER_TWO, 42.0, true),
+            Split::new(1, USER_TWO, 42.0, false),
+            Split::new(1, USER_TWO, 42.0, false),
+            Split::new(1, USER_THREE, 42.0, false),
         ];
 
-        let sum = get_sum(1, 99, splits);
+        let sum = get_sum(USER_ONE, OTHER_USER, splits);
 
         assert_eq!(sum, 0.0);
     }

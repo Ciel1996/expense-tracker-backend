@@ -5,12 +5,11 @@ pub mod user_api {
     use axum::response::IntoResponse;
     use axum::routing::get;
     use axum_oidc::{EmptyAdditionalClaims, OidcClaims, OidcRpInitiatedLogout};
-    use diesel::{sql_types, IntoSql};
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
-    use uuid::{uuid, Uuid};
+    use uuid::{Builder, Uuid};
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::users::users::User;
     use expense_tracker_services::user_service::user_service;
@@ -20,7 +19,7 @@ pub mod user_api {
     /// Registers all functions of the Users API.
     pub fn register(pool : DbPool) -> OpenApiRouter {
         OpenApiRouter::new()
-            .routes(routes!(create_user))
+            .routes(routes!(check_user))
             .routes(routes!(get_users))
             .route("/login", get(login))
             .route("/logout", get(logout))
@@ -72,22 +71,30 @@ pub mod user_api {
 
     /// Creates a new user from the given DTO.
     #[utoipa::path(
-            post,
-            path = "/users",
+            get,
+            path = "/current_user",
             tag = "Users",
             responses(
+                (status = 200, description = "The user does already exist", body = UserDTO),
                 (status = 201, description = "The user", body = UserDTO),
                 (status = 500, description = "The server error")
             )
     )]
-    pub async fn create_user(
+    pub async fn check_user(
         State(service): State<UserService>,
         claims: OidcClaims<EmptyAdditionalClaims>
     ) -> Result<ApiResponse<UserDTO>, ApiResponse<String>> {
         let user_name =
             claims.preferred_username().expect("Username must be set!");
 
-        let uuid = uuid!(claims.subject().to_string());
+        let uuid = Uuid::parse_str(claims.subject().as_str())
+            .expect("Failed to parse uuid");
+        let user = service.get_user_by_id(uuid).await;
+
+        if let Ok(user) = user {
+            return Ok((StatusCode::OK, Json(UserDTO::from(user))));
+        }
+
         let new_user = User::new(uuid, user_name.as_str().to_string());
 
         let res = service
