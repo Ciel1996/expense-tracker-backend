@@ -97,7 +97,10 @@ pub mod currency_api {
             (status = 201, description = "The currency has been created", body = NewCurrencyDTO),
             (status = 409, description = "Detected a conflict, as the symbol is already known.")
         ),
-        request_body = NewCurrencyDTO
+        request_body = NewCurrencyDTO,
+        security(
+                ("bearer" = [])
+        )
     )]
     pub async fn create_currency(
         State(service) : State<CurrencyService>,
@@ -118,6 +121,9 @@ pub mod currency_api {
         tag = "Currency",
         responses(
             (status = 200, description = "All currencies known to the system", body = Vec<CurrencyDTO>),
+        ),
+        security(
+                ("bearer" = [])
         )
     )]
     pub async fn get_currencies(
