@@ -181,6 +181,9 @@ pub mod expense_api {
         ),
         params(
             ("expense_id" = i32, Path, description = "Expense database id for the Expense.  ")
+        ),
+        security(
+            ("bearer" = [])
         )
     )]
     pub async fn get_expense_by_id(

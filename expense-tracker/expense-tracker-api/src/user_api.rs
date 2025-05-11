@@ -1,25 +1,23 @@
 pub mod user_api {
+    use axum::body::Body;
     use axum::extract::State;
-    use axum::http::{HeaderMap, StatusCode, Uri};
+    use axum::http::{Request, StatusCode};
     use axum::Json;
-    use axum::response::IntoResponse;
-    use axum::routing::get;
-    use axum_oidc::{EmptyAdditionalClaims, OidcClaims, OidcRpInitiatedLogout};
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
-    use uuid::{uuid, Builder, Uuid};
+    use uuid::Uuid;
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::users::users::User;
     use expense_tracker_services::user_service::user_service;
     use expense_tracker_services::user_service::user_service::UserService;
-    use crate::api::{check_error, ApiResponse};
+    use crate::api::{check_error, get_sub_claim, get_username, ApiResponse};
 
     /// Registers all functions of the Users API.
     pub fn register(pool : DbPool) -> OpenApiRouter {
         OpenApiRouter::new()
-            .routes(routes!(check_user))
+            .routes(routes!(current_user))
             .routes(routes!(get_users))
             .with_state(user_service::create_service(pool))
     }
@@ -29,15 +27,6 @@ pub mod user_api {
     pub struct UserDTO {
         uuid : Uuid,
         name: String
-    }
-
-    impl UserDTO {
-        pub(crate) fn new(uuid: Uuid, name: String) -> UserDTO {
-            Self {
-                uuid,
-                name
-            }
-        }
     }
 
     impl UserDTO {
@@ -57,14 +46,6 @@ pub mod user_api {
 
             dtos
         }
-
-        pub fn uuid(&self) -> Uuid {
-            self.uuid
-        }
-
-        pub fn name(&self) -> &str {
-            &self.name
-        }
     }
 
     /// Creates a new user from the given DTO.
@@ -81,22 +62,21 @@ pub mod user_api {
                 ("bearer" = [])
             )
     )]
-    pub async fn check_user(
-        claims: OidcClaims<EmptyAdditionalClaims>, // TODO: this is the suspect!
-        State(service): State<UserService>
+    pub async fn current_user(
+        State(service): State<UserService>,
+        request: Request<Body> // TODO: this is the suspect! get rid of it but also find a way of accessing the claims within the token
     ) -> Result<ApiResponse<UserDTO>, ApiResponse<String>> {
-        let user_name =
-            claims.preferred_username().expect("Username must be set!");
-
-        let uuid = Uuid::parse_str(claims.subject().as_str())
-            .expect("Failed to parse uuid");
+        let (parts, _) = request.into_parts();
+        let uuid = get_sub_claim(&parts)?;
         let user = service.get_user_by_id(uuid).await;
 
+        // TODO: what happens in case of a DB exception?
         if let Ok(user) = user {
             return Ok((StatusCode::OK, Json(UserDTO::from(user))));
         }
 
-        let new_user = User::new(uuid, user_name.as_str().to_string());
+        let user_name = get_username(&parts)?;
+        let new_user = User::new(uuid, user_name);
 
         let res = service
             .create_user(new_user)

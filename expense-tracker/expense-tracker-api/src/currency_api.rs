@@ -2,7 +2,6 @@ pub mod currency_api {
     use axum::extract::State;
     use axum::http::StatusCode;
     use axum::Json;
-    use axum::response::IntoResponse;
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
@@ -11,8 +10,8 @@ pub mod currency_api {
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_services::currency_service::currency_service;
     use expense_tracker_services::currency_service::currency_service::CurrencyService;
+    use log::debug;
     use crate::api::{check_error, ApiResponse};
-    use crate::user_api::user_api::UserDTO;
 
     /// Registers all functions of the Currency API.
     pub fn register(pool : DbPool) -> OpenApiRouter {
@@ -63,14 +62,6 @@ pub mod currency_api {
 
         pub fn id(&self) -> i32 {
             self.id
-        }
-
-        pub fn name(&self) -> &str {
-            &self.name
-        }
-
-        pub fn symbol(&self) -> &str {
-            &self.symbol
         }
     }
 
