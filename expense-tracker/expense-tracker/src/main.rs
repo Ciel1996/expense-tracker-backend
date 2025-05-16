@@ -11,7 +11,7 @@ use jsonwebtoken::jwk::JwkSet;
 use reqwest::get;
 use time::Duration;
 use tower::ServiceBuilder;
-use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer};
+use tower_sessions::{Expiry, SessionManagerLayer};
 use utoipa::{Modify, OpenApi};
 use utoipa::gen::serde_json::Value;
 use utoipa::openapi::security::{Http, HttpAuthScheme, SecurityScheme};
@@ -52,7 +52,7 @@ async fn fetch_jwks(jwks_url: &str) -> Result<JwkSet, reqwest::Error> {
 async fn validate_token(token: &str) -> Result<Value, String> {
     debug!("Starting token validation");
     // TODO: load jwks url from config (issuer url + /protocol/openid-connect/certs)
-    let jwks_url = "http://localhost:8080/realms/expense-tracker-dev/protocol/openid-connect/certs";
+    let jwks_url = "https://nas.home:8443/realms/dev/protocol/openid-connect/certs";
     let jwks = match fetch_jwks(jwks_url).await {
         Ok(jwks) => jwks,
         Err(e) => {
@@ -97,7 +97,7 @@ async fn validate_token(token: &str) -> Result<Value, String> {
     // TODO: read from config
     // TODO: validate as much as possible
     validation.set_audience(&["expense-tracker"]);
-    validation.set_issuer(&["http://localhost:8080/realms/expense-tracker-dev"]);
+    validation.set_issuer(&["https://nas.home:8443/realms/dev"]);
     // validation.set_required_spec_claims()
     match decode::<Value>(token, &decoding_key, &validation) {
         Ok(data) => {
@@ -157,13 +157,6 @@ async fn main() {
 
     let pool = setup_db().await.expect("Failed to create pool");
 
-    let session_store = MemoryStore::default();
-    let session_layer =
-        SessionManagerLayer::new(session_store)
-            .with_secure(false)
-            .with_same_site(SameSite::Lax)
-            .with_expiry(Expiry::OnInactivity(Duration::seconds(60)));
-
     // To get a JWT: curl -X POST 'http://localhost:8080/realms/expense-tracker-dev/protocol/openid-connect/token' -H 'Content-Type: application/x-www-form-urlencoded' -d 'client_id=<CLIENT_ID>' -d 'username=<USER>' -d 'password=<PASSWORD>' -d 'grant_type=password' -d 'scope=email profile' -d 'client_secret=<CLIENT_SECRET>'
 
     let oauth_validator = ServiceBuilder::new()
@@ -172,7 +165,6 @@ async fn main() {
     let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
         .nest("/api", api::router(pool).await)
         .layer(oauth_validator)
-        .layer(session_layer)
         .nest("/api", api::add_health_api().await)
         // 3. Add a TraceLayer to automatically create and enter spans
         .layer(TraceLayer::new_for_http())
