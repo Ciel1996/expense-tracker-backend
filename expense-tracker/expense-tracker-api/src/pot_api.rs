@@ -6,13 +6,13 @@ pub mod pot_api {
     use axum::extract::{Path, State};
     use axum::http::StatusCode;
     use axum::Json;
-    use hyper::service::Service;
     use expense_tracker_db::pots::pots::{NewPot, Pot};
     use expense_tracker_db::setup::DbPool;
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
+    use uuid::Uuid;
     use expense_tracker_services::currency_service::currency_service;
     use expense_tracker_services::currency_service::currency_service::CurrencyService;
     use expense_tracker_services::expense_service::expense_service;
@@ -22,7 +22,7 @@ pub mod pot_api {
     use crate::expense_api::expense_api::{ExpenseDTO, NewExpenseDTO};
 
     /// Holds the App State for the PotAPI.
-    struct PotApiState {
+    pub struct PotApiState {
         pot_service: PotService,
         currency_service: CurrencyService,
         expense_service: ExpenseService
@@ -48,7 +48,7 @@ pub mod pot_api {
     #[derive(ToSchema, Serialize)]
     pub struct PotDTO {
         id: i32,
-        owner_id: i32,
+        owner_id: Uuid,
         name: String,
         default_currency: CurrencyDTO,
     }
@@ -85,7 +85,7 @@ pub mod pot_api {
     /// DTO used when creating a new Pot.
     #[derive(ToSchema, Serialize, Deserialize)]
     pub struct NewPotDTO {
-        owner_id: i32,
+        owner_id: Uuid,
         name: String,
         default_currency_id: i32,
     }
@@ -105,7 +105,10 @@ pub mod pot_api {
         responses(
             (status = 201, description = "The pot has been created", body = PotDTO),
         ),
-        request_body = NewPotDTO
+        request_body = NewPotDTO,
+        security(
+            ("bearer" = [])
+        )
     )]
     pub async fn create_pot(
         State(pot_api_state): State<Arc<PotApiState>>,
@@ -126,6 +129,9 @@ pub mod pot_api {
         tag = "Pots",
         responses(
             (status = 200, description = "The list of known pots.", body = Vec<PotDTO>)
+        ),
+        security(
+                ("bearer" = [])
         )
     )]
     pub async fn get_pots(
@@ -166,6 +172,9 @@ pub mod pot_api {
         request_body = NewExpenseDTO,
         params(
             ("pot_id" = i32, Path, description = "Pot database id for the pot.  ")
+        ),
+        security(
+            ("bearer" = [])
         )
     )]
     pub async fn add_expense(
@@ -212,6 +221,9 @@ pub mod pot_api {
         ),
         params(
             ("pot_id" = i32, Path, description = "Pot database id for the pot.  ")
+        ),
+        security(
+            ("bearer" = [])
         )
     )]
     pub async fn get_pot_expenses(

@@ -6,8 +6,11 @@ mod expense_api;
 
 pub mod api {
     use axum::http::StatusCode;
+    use axum::http::request::Parts;
     use axum::Json;
+    use utoipa::gen::serde_json::Value;
     use utoipa_axum::router::OpenApiRouter;
+    use uuid::Uuid;
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_services::ExpenseError;
     use crate::currency_api::currency_api;
@@ -20,14 +23,23 @@ pub mod api {
     pub type ApiResponse<T> = (StatusCode, Json<T>);
 
     const VERSION_ONE: &str = "/v1";
+    const SUB_CLAIM: &str = "sub";
+    const PREFERRED_USERNAME_CLAIM: &str = "preferred_username";
 
-    pub fn router(pool: DbPool) -> OpenApiRouter {
+    /// Registers the APIs with token validation.
+    pub async fn router(pool: DbPool) -> OpenApiRouter {
         OpenApiRouter::new()
-            .nest(VERSION_ONE, health_api::register())
             .nest(VERSION_ONE, user_api::register(pool.clone()))
             .nest(VERSION_ONE, pot_api::register(pool.clone()))
             .nest(VERSION_ONE, currency_api::register(pool.clone()))
             .nest(VERSION_ONE, expense_api::register(pool.clone()))
+    }
+
+    /// Registers the health API without token validation so it is always possible to
+    /// check if the service is running or not.
+    pub async fn add_health_api() -> OpenApiRouter {
+        OpenApiRouter::new()
+            .nest(VERSION_ONE, health_api::register())
     }
 
     /// Checks the given `Error` and gets the correct error message.
@@ -51,5 +63,35 @@ pub mod api {
                 Json(message)
             ),
         }
+    }
+
+    /// Gets the sub_claim from the given Request that has been put there by the auth middleware.
+    pub fn get_sub_claim(parts: &Parts) -> Result<Uuid, ApiResponse<String>> {
+        let claims: &Value = parts.extensions.get().unwrap();
+
+        let sub_claim = claims
+            .get(SUB_CLAIM)
+            .expect("Sub claim must be set!")
+            .as_str()
+            .ok_or(ExpenseError::Internal("Sub claim must be set!".to_string()))
+            .map_err(check_error);
+
+        Ok(Uuid::parse_str(sub_claim?)
+            .expect("Failed to parse uuid"))
+    }
+
+    /// Gets the preferred_username from the given Request that has been put there by the auth middleware.
+    pub fn get_username(parts: &Parts) -> Result<String, ApiResponse<String>> {
+        let claims: &Value = parts.extensions.get().unwrap();
+
+        let user_name =
+            claims
+                .get(PREFERRED_USERNAME_CLAIM)
+                .expect("Username must be set!")
+                .as_str()
+                .ok_or(ExpenseError::Internal("Username must be set!".to_string()))
+                .map_err(check_error);
+
+        Ok(user_name?.to_string())
     }
 }

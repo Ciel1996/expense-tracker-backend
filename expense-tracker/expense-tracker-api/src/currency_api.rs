@@ -2,7 +2,6 @@ pub mod currency_api {
     use axum::extract::State;
     use axum::http::StatusCode;
     use axum::Json;
-    use axum::response::IntoResponse;
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
@@ -12,7 +11,6 @@ pub mod currency_api {
     use expense_tracker_services::currency_service::currency_service;
     use expense_tracker_services::currency_service::currency_service::CurrencyService;
     use crate::api::{check_error, ApiResponse};
-    use crate::user_api::user_api::UserDTO;
 
     /// Registers all functions of the Currency API.
     pub fn register(pool : DbPool) -> OpenApiRouter {
@@ -64,14 +62,6 @@ pub mod currency_api {
         pub fn id(&self) -> i32 {
             self.id
         }
-
-        pub fn name(&self) -> &str {
-            &self.name
-        }
-
-        pub fn symbol(&self) -> &str {
-            &self.symbol
-        }
     }
 
     /// DTO representing a new currency.
@@ -97,7 +87,10 @@ pub mod currency_api {
             (status = 201, description = "The currency has been created", body = NewCurrencyDTO),
             (status = 409, description = "Detected a conflict, as the symbol is already known.")
         ),
-        request_body = NewCurrencyDTO
+        request_body = NewCurrencyDTO,
+        security(
+                ("bearer" = [])
+        )
     )]
     pub async fn create_currency(
         State(service) : State<CurrencyService>,
@@ -118,6 +111,9 @@ pub mod currency_api {
         tag = "Currency",
         responses(
             (status = 200, description = "All currencies known to the system", body = Vec<CurrencyDTO>),
+        ),
+        security(
+                ("bearer" = [])
         )
     )]
     pub async fn get_currencies(

@@ -1,6 +1,7 @@
 pub mod expenses {
     use diesel::{Associations, Insertable, Queryable, Selectable};
     use serde::{Deserialize, Serialize};
+    use uuid::Uuid;
     use crate::schema::expenses;
     use crate::pots::pots::Pot;
 
@@ -12,7 +13,7 @@ pub mod expenses {
     pub struct Expense {
         id: i32,
         pot_id: i32,
-        owner_id: i32,
+        owner_id: Uuid,
         description: String,
         currency_id: i32
     }
@@ -21,7 +22,7 @@ pub mod expenses {
     #[derive(Deserialize, Insertable, Clone)]
     #[diesel(table_name = expenses)]
     pub struct NewExpense {
-        owner_id: i32,
+        owner_id: Uuid,
         pot_id: i32,
         description: String,
         currency_id: i32
@@ -32,7 +33,7 @@ pub mod expenses {
         pub fn new(
             id: i32,
             pot_id: i32,
-            owner_id: i32,
+            owner_id: Uuid,
             description: String,
             currency_id: i32
         ) -> Expense {
@@ -56,7 +57,7 @@ pub mod expenses {
         }
 
         /// Getter for owner_id
-        pub fn owner_id(&self) -> i32 {
+        pub fn owner_id(&self) -> Uuid {
             self.owner_id
         }
 
@@ -71,7 +72,7 @@ pub mod expenses {
     }
 
     impl NewExpense {
-        pub fn new(owner_id: i32, pot_id: i32, description: String, currency_id: i32) -> Self {
+        pub fn new(owner_id: Uuid, pot_id: i32, description: String, currency_id: i32) -> Self {
             Self { owner_id, pot_id, description, currency_id }
         }
     }

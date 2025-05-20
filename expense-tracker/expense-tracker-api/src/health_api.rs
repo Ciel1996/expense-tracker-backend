@@ -2,6 +2,7 @@ pub mod health_api {
     use axum::extract::State;
     use axum::http::StatusCode;
     use axum::response::IntoResponse;
+    use log::debug;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
     use expense_tracker_services::health_service::health_service;
@@ -24,6 +25,7 @@ pub mod health_api {
         )
     )]
     pub async fn health_check(State(service) : State<PingHealthService>) -> impl IntoResponse {
+        debug!("PONG!");
         (StatusCode::OK, service.ping()).into_response()
     }
 }
