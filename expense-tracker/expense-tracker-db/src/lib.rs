@@ -22,10 +22,7 @@ pub mod setup {
     const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 
     /// Sets up the db for the application.
-    pub async fn setup_db() -> Result<DbPool, Box<dyn Error>> {
-        // TODO: load from config
-        let db_string = "postgres://admin:localpassword@localhost/postgres";
-
+    pub async fn setup_db(db_string : &str) -> Result<DbPool, Box<dyn Error>> {
         let manager = AsyncDieselConnectionManager
             ::<AsyncPgConnection>::new(db_string);
 

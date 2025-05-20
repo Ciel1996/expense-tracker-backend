@@ -1,0 +1,7 @@
+[oidc]
+issuer_url = "https://nas.home:8443/realms/dev"
+audience = "expense-tracker"
+
+[expense_tracker]
+port = 3000
+db_connection_string = "postgres://admin:localpassword@localhost/postgres"
