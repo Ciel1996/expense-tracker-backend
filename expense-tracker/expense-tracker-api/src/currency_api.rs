@@ -10,7 +10,6 @@ pub mod currency_api {
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_services::currency_service::currency_service;
     use expense_tracker_services::currency_service::currency_service::CurrencyService;
-    use log::debug;
     use crate::api::{check_error, ApiResponse};
 
     /// Registers all functions of the Currency API.
