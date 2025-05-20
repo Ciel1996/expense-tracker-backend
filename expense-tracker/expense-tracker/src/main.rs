@@ -1,6 +1,8 @@
 extern crate core;
+mod settings;
 
 use std::net::SocketAddr;
+use std::sync::LazyLock;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use axum::middleware::Next;
@@ -20,6 +22,13 @@ use expense_tracker_db::setup::setup_db;
 use log::{debug, error, info};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
+use crate::settings::Settings;
+
+const SETTINGS_FILE: &str = "settings.toml";
+static APP_SETTINGS: LazyLock<Settings> = LazyLock::new(||
+    Settings::new(SETTINGS_FILE)
+        .expect("Settings file must exist")
+    );
 
 #[derive(OpenApi)]
 #[openapi(
@@ -46,11 +55,10 @@ async fn fetch_jwks(jwks_url: &str) -> Result<JwkSet, reqwest::Error> {
     Ok(jwks)
 }
 
-async fn validate_token(token: &str) -> Result<Value, String> {
+async fn validate_token(token: &str, oidc_settings: &settings::Oidc) -> Result<Value, String> {
     debug!("Starting token validation");
-    // TODO: load jwks url from config (issuer url + /protocol/openid-connect/certs)
-    let jwks_url = "https://nas.home:8443/realms/dev/protocol/openid-connect/certs";
-    let jwks = match fetch_jwks(jwks_url).await {
+    let jwks_url = format!("{}/protocol/openid-connect/certs", oidc_settings.issuer_url());
+    let jwks = match fetch_jwks(jwks_url.as_str()).await {
         Ok(jwks) => jwks,
         Err(e) => {
             error!("Failed to fetch JWKS: {}", e);
@@ -91,11 +99,8 @@ async fn validate_token(token: &str) -> Result<Value, String> {
     };
 
     let mut validation = Validation::new(header.alg);
-    // TODO: read from config
-    // TODO: validate as much as possible
-    validation.set_audience(&["expense-tracker"]);
-    validation.set_issuer(&["https://nas.home:8443/realms/dev"]);
-    // validation.set_required_spec_claims()
+    validation.set_audience(&[oidc_settings.audience()]);
+    validation.set_issuer(&[oidc_settings.issuer_url()]);
     match decode::<Value>(token, &decoding_key, &validation) {
         Ok(data) => {
             debug!("Token validated successfully");
@@ -124,7 +129,7 @@ async fn auth_middleware(request: Request<Body>, next: Next) -> Result<Response,
 
     debug!("Token extracted!");
 
-    let claims = validate_token(token)
+    let claims = validate_token(token, APP_SETTINGS.oidc())
         .await
         .map_err(|e|
             Response::builder()
@@ -141,6 +146,7 @@ async fn auth_middleware(request: Request<Body>, next: Next) -> Result<Response,
 
 #[tokio::main]
 async fn main() {
+
     // 1. Initialize tracing + log bridging
     tracing_subscriber::fmt()
         // This allows you to use, e.g., `RUST_LOG=info` or `RUST_LOG=debug`
@@ -152,7 +158,12 @@ async fn main() {
         )
         .init();
 
-    let pool = setup_db().await.expect("Failed to create pool");
+    let pool = setup_db(
+        APP_SETTINGS
+            .expense_tracker()
+            .db_connection_string())
+        .await
+        .expect("Failed to create pool");
 
     // To get a JWT: curl -X POST 'http://localhost:8080/realms/expense-tracker-dev/protocol/openid-connect/token' -H 'Content-Type: application/x-www-form-urlencoded' -d 'client_id=<CLIENT_ID>' -d 'username=<USER>' -d 'password=<PASSWORD>' -d 'grant_type=password' -d 'scope=email profile' -d 'client_secret=<CLIENT_SECRET>'
 
@@ -169,15 +180,16 @@ async fn main() {
 
     // setup oAuth with utoipa swagger ui
     let oauth_config = oauth::Config::new()
-        .client_id("expense-tracker");
+        .client_id(APP_SETTINGS.oidc().audience());
 
     let router = router
         .merge(SwaggerUi::new("/swagger-ui")
             .url("/api-docs/openapi.json", api.clone())
             .oauth(oauth_config));
 
-    // TODO: read from config
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(
+        ([127, 0, 0, 1],
+         APP_SETTINGS.expense_tracker().port()));
 
     info!("listening on {}", addr);
 
