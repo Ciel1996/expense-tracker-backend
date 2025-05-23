@@ -1,10 +1,12 @@
 pub mod pot_api {
     use std::sync::Arc;
-    use crate::api::{check_error, ApiResponse};
+    use axum::body::Body;
+    use crate::api::{check_error, get_sub_claim, ApiResponse};
     use crate::currency_api::currency_api::CurrencyDTO;
     
     use axum::extract::{Path, State};
-    use axum::http::StatusCode;
+    use axum::http::{Request, StatusCode};
+    use axum::http::request::Parts;
     use axum::Json;
     use expense_tracker_db::pots::pots::{NewPot, Pot};
     use expense_tracker_db::setup::DbPool;
@@ -85,19 +87,18 @@ pub mod pot_api {
     /// DTO used when creating a new Pot.
     #[derive(ToSchema, Serialize, Deserialize)]
     pub struct NewPotDTO {
-        owner_id: Uuid,
         name: String,
         default_currency_id: i32,
     }
 
     impl NewPotDTO {
         /// Converts the DTO to the db object.
-        fn to_db(&self) -> NewPot {
-            NewPot::new(self.owner_id, self.name.clone(), self.default_currency_id)
+        fn to_db(&self, owner_id: Uuid) -> NewPot {
+            NewPot::new(owner_id, self.name.clone(), self.default_currency_id)
         }
     }
 
-    /// Creates a pot from the given DTO.
+    /// Creates a pot from the given DTO for the bearer.
     #[utoipa::path(
         post,
         path = "/pots",
@@ -112,17 +113,20 @@ pub mod pot_api {
     )]
     pub async fn create_pot(
         State(pot_api_state): State<Arc<PotApiState>>,
-        Json(new_pot): Json<NewPotDTO>,
+        parts : Parts,
+        Json(new_pot): Json<NewPotDTO>
     ) -> Result<ApiResponse<PotDTO>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&parts)?;
+
         let result = pot_api_state.pot_service
-            .create_pot(new_pot.to_db())
+            .create_pot(new_pot.to_db(subject_id))
             .await
             .map_err(check_error)?;
 
         Ok((StatusCode::CREATED, Json(PotDTO::from(result.0, CurrencyDTO::from(result.1)))))
     }
 
-    /// Gets the list of all pots.
+    /// Gets the list of all pots the bearer can view.
     #[utoipa::path(
         get,
         path = "/pots",
@@ -136,10 +140,13 @@ pub mod pot_api {
     )]
     pub async fn get_pots(
         State(pot_api_state): State<Arc<PotApiState>>,
+        parts : Parts,
     ) -> Result<ApiResponse<Vec<PotDTO>>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&parts)?;
+
         let loaded_pots = pot_api_state
             .pot_service
-            .get_pots()
+            .get_pots(subject_id)
             .await
             .map_err(check_error)?;
 
@@ -154,6 +161,8 @@ pub mod pot_api {
         Ok((StatusCode::OK, Json(PotDTO::from_vec(loaded_pots, all_currencies))))
     }
 
+    /// Adds a new expense in the name of the user from the Bearer token to the pot with the given
+    /// pot_id if it exists.
     #[utoipa::path(
         post,
         path = "/pots/{pot_id}",
@@ -180,11 +189,14 @@ pub mod pot_api {
     pub async fn add_expense(
         State(pot_api_state): State<Arc<PotApiState>>,
         Path(pot_id): Path<i32>,
+        part : Parts,
         Json(new_expense): Json<NewExpenseDTO>,
     ) -> Result<ApiResponse<ExpenseDTO>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&part)?;
+
         let loaded_pot = pot_api_state.
             pot_service
-            .get_pot_by_id(pot_id)
+            .get_pot_by_id(pot_id, subject_id)
             .await
             .map_err(check_error)?;
 
@@ -204,6 +216,7 @@ pub mod pot_api {
         Ok((StatusCode::CREATED,Json(ExpenseDTO::from(expense, currency, splits))))
     }
 
+    /// Gets the sum of all expenses for the given user of the given pot.
     #[utoipa::path(
         get,
         path = "/pots/{pot_id}",
@@ -228,11 +241,14 @@ pub mod pot_api {
     )]
     pub async fn get_pot_expenses(
         State(pot_api_service) : State<Arc<PotApiState>>,
-        Path(pot_id): Path<i32>
+        Path(pot_id): Path<i32>,
+        parts : Parts
     ) -> Result<ApiResponse<Vec<ExpenseDTO>>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&parts)?;
+
         let result = pot_api_service
             .expense_service
-            .get_expenses_by_pot_id(pot_id)
+            .get_expenses_by_pot_id(pot_id, subject_id)
             .await
             .map_err(check_error)?;
 

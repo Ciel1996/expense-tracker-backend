@@ -64,7 +64,7 @@ pub mod user_api {
     )]
     pub async fn current_user(
         State(service): State<UserService>,
-        request: Request<Body> // TODO: this is the suspect! get rid of it but also find a way of accessing the claims within the token
+        request: Request<Body>
     ) -> Result<ApiResponse<UserDTO>, ApiResponse<String>> {
         let (parts, _) = request.into_parts();
         let uuid = get_sub_claim(&parts)?;
@@ -86,6 +86,8 @@ pub mod user_api {
         Ok((StatusCode::CREATED, Json(UserDTO::from(res))))
     }
 
+    /// Returns a list of a users registered in the system. Needs a bearer token to track
+    /// who requested it.
     #[utoipa::path(
         get,
         path = "/users",
