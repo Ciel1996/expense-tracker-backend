@@ -1,12 +1,13 @@
 pub mod pot_api {
     use std::sync::Arc;
-    use crate::api::{check_error, ApiResponse};
+    use crate::api::{check_error, get_sub_claim, ApiResponse};
     use crate::currency_api::currency_api::CurrencyDTO;
     
     use axum::extract::{Path, State};
     use axum::http::StatusCode;
+    use axum::http::request::Parts;
     use axum::Json;
-    use expense_tracker_db::pots::pots::{NewPot, Pot};
+    use expense_tracker_db::pots::pots::{NewPot, Pot, PotToUser};
     use expense_tracker_db::setup::DbPool;
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
@@ -41,6 +42,7 @@ pub mod pot_api {
             .routes(routes!(get_pots))
             .routes(routes!(add_expense))
             .routes(routes!(get_pot_expenses))
+            .routes(routes!(add_user_to_pot))
             .with_state(shared_state)
     }
 
@@ -85,19 +87,29 @@ pub mod pot_api {
     /// DTO used when creating a new Pot.
     #[derive(ToSchema, Serialize, Deserialize)]
     pub struct NewPotDTO {
-        owner_id: Uuid,
         name: String,
         default_currency_id: i32,
     }
 
     impl NewPotDTO {
         /// Converts the DTO to the db object.
-        fn to_db(&self) -> NewPot {
-            NewPot::new(self.owner_id, self.name.clone(), self.default_currency_id)
+        fn to_db(&self, owner_id: Uuid) -> NewPot {
+            NewPot::new(owner_id, self.name.clone(), self.default_currency_id)
         }
     }
 
-    /// Creates a pot from the given DTO.
+    #[derive(ToSchema, Serialize, Deserialize)]
+    pub struct AddUserToPotDTO {
+        user_id: Uuid,
+    }
+
+    impl AddUserToPotDTO {
+        pub fn user_id(&self) -> Uuid {
+            self.user_id
+        }
+    }
+
+    /// Creates a pot from the given DTO for the bearer.
     #[utoipa::path(
         post,
         path = "/pots",
@@ -112,17 +124,20 @@ pub mod pot_api {
     )]
     pub async fn create_pot(
         State(pot_api_state): State<Arc<PotApiState>>,
-        Json(new_pot): Json<NewPotDTO>,
+        parts : Parts,
+        Json(new_pot): Json<NewPotDTO>
     ) -> Result<ApiResponse<PotDTO>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&parts)?;
+
         let result = pot_api_state.pot_service
-            .create_pot(new_pot.to_db())
+            .create_pot(new_pot.to_db(subject_id))
             .await
             .map_err(check_error)?;
 
         Ok((StatusCode::CREATED, Json(PotDTO::from(result.0, CurrencyDTO::from(result.1)))))
     }
 
-    /// Gets the list of all pots.
+    /// Gets the list of all pots the bearer can view.
     #[utoipa::path(
         get,
         path = "/pots",
@@ -136,10 +151,13 @@ pub mod pot_api {
     )]
     pub async fn get_pots(
         State(pot_api_state): State<Arc<PotApiState>>,
+        parts : Parts,
     ) -> Result<ApiResponse<Vec<PotDTO>>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&parts)?;
+
         let loaded_pots = pot_api_state
             .pot_service
-            .get_pots()
+            .get_pots(subject_id)
             .await
             .map_err(check_error)?;
 
@@ -154,6 +172,56 @@ pub mod pot_api {
         Ok((StatusCode::OK, Json(PotDTO::from_vec(loaded_pots, all_currencies))))
     }
 
+    /// Adds the given user to the pot, if Bearer is the owner of that pot.
+    #[utoipa::path(
+            put,
+            path = "/pots/{pot_id}",
+            tag = "Pots",
+            responses(
+                (status = 200, description = "The user has successfully been added to the pot"),
+                (status = 403, description = "The user could not be added due to the caller not being the owner of the given pot."),
+                (status = 409, description = "The user was already added to the pot."),
+                (status = 500, description = "An internal server error occurred")
+            ),
+            request_body = AddUserToPotDTO,
+            params(
+                ("pot_id" = i32, Path, description = "Pot database id for the pot.  ")
+            ),
+            security(
+                    ("bearer" = [])
+            )
+        )]
+    pub async fn add_user_to_pot(
+        State(pot_api_state) : State<Arc<PotApiState>>,
+        Path(pot_id) : Path<i32>,
+        part : Parts,
+        Json(add_user_to_pot_dto) : Json<AddUserToPotDTO>
+    ) -> Result<ApiResponse<String>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&part)?;
+        let new_user_id = add_user_to_pot_dto.user_id();
+
+        let result = pot_api_state
+            .pot_service
+            .add_user_to_pot(PotToUser::new(pot_id, new_user_id), subject_id)
+            .await
+            .map_err(check_error)?;
+
+        if !result {
+            return Ok(
+                (
+                    StatusCode::FORBIDDEN,
+                    Json(format!("User {} could not be added to pot {}", new_user_id, pot_id))
+                ));
+        }
+
+        Ok((
+            StatusCode::OK,
+            Json(format!("User {} successfully added to pot {}", new_user_id, pot_id))
+            ))
+    }
+
+    /// Adds a new expense in the name of the user from the Bearer token to the pot with the given
+    /// pot_id if it exists.
     #[utoipa::path(
         post,
         path = "/pots/{pot_id}",
@@ -180,18 +248,21 @@ pub mod pot_api {
     pub async fn add_expense(
         State(pot_api_state): State<Arc<PotApiState>>,
         Path(pot_id): Path<i32>,
+        part : Parts,
         Json(new_expense): Json<NewExpenseDTO>,
     ) -> Result<ApiResponse<ExpenseDTO>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&part)?;
+
         let loaded_pot = pot_api_state.
             pot_service
-            .get_pot_by_id(pot_id)
+            .get_pot_by_id(pot_id, subject_id)
             .await
             .map_err(check_error)?;
 
         let expense_splits_result = pot_api_state
             .expense_service
             .create_expense(
-                new_expense.to_db(loaded_pot.id()),
+                new_expense.to_db(loaded_pot.id(), subject_id),
                 new_expense.splits_to_new_db()
             )
             .await
@@ -204,6 +275,7 @@ pub mod pot_api {
         Ok((StatusCode::CREATED,Json(ExpenseDTO::from(expense, currency, splits))))
     }
 
+    /// Gets the sum of all expenses for the given user of the given pot.
     #[utoipa::path(
         get,
         path = "/pots/{pot_id}",
@@ -228,11 +300,14 @@ pub mod pot_api {
     )]
     pub async fn get_pot_expenses(
         State(pot_api_service) : State<Arc<PotApiState>>,
-        Path(pot_id): Path<i32>
+        Path(pot_id): Path<i32>,
+        parts : Parts
     ) -> Result<ApiResponse<Vec<ExpenseDTO>>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&parts)?;
+
         let result = pot_api_service
             .expense_service
-            .get_expenses_by_pot_id(pot_id)
+            .get_expenses_by_pot_id(pot_id, subject_id)
             .await
             .map_err(check_error)?;
 

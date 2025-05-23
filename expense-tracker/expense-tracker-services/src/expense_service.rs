@@ -1,17 +1,20 @@
 pub mod expense_service {
     use crate::{internal_error, not_found_error, ExpenseError};
-    use diesel::{QueryDsl, SelectableHelper, ExpressionMethods};
+    use diesel::{QueryDsl, SelectableHelper, ExpressionMethods, BoolExpressionMethods, JoinOnDsl};
     use diesel::result::Error;
     use diesel_async::{AsyncConnection, RunQueryDsl};
     use diesel_async::scoped_futures::ScopedFutureExt;
+    use uuid::Uuid;
     use expense_tracker_db::currencies::currencies::Currency;
     use expense_tracker_db::expenses::expenses::{Expense, NewExpense};
     use expense_tracker_db::schema::currencies::dsl::currencies;
     use expense_tracker_db::schema::expense_splits::dsl::expense_splits;
     use expense_tracker_db::schema::expense_splits::expense_id as split_expense_id;
     use expense_tracker_db::schema::expenses::dsl::expenses;
-    use expense_tracker_db::schema::expenses::{id as expense_id, pot_id as expense_pot_id};
+    use expense_tracker_db::schema::expenses::{id as expense_id, owner_id, pot_id as expense_pot_id};
     use expense_tracker_db::schema::currencies::id as currencies_id;
+    use expense_tracker_db::schema::pots_to_users::dsl::pots_to_users;
+    use expense_tracker_db::schema::pots_to_users::{pot_id, user_id};
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::splits::splits::{NewExpenseSplit, Split};
     use crate::currency_service::currency_service;
@@ -80,23 +83,15 @@ pub mod expense_service {
             Ok(result)
         }
 
-        // TODO: this might require a specific ExpenseAPI!!
         /// Gets a single expense with all associated data by the given id.
-        pub async fn get_expense_by_id(&self, target_id : i32)
+        pub async fn get_expense_by_id(&self, target_id : i32, uuid : Uuid)
             -> Result<JoinedExpense, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
-
-            // let result = expenses
-            //     .inner_join(currencies)
-            //     .filter(expense_id.eq(target_id))
-            //     .first::<JoinedExpenseCurrency>(&mut conn)
-            //     .await
-            //     .map_err(internal_error)?;
 
             // I'm just not able to make a join work with diesel and bb8.
             // I have to think about it a bit longer.
             let expense = expenses
-                .filter(expense_id.eq(target_id))
+                .filter(expense_id.eq(target_id).and(owner_id.eq(uuid)))
                 .select(Expense::as_select())
                 .get_result::<Expense>(&mut conn)
                 .await
@@ -120,22 +115,19 @@ pub mod expense_service {
         /// Gets all expenses for the pot with the given target_pot_id.
         pub async fn get_expenses_by_pot_id(
             &self,
-            target_pot_id : i32
+            target_pot_id : i32,
+            requester_id : Uuid,
         ) -> Result<Vec<JoinedExpense>, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
-            // TODO: doing this in a single db query doesn't work as easily as expected! Figure this out!
-            // TODO: this will break with more and more db entries!! This has to be addressed asap! We could circumvent this a tiny bit by only selecting unpaid expenses, however this is currently not implemented!
-            // let result = expenses
-            //     .filter(expense_pot_id.eq(target_pot_id))
-            //     .inner_join(expense_splits)
-            //     .inner_join(currencies)
-            //     .get_results::<JoinedExpense>(&mut conn)
-            //     .await
-            //     .map_err(internal_error)?;
-
             let pot_expenses = expenses
-                .filter(expense_pot_id.eq(target_pot_id))
+                .left_join(pots_to_users.on(pot_id.eq(expense_pot_id)))
+                .filter(
+                    expense_pot_id.eq(target_pot_id).and(
+                        owner_id.eq(requester_id)
+                            .or(user_id.eq(requester_id))
+                    )
+                )
                 .select(Expense::as_select())
                 .get_results::<Expense>(&mut conn)
                 .await

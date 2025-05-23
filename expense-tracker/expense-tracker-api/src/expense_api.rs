@@ -1,5 +1,7 @@
 pub mod expense_api {
+    use axum::body::Body;
     use axum::extract::{Path, State};
+    use axum::http::Request;
     use axum::Json;
     use hyper::StatusCode;
     use serde::{Deserialize, Serialize};
@@ -13,7 +15,7 @@ pub mod expense_api {
     use expense_tracker_db::splits::splits::{NewExpenseSplit, Split};
     use expense_tracker_services::expense_service;
     use expense_tracker_services::expense_service::expense_service::{ExpenseService, JoinedExpense};
-    use crate::api::{check_error, ApiResponse};
+    use crate::api::{check_error, get_sub_claim, ApiResponse};
     use crate::currency_api::currency_api::CurrencyDTO;
 
     /// DTO used when working with existing Expenses.
@@ -118,7 +120,6 @@ pub mod expense_api {
     /// DTO used when creating a new expense for the given pot.
     #[derive(ToSchema, Serialize, Deserialize)]
     pub struct NewExpenseDTO {
-        owner_id: Uuid,
         description: String,
         currency_id: i32,
         splits: Vec<SplitDTO>,
@@ -126,9 +127,9 @@ pub mod expense_api {
 
     impl NewExpenseDTO {
         /// Turns this NewExpenseDTO into a NewExpense.
-        pub(crate) fn to_db(&self, owning_pot_id: i32) -> NewExpense {
+        pub(crate) fn to_db(&self, owning_pot_id: i32, owner_id : Uuid) -> NewExpense {
             NewExpense::new(
-                self.owner_id,
+                owner_id,
                 owning_pot_id,
                 self.description.clone(),
                 self.currency_id,
@@ -151,7 +152,6 @@ pub mod expense_api {
     impl Clone for NewExpenseDTO {
         fn clone(&self) -> Self {
             Self {
-                owner_id: self.owner_id,
                 description: self.description.clone(),
                 currency_id: self.currency_id,
                 splits: self.splits.clone()
@@ -164,6 +164,9 @@ pub mod expense_api {
             .routes(routes!(get_expense_by_id))
             .with_state(expense_service::expense_service::new_service(pool))
     }
+
+    /// Gets the expense with the given id. Returns 404 if no expense with the given id exists
+    /// or the bearer has no access to it.
     #[utoipa::path(
         get,
         path = "/expenses/{expense_id}",
@@ -188,9 +191,14 @@ pub mod expense_api {
     )]
     pub async fn get_expense_by_id(
         State(service) : State<ExpenseService>,
-        Path(expense_id) : Path<i32>
+        Path(expense_id) : Path<i32>,
+        request: Request<Body>
     ) -> Result<ApiResponse<ExpenseDTO>, ApiResponse<String>> {
-        let expense = service.get_expense_by_id(expense_id)
+        let (parts, _) = request.into_parts();
+        let subject_id = get_sub_claim(&parts)?;
+
+        let expense = service
+            .get_expense_by_id(expense_id, subject_id)
             .await
             .map_err(check_error)?;
 
