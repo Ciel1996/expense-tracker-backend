@@ -1,6 +1,6 @@
 pub mod expense_service {
     use crate::{internal_error, not_found_error, ExpenseError};
-    use diesel::{QueryDsl, SelectableHelper, ExpressionMethods, BoolExpressionMethods};
+    use diesel::{QueryDsl, SelectableHelper, ExpressionMethods, BoolExpressionMethods, JoinOnDsl};
     use diesel::result::Error;
     use diesel_async::{AsyncConnection, RunQueryDsl};
     use diesel_async::scoped_futures::ScopedFutureExt;
@@ -13,6 +13,8 @@ pub mod expense_service {
     use expense_tracker_db::schema::expenses::dsl::expenses;
     use expense_tracker_db::schema::expenses::{id as expense_id, owner_id, pot_id as expense_pot_id};
     use expense_tracker_db::schema::currencies::id as currencies_id;
+    use expense_tracker_db::schema::pots_to_users::dsl::pots_to_users;
+    use expense_tracker_db::schema::pots_to_users::{pot_id, user_id};
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::splits::splits::{NewExpenseSplit, Split};
     use crate::currency_service::currency_service;
@@ -81,7 +83,6 @@ pub mod expense_service {
             Ok(result)
         }
 
-        // TODO: this might require a specific ExpenseAPI!!
         /// Gets a single expense with all associated data by the given id.
         pub async fn get_expense_by_id(&self, target_id : i32, uuid : Uuid)
             -> Result<JoinedExpense, ExpenseError> {
@@ -120,7 +121,13 @@ pub mod expense_service {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
             let pot_expenses = expenses
-                .filter(expense_pot_id.eq(target_pot_id).and(owner_id.eq(requester_id)))
+                .left_join(pots_to_users.on(pot_id.eq(expense_pot_id)))
+                .filter(
+                    expense_pot_id.eq(target_pot_id).and(
+                        owner_id.eq(requester_id)
+                            .or(user_id.eq(requester_id))
+                    )
+                )
                 .select(Expense::as_select())
                 .get_results::<Expense>(&mut conn)
                 .await

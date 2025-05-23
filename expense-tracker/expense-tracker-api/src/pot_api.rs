@@ -262,7 +262,7 @@ pub mod pot_api {
         let expense_splits_result = pot_api_state
             .expense_service
             .create_expense(
-                new_expense.to_db(loaded_pot.id()),
+                new_expense.to_db(loaded_pot.id(), subject_id),
                 new_expense.splits_to_new_db()
             )
             .await

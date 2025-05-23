@@ -2,8 +2,7 @@ pub mod pot_service {
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
     use crate::{check_error, internal_error, not_found_error, ExpenseError};
-    use diesel::{BoolExpressionMethods, ExpressionMethods, Insertable, QueryDsl, SelectableHelper};
-    use diesel::dsl::{count_star, CountStar};
+    use diesel::{BoolExpressionMethods, ExpressionMethods, QueryDsl, SelectableHelper};
     use diesel_async::RunQueryDsl;
     use uuid::Uuid;
     use expense_tracker_db::currencies::currencies::Currency;
@@ -121,7 +120,16 @@ pub mod pot_service {
             requester_id : Uuid) -> Result<Pot, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
-            pots.filter(owner_id.eq(requester_id).and(pots_id.eq(to_search)))
+            // getting the pot ids where the user behind user_uuid is only a part of (not the owner)
+            let pot_ids : Vec<i32> = pots_to_users
+                .filter(user_id.eq(requester_id))
+                .select(pot_id)
+                .load(&mut conn)
+                .await
+                .map_err(internal_error)?;
+
+            pots
+                .filter(pots_id.eq(to_search).and(owner_id.eq(requester_id).or(pots_id.eq_any(pot_ids))))
                 .get_result::<Pot>(&mut conn)
                 .await
                 .map_err(not_found_error)
