@@ -3,6 +3,7 @@ pub mod pots {
     use serde::{Deserialize, Serialize};
     use uuid::Uuid;
     use crate::schema::pots;
+    use crate::schema::pots_to_users;
 
     /// Represents a pot. A pot is an accumulation of expenses and is owned by a single
     /// user. A pot can be shared with multiple users. The users can leave a pot
@@ -86,6 +87,28 @@ pub mod pots {
 
         pub fn default_currency_id(&self) -> i32 {
             self.default_currency_id
+        }
+    }
+
+    /// This struct is used to create a new pots_to_user relationship in the database.
+    #[derive(Deserialize, Insertable)]
+    #[diesel(table_name = pots_to_users)]
+    pub struct PotToUser {
+        pot_id : i32,
+        user_id : Uuid,
+    }
+
+    impl PotToUser {
+        pub fn new(pot_id: i32, user_id: Uuid) -> Self {
+            Self { pot_id, user_id }
+        }
+
+        pub fn pot_id(&self) -> i32 {
+            self.pot_id
+        }
+
+        pub fn user_id(&self) -> Uuid {
+            self.user_id
         }
     }
 }

@@ -119,16 +119,6 @@ pub mod expense_service {
         ) -> Result<Vec<JoinedExpense>, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
-            // TODO: doing this in a single db query doesn't work as easily as expected! Figure this out!
-            // TODO: this will break with more and more db entries!! This has to be addressed asap! We could circumvent this a tiny bit by only selecting unpaid expenses, however this is currently not implemented!
-            // let result = expenses
-            //     .filter(expense_pot_id.eq(target_pot_id))
-            //     .inner_join(expense_splits)
-            //     .inner_join(currencies)
-            //     .get_results::<JoinedExpense>(&mut conn)
-            //     .await
-            //     .map_err(internal_error)?;
-
             let pot_expenses = expenses
                 .filter(expense_pot_id.eq(target_pot_id).and(owner_id.eq(requester_id)))
                 .select(Expense::as_select())
