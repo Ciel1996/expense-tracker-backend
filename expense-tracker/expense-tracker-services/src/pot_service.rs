@@ -95,15 +95,17 @@ pub mod pot_service {
         pub async fn get_pots(&self, user_uuid : Uuid) -> Result<Vec<Pot>, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
-            let pots_with_user : Vec<i32> = pots_to_users
+            // getting the pot ids where the user behind user_uuid is only a part of (not the owner)
+            let pot_ids : Vec<i32> = pots_to_users
                 .filter(user_id.eq(user_uuid))
                 .select(pot_id)
                 .load(&mut conn)
                 .await
-                .unwrap_or_else(|_| Vec::new());
+                .map_err(internal_error)?;
 
+            // getting all pods where the user behind user_uuid is a part of OR the owner
             let loaded_pots = pots
-                .filter(owner_id.eq(user_uuid))
+                .filter(owner_id.eq(user_uuid).or(id.eq_any(pot_ids)))
                 .select(Pot::as_select())
                 .load(&mut conn)
                 .await
