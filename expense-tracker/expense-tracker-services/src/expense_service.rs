@@ -1,5 +1,5 @@
 pub mod expense_service {
-    use crate::{internal_error, not_found_error, ExpenseError};
+    use crate::{check_error, internal_error, not_found_error, ExpenseError};
     use diesel::{QueryDsl, SelectableHelper, ExpressionMethods, BoolExpressionMethods, JoinOnDsl};
     use diesel::result::Error;
     use diesel_async::{AsyncConnection, RunQueryDsl};
@@ -19,20 +19,7 @@ pub mod expense_service {
     use expense_tracker_db::splits::splits::{NewExpenseSplit, Split};
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
-
-    // TODO: use something like this for a JOIN query
-    // #[derive(Queryable)]
-    // pub struct JoinedExpenseCurrency {
-    //     expense_id: i32,
-    //     expense_owner_id: i32,
-    //     expense_pot_id: i32,
-    //     expense_description: String,
-    //     expense_currency_id: i32,
-    //     currency_id: i32,
-    //     currency_symbol: String,
-    //     currency_name: String
-    // }
-
+    use crate::ExpenseError::{Conflict, Forbidden};
     /// Represents a joined `Expense`, with a `Vec<Split>` and a `Currency`.
     pub type JoinedExpense = (Expense, Vec<Split>, Currency);
 
@@ -83,15 +70,16 @@ pub mod expense_service {
             Ok(result)
         }
 
+        // TODO: review because owner and members of the pot/expense should be able to view the expense
         /// Gets a single expense with all associated data by the given id.
-        pub async fn get_expense_by_id(&self, target_id : i32, uuid : Uuid)
+        pub async fn get_expense_by_id(&self, target_id : i32, requester_id : Uuid)
             -> Result<JoinedExpense, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
             // I'm just not able to make a join work with diesel and bb8.
             // I have to think about it a bit longer.
             let expense = expenses
-                .filter(expense_id.eq(target_id).and(owner_id.eq(uuid)))
+                .filter(expense_id.eq(target_id))
                 .select(Expense::as_select())
                 .get_result::<Expense>(&mut conn)
                 .await
@@ -99,7 +87,7 @@ pub mod expense_service {
 
             let splits = expense_splits
                 .filter(split_expense_id.eq(target_id))
-                .get_results::<Split>(&mut conn)
+                .get_results(&mut conn)
                 .await
                 .map_err(not_found_error)?;
 
@@ -112,7 +100,6 @@ pub mod expense_service {
             Ok((expense, splits, currency))
         }
 
-        // TODO: review
         /// Gets all expenses for the pot with the given target_pot_id.
         pub async fn get_expenses_by_pot_id(
             &self,
@@ -120,6 +107,7 @@ pub mod expense_service {
             requester_id : Uuid,
         ) -> Result<Vec<JoinedExpense>, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+
 
             let pot_expenses = expenses
                 .left_join(pots_to_users.on(pot_id.eq(expense_pot_id)))
@@ -159,6 +147,45 @@ pub mod expense_service {
             }
 
             Ok(result)
+        }
+
+        /// The user with the given `requester_id` tries to pay the given `payment_amount` for the
+        /// expense with the given `target_id`.
+        pub async fn pay_expense(
+            &self,
+            target_id : i32,
+            requester_id: Uuid,
+            payment_amount: f64
+        ) -> Result<bool, ExpenseError> {
+            let expense = self
+                .get_expense_by_id(target_id, requester_id)
+                .await
+                .map_err(check_error)?;
+
+            let requester_splits = expense.1
+                .iter()
+                .filter(|s| s.user_id() == requester_id).collect::<Vec<_>>();
+
+            if requester_splits.is_empty() {
+                return Err(Forbidden("You have no split in this expense!".to_string()));
+            }
+
+            for split in requester_splits {
+                if !split.is_paid() {
+                    if split.amount() > payment_amount {
+                        return Err(Conflict("Can't overpay!".to_string()));
+                    }
+                    else if split.amount() < payment_amount
+                    {
+                        return Err(Conflict("Can't underpay!".to_string()));
+                    }
+
+                    // update is_paid to true
+                    return Ok(true);
+                }
+            }
+
+            Ok(true)
         }
     }
 
