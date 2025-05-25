@@ -1,6 +1,8 @@
 pub mod pot_service {
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
+    use crate::expense_service::expense_service;
+    use crate::expense_service::expense_service::ExpenseService;
     use crate::{check_error, internal_error, not_found_error, ExpenseError};
     use diesel::{BoolExpressionMethods, ExpressionMethods, QueryDsl, SelectableHelper};
     use diesel_async::RunQueryDsl;
@@ -12,13 +14,14 @@ pub mod pot_service {
     use expense_tracker_db::schema::pots_to_users::dsl::pots_to_users;
     use expense_tracker_db::schema::pots_to_users::{pot_id, user_id};
     use expense_tracker_db::setup::DbPool;
-    use crate::ExpenseError::Conflict;
+    use crate::ExpenseError::{Conflict, Forbidden};
 
     /// A service offering interfaces related to Pots.
     #[derive(Clone)]
     pub struct PotService {
         db_pool: DbPool,
         currency_service: CurrencyService,
+        expense_service: ExpenseService
     }
 
     impl PotService {
@@ -134,6 +137,62 @@ pub mod pot_service {
                 .await
                 .map_err(not_found_error)
         }
+
+        /// Tries to delete the pot with the given `to_delete` id. Checks if `requester_id` belongs
+        /// to the owner of the pot. The pot can only be deleted, if no further expenses are outstanding.
+        pub async fn try_delete_pot(
+            &self,
+            to_delete: i32,
+            requester_id : Uuid) -> Result<bool, ExpenseError> {
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+
+            // check if user is even allowed to try to delete the pot
+            let is_allowed_to_delete = pots
+                .filter(id.eq(to_delete).and(owner_id.eq(requester_id)))
+                .count()
+                .get_result::<i64>(&mut conn)
+                .await
+                .map_err(internal_error)? == 1;
+
+            if !is_allowed_to_delete {
+                return Err(Forbidden(format!("The user does not own the pot with id {}", to_delete)));
+            }
+
+            // check if pot has outstanding expenses
+            let outstanding = self
+                .expense_service
+                .get_expenses_by_pot_id(to_delete, requester_id)
+                .await;
+
+            if let Err(error) = outstanding {
+                return Err(check_error(error));
+            }
+
+            for joined_expense in outstanding? {
+                for split in joined_expense.1 {
+                    if !split.is_paid() {
+                        return Err(
+                            Conflict(
+                                format!(
+                                    "Cannot delete pod with id {} because there are unpaid expenses",
+                                    to_delete
+                                )
+                            )
+                        );
+                    }
+                }
+            }
+
+            let deleted = diesel::delete(
+                pots
+                    .filter(id.eq(to_delete)
+                        .and(owner_id.eq(requester_id))))
+                .execute(&mut conn)
+                .await
+                .map_err(not_found_error)?;
+
+            Ok(deleted == 1)
+        }
     }
 
     /// Creates a new PotService with the given DbConnectionPool.
@@ -141,6 +200,7 @@ pub mod pot_service {
         PotService {
             db_pool: pool.clone(),
             currency_service: currency_service::new_service(pool.clone()),
+            expense_service: expense_service::new_service(pool.clone()),
         }
     }
 }

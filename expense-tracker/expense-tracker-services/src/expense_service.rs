@@ -112,6 +112,7 @@ pub mod expense_service {
             Ok((expense, splits, currency))
         }
 
+        // TODO: review
         /// Gets all expenses for the pot with the given target_pot_id.
         pub async fn get_expenses_by_pot_id(
             &self,

@@ -33,7 +33,12 @@ pub mod expense_api {
     }
 
     impl ExpenseDTO {
-        pub fn from(expense: Expense, currency: Currency, splits: Vec<Split>) -> Self {
+        pub fn from(
+            expense: Expense,
+            currency: Currency,
+            splits: Vec<Split>,
+            requester_id : Uuid,
+        ) -> Self {
             Self {
                 id: expense.id(),
                 description: expense.description().to_string(),
@@ -41,12 +46,11 @@ pub mod expense_api {
                 currency: CurrencyDTO::from(currency),
                 owner_id: expense.owner_id(),
                 splits: SplitDTO::from_vec_split(splits.clone()),
-                // TODO: viewer_id (1) must be gathered from oidc token!
-                sum: get_sum(expense.owner_id(), uuid!("ddc96061-81da-489c-8c97-0a578079bd43"), splits)
+                sum: get_sum(expense.owner_id(), requester_id, splits)
             }
         }
 
-        pub fn from_vec(expenses : Vec<JoinedExpense>) -> Vec<Self> {
+        pub fn from_vec(expenses : Vec<JoinedExpense>, requester_id : Uuid) -> Vec<Self> {
             let mut dtos: Vec<ExpenseDTO> = vec!();
 
             for joined_expense in expenses {
@@ -54,7 +58,7 @@ pub mod expense_api {
                 let splits = joined_expense.1;
                 let currency = joined_expense.2;
 
-                dtos.push(ExpenseDTO::from(expense, currency, splits))
+                dtos.push(ExpenseDTO::from(expense, currency, splits, requester_id))
             }
 
             dtos
@@ -202,7 +206,7 @@ pub mod expense_api {
             .await
             .map_err(check_error)?;
 
-        Ok((StatusCode::OK, Json(ExpenseDTO::from(expense.0, expense.2, expense.1))))
+        Ok((StatusCode::OK, Json(ExpenseDTO::from(expense.0, expense.2, expense.1, subject_id))))
     }
 }
 

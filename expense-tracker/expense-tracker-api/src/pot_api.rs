@@ -43,6 +43,7 @@ pub mod pot_api {
             .routes(routes!(add_expense))
             .routes(routes!(get_pot_expenses))
             .routes(routes!(add_user_to_pot))
+            .routes(routes!(delete_pot))
             .with_state(shared_state)
     }
 
@@ -272,7 +273,7 @@ pub mod pot_api {
         let splits = expense_splits_result.1;
         let currency = expense_splits_result.2;
 
-        Ok((StatusCode::CREATED,Json(ExpenseDTO::from(expense, currency, splits))))
+        Ok((StatusCode::CREATED,Json(ExpenseDTO::from(expense, currency, splits, subject_id))))
     }
 
     /// Gets the sum of all expenses for the given user of the given pot.
@@ -311,6 +312,53 @@ pub mod pot_api {
             .await
             .map_err(check_error)?;
 
-        Ok((StatusCode::OK, Json(ExpenseDTO::from_vec(result))))
+        Ok((StatusCode::OK, Json(ExpenseDTO::from_vec(result, subject_id))))
+    }
+
+    /// Deletes the given pot if it does not contain any outstanding expenses and the caller
+    /// is the pot's owner.
+    #[utoipa::path(
+        delete,
+        path = "/pots/{pot_id}",
+        tag = "Pots",
+        responses(
+            (
+                status = 204,
+                description = "The pot has been deleted."
+            ),
+            (
+                status = 403,
+                description = "Indicates that the user is not authorized to delete the given pot."
+            ),
+            (
+                status = 404,
+                description = "Indicates that the desired pot does not exists."
+            ),
+            (
+                status = 409,
+                description = "Indicates that the desired pot can't be deleted."
+            )
+        ),
+        params(
+            ("pot_id" = i32, Path, description = "Pot database id for the pot.  ")
+        ),
+        security(
+            ("bearer" = [])
+        )
+    )]
+    pub async fn delete_pot(
+        State(pot_api_service) : State<Arc<PotApiState>>,
+        Path(pot_id): Path<i32>,
+        parts : Parts
+    ) -> Result<ApiResponse<String>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&parts)?;
+
+        pot_api_service
+            .pot_service
+            .try_delete_pot(pot_id, subject_id)
+            .await
+            .map_err(check_error)?;
+
+        Ok((StatusCode::NO_CONTENT, Json(format!("Deleted pot {}", pot_id))))
     }
 }
