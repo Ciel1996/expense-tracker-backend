@@ -13,6 +13,8 @@ pub mod expense_service {
     use expense_tracker_db::schema::expenses::dsl::expenses;
     use expense_tracker_db::schema::expenses::{id as expense_id, owner_id, pot_id as expense_pot_id};
     use expense_tracker_db::schema::currencies::id as currencies_id;
+    use expense_tracker_db::schema::pots::dsl::pots;
+    use expense_tracker_db::schema::pots::id as pots_id;
     use expense_tracker_db::schema::pots_to_users::dsl::pots_to_users;
     use expense_tracker_db::schema::pots_to_users::{pot_id, user_id};
     use expense_tracker_db::setup::DbPool;
@@ -70,7 +72,6 @@ pub mod expense_service {
             Ok(result)
         }
 
-        // TODO: review because owner and members of the pot/expense should be able to view the expense
         /// Gets a single expense with all associated data by the given id.
         pub async fn get_expense_by_id(&self, target_id : i32, requester_id : Uuid)
             -> Result<JoinedExpense, ExpenseError> {
@@ -79,7 +80,9 @@ pub mod expense_service {
             // I'm just not able to make a join work with diesel and bb8.
             // I have to think about it a bit longer.
             let expense = expenses
-                .filter(expense_id.eq(target_id))
+                .left_join(pots.on(pots_id.eq(expense_pot_id)))
+                .left_join(pots_to_users.on(pots_id.eq(pots_id)))
+                .filter(expense_id.eq(target_id).and(user_id.eq(requester_id)))
                 .select(Expense::as_select())
                 .get_result::<Expense>(&mut conn)
                 .await
