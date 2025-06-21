@@ -22,6 +22,7 @@ pub mod expense_service {
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
     use crate::ExpenseError::{Conflict, Forbidden};
+
     /// Represents a joined `Expense`, with a `Vec<Split>` and a `Currency`.
     pub type JoinedExpense = (Expense, Vec<Split>, Currency);
 
