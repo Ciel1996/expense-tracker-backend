@@ -1,14 +1,13 @@
 pub mod expense_api {
-    use axum::body::Body;
     use axum::extract::{Path, State};
-    use axum::http::Request;
+    use axum::http::request::Parts;
     use axum::Json;
     use hyper::StatusCode;
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
-    use uuid::{uuid, Uuid};
+    use uuid::Uuid;
     use expense_tracker_db::currencies::currencies::Currency;
     use expense_tracker_db::expenses::expenses::{Expense, NewExpense};
     use expense_tracker_db::setup::DbPool;
@@ -33,7 +32,12 @@ pub mod expense_api {
     }
 
     impl ExpenseDTO {
-        pub fn from(expense: Expense, currency: Currency, splits: Vec<Split>) -> Self {
+        pub fn from(
+            expense: Expense,
+            currency: Currency,
+            splits: Vec<Split>,
+            requester_id : Uuid,
+        ) -> Self {
             Self {
                 id: expense.id(),
                 description: expense.description().to_string(),
@@ -41,12 +45,11 @@ pub mod expense_api {
                 currency: CurrencyDTO::from(currency),
                 owner_id: expense.owner_id(),
                 splits: SplitDTO::from_vec_split(splits.clone()),
-                // TODO: viewer_id (1) must be gathered from oidc token!
-                sum: get_sum(expense.owner_id(), uuid!("ddc96061-81da-489c-8c97-0a578079bd43"), splits)
+                sum: get_sum(expense.owner_id(), requester_id, splits)
             }
         }
 
-        pub fn from_vec(expenses : Vec<JoinedExpense>) -> Vec<Self> {
+        pub fn from_vec(expenses : Vec<JoinedExpense>, requester_id : Uuid) -> Vec<Self> {
             let mut dtos: Vec<ExpenseDTO> = vec!();
 
             for joined_expense in expenses {
@@ -54,10 +57,22 @@ pub mod expense_api {
                 let splits = joined_expense.1;
                 let currency = joined_expense.2;
 
-                dtos.push(ExpenseDTO::from(expense, currency, splits))
+                dtos.push(ExpenseDTO::from(expense, currency, splits, requester_id))
             }
 
             dtos
+        }
+    }
+
+    /// DTO used to update an expense
+    #[derive(ToSchema, Serialize, Deserialize)]
+    pub struct PayExpenseDTO {
+        sum_paid : f64
+    }
+
+    impl PayExpenseDTO {
+        pub fn sum_paid(&self) -> f64 {
+            self.sum_paid
         }
     }
 
@@ -162,6 +177,7 @@ pub mod expense_api {
     pub fn register(pool: DbPool) -> OpenApiRouter {
         OpenApiRouter::new()
             .routes(routes!(get_expense_by_id))
+            .routes(routes!(pay_expense))
             .with_state(expense_service::expense_service::new_service(pool))
     }
 
@@ -175,7 +191,7 @@ pub mod expense_api {
             (
                 status = 200,
                 description = "The Expense with the given id.",
-                body = Vec<ExpenseDTO>
+                body = ExpenseDTO
             ),
             (
                 status = 404,
@@ -183,7 +199,7 @@ pub mod expense_api {
             )
         ),
         params(
-            ("expense_id" = i32, Path, description = "Expense database id for the Expense.  ")
+            ("expense_id" = i32, Path, description = "Expense database id for the Expense.")
         ),
         security(
             ("bearer" = [])
@@ -192,9 +208,8 @@ pub mod expense_api {
     pub async fn get_expense_by_id(
         State(service) : State<ExpenseService>,
         Path(expense_id) : Path<i32>,
-        request: Request<Body>
+        parts: Parts
     ) -> Result<ApiResponse<ExpenseDTO>, ApiResponse<String>> {
-        let (parts, _) = request.into_parts();
         let subject_id = get_sub_claim(&parts)?;
 
         let expense = service
@@ -202,7 +217,63 @@ pub mod expense_api {
             .await
             .map_err(check_error)?;
 
-        Ok((StatusCode::OK, Json(ExpenseDTO::from(expense.0, expense.2, expense.1))))
+        Ok((StatusCode::OK, Json(ExpenseDTO::from(expense.0, expense.2, expense.1, subject_id))))
+    }
+
+    /// Pays the expense with the given `expense_id` if the user has access to it.
+    #[utoipa::path(
+        put,
+        path = "/expenses/{expense_id}",
+        tag = "Expenses",
+        responses(
+            (
+                status = 200,
+                description = "The Expense with the given id has been paid.",
+                body = ExpenseDTO
+            ),
+            (
+                status = 403,
+                description = "Indicates that the desired Expense cannot be paid by this users"
+            ),
+            (
+                status = 404,
+                description = "Indicates that the desired Expense does not exists"
+            )
+        ),
+        request_body = PayExpenseDTO,
+        params(
+            ("expense_id" = i32, Path, description = "Expense database id for the Expense.")
+        ),
+        security(
+            ("bearer" = [])
+        )
+    )]
+    pub async fn pay_expense(
+        State(service) : State<ExpenseService>,
+        Path(expense_id) : Path<i32>,
+        parts: Parts,
+        Json(payment): Json<PayExpenseDTO>
+    ) -> Result<ApiResponse<ExpenseDTO>, ApiResponse<String>> {
+        // TODO: Evaluate this with a second user!
+
+        let subject_id = get_sub_claim(&parts)?;
+
+        service
+            .pay_expense(expense_id, subject_id, payment.sum_paid())
+            .await
+            .map_err(check_error)?;
+
+        let expense = service
+            .get_expense_by_id(expense_id, subject_id)
+            .await.map_err(check_error)?;
+
+        let currency = expense.2;
+        let splits = expense.1;
+        let expense = expense.0;
+
+        let expense_dto = ExpenseDTO::from(expense, currency, splits, subject_id);
+
+        Ok((StatusCode::OK, Json(expense_dto)))
     }
 }
 

@@ -12,6 +12,8 @@ pub mod expense_service;
 pub enum ExpenseError {
     /// Indicates that the requested resource could not be found.
     NotFound(String),
+    /// Indicates that the requesting user does NOT have the authorization for the action.
+    Forbidden(String),
     /// Indicates an unspecific error.
     Internal(String),
     /// Indicates a conflict, thus resulting in cancelation of the task.

@@ -1,6 +1,7 @@
 extern crate core;
 mod settings;
 
+use std::env;
 use std::net::SocketAddr;
 use std::sync::LazyLock;
 use axum::body::Body;
@@ -9,7 +10,6 @@ use axum::middleware::Next;
 use axum::response::Response;
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use jsonwebtoken::jwk::JwkSet;
-use reqwest::get;
 use tower::ServiceBuilder;
 use utoipa::{Modify, OpenApi};
 use utoipa::gen::serde_json::Value;
@@ -19,7 +19,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use utoipa_swagger_ui::oauth;
 use expense_tracker_api::api;
 use expense_tracker_db::setup::setup_db;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 use crate::settings::Settings;
@@ -50,7 +50,18 @@ impl Modify for SecurityAddon {
 
 /// Fetches the jwks used for validation of the token
 async fn fetch_jwks(jwks_url: &str) -> Result<JwkSet, reqwest::Error> {
-    let response = get(jwks_url).await?;
+    let ignore_tls = env::var("EXPENSE_TRACKER_IGNORE_TLS").is_ok();
+
+    let mut client_builder = reqwest::Client::builder();
+
+    if ignore_tls {
+        warn!("TLS has been disabled! Please enable for production use!");
+        client_builder = client_builder.danger_accept_invalid_certs(true);
+    }
+
+    let client = client_builder.build()?;
+
+    let response = client.get(jwks_url).send().await?;
     let jwks = response.json::<JwkSet>().await?;
     Ok(jwks)
 }
@@ -146,7 +157,6 @@ async fn auth_middleware(request: Request<Body>, next: Next) -> Result<Response,
 
 #[tokio::main]
 async fn main() {
-
     // 1. Initialize tracing + log bridging
     tracing_subscriber::fmt()
         // This allows you to use, e.g., `RUST_LOG=info` or `RUST_LOG=debug`

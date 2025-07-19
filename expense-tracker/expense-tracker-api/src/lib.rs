@@ -44,12 +44,17 @@ pub mod api {
 
     /// Checks the given `Error` and gets the correct error message.
     /// Returns one of:
+    /// - 403
     /// - 404
     /// - 409
     /// - 500
     pub fn check_error(err: ExpenseError) -> ApiResponse<String>
     {
         match err {
+            ExpenseError::Forbidden(message) => (
+                StatusCode::FORBIDDEN,
+                Json(message)
+            ),
             ExpenseError::NotFound(message) => (
                 StatusCode::NOT_FOUND,
                 Json(message)
