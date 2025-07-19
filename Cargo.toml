@@ -1,0 +1,11 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "apps/expense_tracker",
+    "libs/expense_tracker_api",
+    "libs/expense_tracker_db",
+    "libs/expense_tracker_services"]
+
+[profile.release]
+lto = true
