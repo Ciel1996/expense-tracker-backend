@@ -265,7 +265,7 @@ pub mod pot_service {
                         return Err(
                             Conflict(
                                 format!(
-                                    "Cannot delete pod with id {} because there are unpaid expenses",
+                                    "Cannot delete pot with id {} because there are unpaid expenses",
                                     to_delete
                                 )
                             )

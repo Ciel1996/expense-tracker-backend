@@ -246,7 +246,7 @@ pub mod pot_api {
             ))
     }
 
-    /// Removes the given user to the pot, if Bearer is the owner of that pot.
+    /// Removes the given user from the pot, if Bearer is the owner of that pot.
     #[utoipa::path(
             put,
             path = "/pots/{pot_id}/remove_user",
