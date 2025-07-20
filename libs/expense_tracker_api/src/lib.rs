@@ -3,6 +3,7 @@ mod expense_api;
 mod health_api;
 mod pot_api;
 mod user_api;
+mod generate_openapi;
 
 pub mod api {
     use crate::currency_api::currency_api;
@@ -16,7 +17,6 @@ pub mod api {
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_services::ExpenseError;
     use utoipa::gen::serde_json::Value;
-    use utoipa::OpenApi;
     use utoipa_axum::router::OpenApiRouter;
     use uuid::Uuid;
 

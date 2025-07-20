@@ -15,6 +15,6 @@ diesel = { version = "2.2.9", features = ["uuid"] }
 uuid = ">=0.7.0,<2.0.0"
 log = "0.4.27"
 
-[[bin]]
-name = "gen-openapi"
-path = "./src/lib.rs"
+#[[bin]]
+#name = "gen-openapi"
+#path = "./src/generate_openapi.rs"

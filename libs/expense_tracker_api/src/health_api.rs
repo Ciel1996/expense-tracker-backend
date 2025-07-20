@@ -5,6 +5,7 @@ pub mod health_api {
     use expense_tracker_services::health_service::health_service;
     use expense_tracker_services::health_service::health_service::PingHealthService;
     use log::debug;
+    use utoipa::OpenApi;
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
 
@@ -32,4 +33,8 @@ pub mod health_api {
         debug!("PONG!");
         (StatusCode::OK, service.ping()).into_response()
     }
+
+    // #[derive(OpenApi)]
+    // #[openapi(handlers(health_check))]
+    // pub struct ApiDoc;
 }
