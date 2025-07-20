@@ -1,0 +1,788 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "expense_tracker",
+    "description": "",
+    "license": {
+      "name": ""
+    },
+    "version": "0.2.0"
+  },
+  "paths": {
+    "/api/v1/currencies": {
+      "get": {
+        "tags": [
+          "Currency"
+        ],
+        "summary": "Gets a list of all currently known currencies.",
+        "operationId": "get_currencies",
+        "responses": {
+          "200": {
+            "description": "All currencies known to the system",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CurrencyDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Currency"
+        ],
+        "summary": "Creates a new currency, if symbol is not yet in use.",
+        "operationId": "create_currency",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewCurrencyDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The currency has been created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewCurrencyDTO"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Detected a conflict, as the symbol is already known."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/current_user": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Creates a new user from the given DTO.",
+        "operationId": "current_user",
+        "responses": {
+          "200": {
+            "description": "The user does already exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDTO"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "The user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDTO"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "The server error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/expenses/{expense_id}": {
+      "get": {
+        "tags": [
+          "Expenses"
+        ],
+        "summary": "Gets the expense with the given id. Returns 404 if no expense with the given id exists\nor the bearer has no access to it.",
+        "operationId": "get_expense_by_id",
+        "parameters": [
+          {
+            "name": "expense_id",
+            "in": "path",
+            "description": "Expense database id for the Expense.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The Expense with the given id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Indicates that the desired Expense does not exists"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Expenses"
+        ],
+        "summary": "Pays the expense with the given `expense_id` if the user has access to it.",
+        "operationId": "pay_expense",
+        "parameters": [
+          {
+            "name": "expense_id",
+            "in": "path",
+            "description": "Expense database id for the Expense.",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayExpenseDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The Expense with the given id has been paid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseDTO"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Indicates that the desired Expense cannot be paid by this users"
+          },
+          "404": {
+            "description": "Indicates that the desired Expense does not exists"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "HealthCheck Url",
+        "operationId": "health_check",
+        "responses": {
+          "200": {
+            "description": "If this can be reached, the API is available."
+          }
+        }
+      }
+    },
+    "/api/v1/pots": {
+      "get": {
+        "tags": [
+          "Pots"
+        ],
+        "summary": "Gets the list of all pots the bearer can view.",
+        "operationId": "get_pots",
+        "responses": {
+          "200": {
+            "description": "The list of known pots.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PotDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Pots"
+        ],
+        "summary": "Creates a pot from the given DTO for the bearer.",
+        "operationId": "create_pot",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewPotDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "The pot has been created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PotDTO"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/pots/{pot_id}": {
+      "get": {
+        "tags": [
+          "Pots"
+        ],
+        "summary": "Gets the sum of all expenses for the given user of the given pot.",
+        "operationId": "get_pot_expenses",
+        "parameters": [
+          {
+            "name": "pot_id",
+            "in": "path",
+            "description": "Pot database id for the pot.  ",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The expenses for the pot with the given id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExpenseDTO"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Indicates that the desired pot does not exists"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Pots"
+        ],
+        "summary": "Adds the given user to the pot, if Bearer is the owner of that pot.",
+        "operationId": "add_user_to_pot",
+        "parameters": [
+          {
+            "name": "pot_id",
+            "in": "path",
+            "description": "Pot database id for the pot.  ",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserToPotDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The user has successfully been added to the pot"
+          },
+          "403": {
+            "description": "The user could not be added due to the caller not being the owner of the given pot."
+          },
+          "409": {
+            "description": "The user was already added to the pot."
+          },
+          "500": {
+            "description": "An internal server error occurred"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Pots"
+        ],
+        "summary": "Adds a new expense in the name of the user from the Bearer token to the pot with the given\npot_id if it exists.",
+        "operationId": "add_expense",
+        "parameters": [
+          {
+            "name": "pot_id",
+            "in": "path",
+            "description": "Pot database id for the pot.  ",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewExpenseDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Indicates that the expense has been created for the given pot.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseDTO"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Indicates that the pot for this expense does not exist."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Pots"
+        ],
+        "summary": "Deletes the given pot if it does not contain any outstanding expenses and the caller\nis the pot's owner.",
+        "operationId": "delete_pot",
+        "parameters": [
+          {
+            "name": "pot_id",
+            "in": "path",
+            "description": "Pot database id for the pot.  ",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The pot has been deleted."
+          },
+          "403": {
+            "description": "Indicates that the user is not authorized to delete the given pot."
+          },
+          "404": {
+            "description": "Indicates that the desired pot does not exists."
+          },
+          "409": {
+            "description": "Indicates that the desired pot can't be deleted."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/pots/{pot_id}/remove_user": {
+      "put": {
+        "tags": [
+          "Pots"
+        ],
+        "summary": "Removes the given user from the pot, if Bearer is the owner of that pot.",
+        "operationId": "remove_user_from_pot",
+        "parameters": [
+          {
+            "name": "pot_id",
+            "in": "path",
+            "description": "Pot database id for the pot.  ",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveUserFromPotDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The user has successfully been removed from the pot"
+          },
+          "403": {
+            "description": "The user could not be removed due to the caller not being the owner of the given pot."
+          },
+          "404": {
+            "description": "The user is not part of the pot."
+          },
+          "500": {
+            "description": "An internal server error occurred"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Returns a list of a users registered in the system. Needs a bearer token to track\nwho requested it.",
+        "operationId": "get_users",
+        "responses": {
+          "200": {
+            "description": "All users in the database",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AddUserToPotDTO": {
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "CurrencyDTO": {
+        "type": "object",
+        "description": "DTO representing a currency.",
+        "required": [
+          "id",
+          "name",
+          "symbol"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          }
+        }
+      },
+      "ExpenseDTO": {
+        "type": "object",
+        "description": "DTO used when working with existing Expenses.",
+        "required": [
+          "id",
+          "pot_id",
+          "owner_id",
+          "description",
+          "currency",
+          "splits",
+          "sum"
+        ],
+        "properties": {
+          "currency": {
+            "$ref": "#/components/schemas/CurrencyDTO"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pot_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "splits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SplitDTO"
+            }
+          },
+          "sum": {
+            "type": "number",
+            "format": "double",
+            "description": "If negative: you have to pay `owner_id` this amount of money, otherwise\nyou can expect others to pay you the given amount."
+          }
+        }
+      },
+      "NewCurrencyDTO": {
+        "type": "object",
+        "description": "DTO representing a new currency.",
+        "required": [
+          "name",
+          "symbol"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          }
+        }
+      },
+      "NewExpenseDTO": {
+        "type": "object",
+        "description": "DTO used when creating a new expense for the given pot.",
+        "required": [
+          "description",
+          "currency_id",
+          "splits"
+        ],
+        "properties": {
+          "currency_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": {
+            "type": "string"
+          },
+          "splits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SplitDTO"
+            }
+          }
+        }
+      },
+      "NewPotDTO": {
+        "type": "object",
+        "description": "DTO used when creating a new Pot.",
+        "required": [
+          "name",
+          "default_currency_id"
+        ],
+        "properties": {
+          "default_currency_id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "PayExpenseDTO": {
+        "type": "object",
+        "description": "DTO used to update an expense",
+        "required": [
+          "sum_paid"
+        ],
+        "properties": {
+          "sum_paid": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "PotDTO": {
+        "type": "object",
+        "description": "DTO used when working with existing Pots.",
+        "required": [
+          "id",
+          "owner_id",
+          "name",
+          "default_currency",
+          "users"
+        ],
+        "properties": {
+          "default_currency": {
+            "$ref": "#/components/schemas/CurrencyDTO"
+          },
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserDTO"
+            }
+          }
+        }
+      },
+      "RemoveUserFromPotDTO": {
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "SplitDTO": {
+        "type": "object",
+        "description": "DTO used when working with splits.",
+        "required": [
+          "user_id",
+          "amount",
+          "is_paid"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "is_paid": {
+            "type": "boolean",
+            "description": "Is `true` by default, if the Split's `user_id` == the expenses `owner_id`! Otherwise\n`false`. This is because the owner of an expense has already paid their part!"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "UserDTO": {
+        "type": "object",
+        "description": "The DTO representing a user from DB.",
+        "required": [
+          "uuid",
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

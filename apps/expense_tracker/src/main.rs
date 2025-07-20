@@ -11,7 +11,7 @@ use expense_tracker_db::setup::setup_db;
 use jsonwebtoken::jwk::JwkSet;
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use log::{debug, error, info, warn};
-use std::env;
+use std::{env};
 use std::net::SocketAddr;
 use std::sync::LazyLock;
 use tower::ServiceBuilder;
@@ -163,6 +163,10 @@ async fn auth_middleware(request: Request<Body>, next: Next) -> Result<Response,
 
 #[tokio::main]
 async fn main() {
+    // auto generate OAS on build: https://github.com/juhaku/utoipa/issues/214#issuecomment-1179589373
+    // let doc = generate_my_openapi();
+    // fs::write("./openapi.json", doc).unwrap();
+
     // 1. Initialize tracing + log bridging
     tracing_subscriber::fmt()
         // This allows you to use, e.g., `RUST_LOG=info` or `RUST_LOG=debug`

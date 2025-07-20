@@ -16,6 +16,7 @@ pub mod api {
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_services::ExpenseError;
     use utoipa::gen::serde_json::Value;
+    use utoipa::OpenApi;
     use utoipa_axum::router::OpenApiRouter;
     use uuid::Uuid;
 
@@ -83,4 +84,13 @@ pub mod api {
 
         Ok(user_name?.to_string())
     }
+
+    // pub fn generate_my_openapi() -> String {
+    //     #[derive(OpenApi)]
+    //     #[openapi(schemas(components(CurrencyDTO)))]
+    //     struct ApiDoc;
+    //
+    //     ApiDoc::openapi().to_pretty_json().unwrap()
+    // }
+
 }
