@@ -216,7 +216,14 @@
         "operationId": "health_check",
         "responses": {
           "200": {
-            "description": "If this can be reached, the API is available."
+            "description": "If this can be reached, the API is available.",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           }
         }
       }
