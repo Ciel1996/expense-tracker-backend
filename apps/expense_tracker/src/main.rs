@@ -12,8 +12,11 @@ use jsonwebtoken::jwk::JwkSet;
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use log::{debug, error, info, warn};
 use std::{env};
+use std::fs::File;
+use std::io::Write;
 use std::net::SocketAddr;
 use std::sync::LazyLock;
+use clap::Parser;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
@@ -27,6 +30,13 @@ use utoipa_swagger_ui::SwaggerUi;
 const SETTINGS_FILE: &str = "config/settings.toml";
 static APP_SETTINGS: LazyLock<Settings> =
     LazyLock::new(|| Settings::new(SETTINGS_FILE).expect("Settings file must exist"));
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    #[arg(short, long)]
+    export_openapi : bool
+}
 
 #[derive(OpenApi)]
 #[openapi(
@@ -163,9 +173,7 @@ async fn auth_middleware(request: Request<Body>, next: Next) -> Result<Response,
 
 #[tokio::main]
 async fn main() {
-    // auto generate OAS on build: https://github.com/juhaku/utoipa/issues/214#issuecomment-1179589373
-    // let doc = generate_my_openapi();
-    // fs::write("./openapi.json", doc).unwrap();
+    let args = Args::parse();
 
     // 1. Initialize tracing + log bridging
     tracing_subscriber::fmt()
@@ -202,6 +210,13 @@ async fn main() {
             .url("/api-docs/openapi.json", api.clone())
             .oauth(oauth_config),
     );
+
+    if args.export_openapi {
+        let mut file = File::create("./openapi/expense_tracker_openapi.json").expect("Failed to create file");
+        file.write_all(api.to_pretty_json().unwrap().as_bytes()).expect("Failed to write to file");
+        println!("OpenAPI JSON exported successfully.");
+        return;
+    }
 
     let addr = SocketAddr::from(([127, 0, 0, 1], APP_SETTINGS.expense_tracker().port()));
 
