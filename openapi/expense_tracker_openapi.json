@@ -2,9 +2,13 @@
   "openapi": "3.1.0",
   "info": {
     "title": "expense_tracker",
-    "description": "",
+    "description": "A REST Api that offers various endpoints for handling shared expenses.",
+    "contact": {
+      "name": "Ciel1996"
+    },
     "license": {
-      "name": ""
+      "name": "MIT",
+      "identifier": "MIT"
     },
     "version": "0.2.0"
   },

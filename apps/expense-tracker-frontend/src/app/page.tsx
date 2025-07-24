@@ -1,4 +1,4 @@
-import { healthCheck, currentUser } from "../../../../libs/expense-tracker-client/src/expense-tracker-client";
+import { healthCheck, currentUser } from '';
 
 export default async function Index() {
   let healthStatus = '';

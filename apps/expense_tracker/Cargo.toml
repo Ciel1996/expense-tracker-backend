@@ -2,6 +2,9 @@
 name = "expense_tracker"
 version = "0.2.0"
 edition = "2021"
+description = "A REST Api that offers various endpoints for handling shared expenses."
+license = "MIT"
+authors = ["Ciel1996"]
 
 [dependencies]
 expense_tracker_api = { path = "../../libs/expense_tracker_api" }

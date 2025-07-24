@@ -57,6 +57,16 @@
           "release": true
         }
       }
+    },
+    "swagger": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "cargo run -- --export-openapi; nx run expense-tracker-client:orval"
+          }
+        ]
+      }
     }
   },
   "tags": []

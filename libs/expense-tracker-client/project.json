@@ -4,6 +4,7 @@
   "sourceRoot": "libs/expense-tracker-client/src",
   "projectType": "library",
   "tags": [],
+  "implicitDependencies": ["expense_tracker_api"],
   "targets": {
     "build": {
       "executor": "@nx/js:tsc",
@@ -13,6 +14,16 @@
         "main": "libs/expense-tracker-client/src/index.ts",
         "tsConfig": "libs/expense-tracker-client/tsconfig.lib.json",
         "assets": ["libs/expense-tracker-client/*.md"]
+      }
+    },
+    "orval": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          {
+            "command": "orval --config libs/expense-tracker-client/orval.config.js"
+          }
+        ]
       }
     }
   }
