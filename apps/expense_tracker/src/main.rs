@@ -3,7 +3,7 @@ mod settings;
 
 use crate::settings::Settings;
 use axum::body::Body;
-use axum::http::{Request, StatusCode};
+use axum::http::{HeaderValue, Request, StatusCode};
 use axum::middleware::Next;
 use axum::response::Response;
 use expense_tracker_api::api;
@@ -18,6 +18,7 @@ use std::net::SocketAddr;
 use std::sync::LazyLock;
 use clap::Parser;
 use tower::ServiceBuilder;
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 use utoipa::gen::serde_json::Value;
@@ -192,12 +193,27 @@ async fn main() {
 
     // To get a JWT: curl -X POST 'http://localhost:8080/realms/expense-tracker-dev/protocol/openid-connect/token' -H 'Content-Type: application/x-www-form-urlencoded' -d 'client_id=<CLIENT_ID>' -d 'username=<USER>' -d 'password=<PASSWORD>' -d 'grant_type=password' -d 'scope=email profile' -d 'client_secret=<CLIENT_SECRET>'
 
-    let oauth_validator = ServiceBuilder::new().layer(axum::middleware::from_fn(auth_middleware));
+    let origins = [
+        "http://localhost:3000".parse::<HeaderValue>().unwrap(),
+        "http://localhost:3000".parse::<HeaderValue>().unwrap()
+    ];
+
+    let cors_layer = CorsLayer::new()
+        .allow_origin(origins)
+        .allow_methods(Any);
+
+    let cors = ServiceBuilder::new()
+        .layer(cors_layer);
+
+    let oauth_validator = ServiceBuilder::new()
+        .layer(cors.clone())
+        .layer(axum::middleware::from_fn(auth_middleware));
 
     let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
         .nest("/api", api::router(pool).await)
         .layer(oauth_validator)
         .nest("/api", api::add_health_api().await)
+        .layer(cors)
         // 3. Add a TraceLayer to automatically create and enter spans
         .layer(TraceLayer::new_for_http())
         .split_for_parts();

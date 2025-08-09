@@ -1,9 +1,20 @@
 module.exports = {
-  'expense-tracker-client': {
-    input: '../../openapi/expense_tracker_openapi.json',
+  "expense-tracker-client": {
     output: {
-      target: './src/expense-tracker-client.ts',
-      baseUrl: 'http://localhost:3001', // find a way of doing this for all different environments
+      mode: 'tags-split',
+      target: 'src/endpoints/api.ts',
+      schemas: 'src/model',
+      client: 'react-query',
+      prettier: true,
+      override: {
+        mutator: {
+          path: './src/custom-client.ts',
+          name: 'useCustomClient',
+        }
+      }
+    },
+    input: {
+      target: '../../openapi/expense_tracker_openapi.json',
     },
   },
 };

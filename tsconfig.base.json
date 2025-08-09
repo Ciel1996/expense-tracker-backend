@@ -15,8 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@./expense-tracker-client": ["libs/expense-tracker-client/src/index.ts"],
-      "@./mylib": ["libs/mylib/src/index.ts"]
+      "@./expense-tracker-client": ["libs/expense-tracker-client/index.ts"],
     }
   },
   "exclude": ["node_modules", "tmp"]

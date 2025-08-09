@@ -1,47 +1,27 @@
-import { healthCheck, currentUser } from '';
+'use client';
 
-export default async function Index() {
-  let healthStatus = '';
-  let userName = '';
+import {useCurrentUser, useHealthCheck,} from '@./expense-tracker-client';
+import {useEffect} from 'react';
+import {useAuthDispatch} from "../../../../libs/expense-tracker-client/src/auth.context";
 
-  try {
-    const response = await healthCheck();
-    console.log(response.data);
-    healthStatus = response.data;
-  } catch (error) {
-    console.log(error);
-    healthStatus = "Error fetching health status";
-  }
+export default function Index() {
+  const dispatch = useAuthDispatch();
+  const { data: healthStatus, refetch : refetchHealth } = useHealthCheck();
+  const { data: currentUser, refetch: refetchUser } = useCurrentUser();
 
-  try {
-    // TODO: get token an insert it
-    const usernameReponse = await currentUser();
-    console.log(usernameReponse.status);
-    userName = usernameReponse.data.name;
-  } catch (error) {
-    console.log(error);
-    userName = "Anonymous"
-  }
+  useEffect(() => {
+    dispatch('token');
+    setTimeout(() => {
+      refetchHealth();
+      refetchUser();
+    }, 2000);
+  }, [refetchHealth, refetchUser, dispatch]);
 
-  /*
-   * Replace the elements below with your own.
-   *
-   * Note: The corresponding styles are in the ./index.tailwind file.
-   */
-  return (
-    <div>
-      <div className="wrapper">
-        <div className="container">
-          <div id="welcome">
-            <h1>
-              <span> Hello {userName}, </span>
-              Welcome to expense-tracker-frontend 👋
-
-              <span>Message from ExpenseTracker: {healthStatus} </span>
-            </h1>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    return (
+        <h1>
+          Welcome to expense-tracker-frontend 👋  <br/>
+          <span>Hello {currentUser?.name ?? 'Anonymous'}, </span>
+          <span>Message from ExpenseTracker: {healthStatus}</span>
+        </h1>
+    );
 }
