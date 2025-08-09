@@ -16,9 +16,10 @@ use std::fs::File;
 use std::io::Write;
 use std::net::SocketAddr;
 use std::sync::LazyLock;
+use std::time::Duration;
 use clap::Parser;
 use tower::ServiceBuilder;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{Any, CorsLayer, MaxAge};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 use utoipa::gen::serde_json::Value;
@@ -200,7 +201,14 @@ async fn main() {
 
     let cors_layer = CorsLayer::new()
         .allow_origin(origins)
-        .allow_methods(Any);
+        .allow_methods(Any)
+        .allow_headers(vec![
+            http::header::AUTHORIZATION,
+            http::header::ACCEPT,
+            http::header::CONTENT_TYPE,
+        ])
+        .max_age(Duration::from_secs(3600));
+
 
     let cors = ServiceBuilder::new()
         .layer(cors_layer);

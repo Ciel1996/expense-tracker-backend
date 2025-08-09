@@ -24,3 +24,4 @@ tracing-subscriber = { version = "0.3.19", features=["env-filter"] }
 config = { version = "0.15.11", features = ["toml"] }
 serde = { version = "1.0.219", features = ["derive"] }
 clap = { version = "4.5.41", features = [ "derive" ] }
+http = "1.3.1"

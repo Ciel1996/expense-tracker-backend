@@ -604,6 +604,7 @@ dependencies = [
  "config",
  "expense_tracker_api",
  "expense_tracker_db",
+ "http",
  "jsonwebtoken",
  "log",
  "reqwest",

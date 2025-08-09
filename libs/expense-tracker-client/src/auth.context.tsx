@@ -1,36 +1,36 @@
-import React, {ReactNode, useContext, useState} from "react";
+'use client';
 
-type Dispatch = (Auth: string) => void;
+import {createContext, FC, ReactNode, useContext, useEffect, useState} from "react";
+import {useSession} from "next-auth/react";
+import {DefaultSession} from "next-auth";
 
-const AuthContext = React.createContext<string | null>(null);
-const AuthDispatchContext = React.createContext<Dispatch | null>(null);
-
-type AuthProviderProps = {
-  children: ReactNode,
-  initialState?: string | null,
+declare module 'next-auth' {
+  interface Session extends DefaultSession {
+    accessToken?: string;
+  }
 }
 
-export const AuthProvider =
-  ({children, initialState = null}: AuthProviderProps) => {
-  const [token, setToken] = useState(initialState);
+const AuthContext = createContext<string | null>(null);
+export const AuthProvider: FC<{ children: ReactNode }> = ({children}) => {
+  const {data: session, status} = useSession();
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.accessToken) {
+      setToken(session.accessToken);
+    } else {
+      setToken(null);
+    }
+  }, [session, status]);
+
 
   return (
     <AuthContext.Provider value={token}>
-      <AuthDispatchContext.Provider value={setToken}>
-        {children}
-      </AuthDispatchContext.Provider>
+      {children}
     </AuthContext.Provider>
   )
 };
 
 export const useAuth = (): string | null => {
   return useContext<string | null>(AuthContext);
-};
-
-export const useAuthDispatch = (): Dispatch => {
-  const context = useContext<Dispatch | null>(AuthDispatchContext);
-  if (!context) {
-    throw new Error("useAuthDispatch must be used within a AuthProvider");
-  }
-  return context;
 };
