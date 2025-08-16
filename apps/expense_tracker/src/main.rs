@@ -3,7 +3,7 @@ mod settings;
 
 use crate::settings::Settings;
 use axum::body::Body;
-use axum::http::{Request, StatusCode};
+use axum::http::{HeaderValue, Request, StatusCode};
 use axum::middleware::Next;
 use axum::response::Response;
 use expense_tracker_api::api;
@@ -12,9 +12,14 @@ use jsonwebtoken::jwk::JwkSet;
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use log::{debug, error, info, warn};
 use std::env;
+use std::fs::File;
+use std::io::Write;
 use std::net::SocketAddr;
 use std::sync::LazyLock;
+use std::time::Duration;
+use clap::Parser;
 use tower::ServiceBuilder;
+use tower_http::cors::{Any, CorsLayer, MaxAge};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 use utoipa::gen::serde_json::Value;
@@ -27,6 +32,13 @@ use utoipa_swagger_ui::SwaggerUi;
 const SETTINGS_FILE: &str = "config/settings.toml";
 static APP_SETTINGS: LazyLock<Settings> =
     LazyLock::new(|| Settings::new(SETTINGS_FILE).expect("Settings file must exist"));
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    #[arg(short, long)]
+    export_openapi : bool
+}
 
 #[derive(OpenApi)]
 #[openapi(
@@ -163,6 +175,8 @@ async fn auth_middleware(request: Request<Body>, next: Next) -> Result<Response,
 
 #[tokio::main]
 async fn main() {
+    let args = Args::parse();
+
     // 1. Initialize tracing + log bridging
     tracing_subscriber::fmt()
         // This allows you to use, e.g., `RUST_LOG=info` or `RUST_LOG=debug`
@@ -180,12 +194,33 @@ async fn main() {
 
     // To get a JWT: curl -X POST 'http://localhost:8080/realms/expense-tracker-dev/protocol/openid-connect/token' -H 'Content-Type: application/x-www-form-urlencoded' -d 'client_id=<CLIENT_ID>' -d 'username=<USER>' -d 'password=<PASSWORD>' -d 'grant_type=password' -d 'scope=email profile' -d 'client_secret=<CLIENT_SECRET>'
 
-    let oauth_validator = ServiceBuilder::new().layer(axum::middleware::from_fn(auth_middleware));
+    let origins = [
+        "http://localhost:3000".parse::<HeaderValue>().unwrap()
+    ];
+
+    let cors_layer = CorsLayer::new()
+        .allow_origin(origins)
+        .allow_methods(Any)
+        .allow_headers(vec![
+            http::header::AUTHORIZATION,
+            http::header::ACCEPT,
+            http::header::CONTENT_TYPE,
+        ])
+        .max_age(Duration::from_secs(3600));
+
+
+    let cors = ServiceBuilder::new()
+        .layer(cors_layer);
+
+    let oauth_validator = ServiceBuilder::new()
+        .layer(cors.clone())
+        .layer(axum::middleware::from_fn(auth_middleware));
 
     let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
         .nest("/api", api::router(pool).await)
         .layer(oauth_validator)
         .nest("/api", api::add_health_api().await)
+        .layer(cors)
         // 3. Add a TraceLayer to automatically create and enter spans
         .layer(TraceLayer::new_for_http())
         .split_for_parts();
@@ -198,6 +233,13 @@ async fn main() {
             .url("/api-docs/openapi.json", api.clone())
             .oauth(oauth_config),
     );
+
+    if args.export_openapi {
+        let mut file = File::create("./openapi/expense_tracker_openapi.json").expect("Failed to create file");
+        file.write_all(api.to_pretty_json().unwrap().as_bytes()).expect("Failed to write to file");
+        println!("OpenAPI JSON exported successfully.");
+        return;
+    }
 
     let addr = SocketAddr::from(([127, 0, 0, 1], APP_SETTINGS.expense_tracker().port()));
 

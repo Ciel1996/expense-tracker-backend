@@ -3,6 +3,7 @@ mod expense_api;
 mod health_api;
 mod pot_api;
 mod user_api;
+mod generate_openapi;
 
 pub mod api {
     use crate::currency_api::currency_api;
@@ -83,4 +84,13 @@ pub mod api {
 
         Ok(user_name?.to_string())
     }
+
+    // pub fn generate_my_openapi() -> String {
+    //     #[derive(OpenApi)]
+    //     #[openapi(schemas(components(CurrencyDTO)))]
+    //     struct ApiDoc;
+    //
+    //     ApiDoc::openapi().to_pretty_json().unwrap()
+    // }
+
 }

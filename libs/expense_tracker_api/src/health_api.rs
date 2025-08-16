@@ -21,7 +21,11 @@ pub mod health_api {
         path = "/health",
         tag = "Health",
         responses(
-            (status = 200, description = "If this can be reached, the API is available.")
+            (
+                status = 200,
+                description = "If this can be reached, the API is available.",
+                body = String
+            )
         )
     )]
     pub async fn health_check(State(service): State<PingHealthService>) -> impl IntoResponse {
