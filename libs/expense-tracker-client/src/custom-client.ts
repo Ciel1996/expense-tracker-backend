@@ -1,7 +1,9 @@
 import Axios from 'axios';
 import {useAuth} from "./auth.context";
 
-export const AXIOS_INSTANCE = Axios.create({ baseURL: process.env['NEXT_PUBLIC_API_URL'] });
+export const AXIOS_INSTANCE = Axios.create({
+  baseURL: process.env['NEXT_PUBLIC_API_URL'] || 'http://localhost:3000/api'
+});
 
 type CustomClient<T> = (data: {
   url: string;
