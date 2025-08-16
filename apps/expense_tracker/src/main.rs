@@ -198,7 +198,8 @@ async fn main() {
         "http://localhost:3000".parse::<HeaderValue>().unwrap(),
         "http://localhost:3000".parse::<HeaderValue>().unwrap()
     ];
-
+        "http://localhost:3000".parse::<HeaderValue>().unwrap()
+    ];
     let cors_layer = CorsLayer::new()
         .allow_origin(origins)
         .allow_methods(Any)
