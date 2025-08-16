@@ -54,36 +54,6 @@ async function refreshAccessToken(token: JWT) {
   }
 }
 
-export default NextAuth({providers: [
-    KeycloakProvider({
-      clientId: process.env.EXPENSE_TRACKER_CLIENT_ID as string,
-      clientSecret: process.env.EXPENSE_TRACKER_CLIENT_SECRET as string,
-      issuer: process.env.EXPENSE_TRACKER_ISSUER as string
-    })
-  ],
-callbacks: {
-  async jwt({token, account}) {
-    if (account) {
-      token.accessToken = account.access_token as string;
-      token.accessTokenExpires = (account.expires_at as number) * 1000;
-      token.refreshToken = account.refresh_token;
-    }
-
-    // Return previous token if the access token has not expired yet
-    // We check if it's valid with a 1-minute buffer for safety
-    if (Date.now() < (token.accessTokenExpires as number) - 60000) {
-      return token;
-    }
-
-    // Access token has expired, try to update it
-    return refreshAccessToken(token)
-  },
-  async session({session, token}) {
-    if (token.accessToken) {
-      session.accessToken = token.accessToken as string;
-    }
-    return session;
-  }
 export default NextAuth({
   providers: [
     KeycloakProvider({
