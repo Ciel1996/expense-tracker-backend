@@ -14,7 +14,7 @@
     ],
     "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"]
   },
-  "nxCloudId": "687bb11b852b9a43a8bc5f18",
+  "neverConnectToCloud": true,
   "plugins": [
     "@monodon/rust",
     {
