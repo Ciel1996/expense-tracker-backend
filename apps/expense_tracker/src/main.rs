@@ -11,7 +11,7 @@ use expense_tracker_db::setup::setup_db;
 use jsonwebtoken::jwk::JwkSet;
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use log::{debug, error, info, warn};
-use std::{env};
+use std::env;
 use std::fs::File;
 use std::io::Write;
 use std::net::SocketAddr;
