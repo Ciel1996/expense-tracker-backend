@@ -12,7 +12,7 @@ type PotProps = {
 
 export const Pot: FC<PotProps> = ({name, currency, owner, users}) => {
   return (
-    <Card hover={true} padding="md" className="w-64 min-h-[120px]">
+    <Card hover={true} padding="md" className="w-full min-w-[16rem] min-h-[120px]">
       <div className="space-y-3">
         <h2 className="font-bold text-base text-gray-900 dark:text-white truncate">
           {name}

@@ -11,9 +11,9 @@ export function PotsOverview() {
   }
 
   return(
-    <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 2xl:columns-6 gap-3">
+    <div className="columns-1 sm:columns-2 md:columns-[16rem] gap-1">
       {pots.map(e => (
-        <div key={`pot-${e.id}`} className="break-inside-avoid mb-3">
+        <div key={`pot-${e.id}`} className="break-inside-avoid mb-2">
           <Pot
             name={e.name}
             currency={e.default_currency.symbol}

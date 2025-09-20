@@ -35,7 +35,7 @@ export function Card({
     'bg-white dark:bg-gray-800',
     'border border-gray-200 dark:border-gray-700',
     'rounded-lg',
-    'w-fit', // Make card only as wide as its content
+    'w-fit',
     paddingClasses[padding],
     shadowClasses[shadow],
     hover ? 'hover:shadow-lg transition-shadow duration-200' : '',
