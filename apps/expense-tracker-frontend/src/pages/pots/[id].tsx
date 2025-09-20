@@ -1,5 +1,7 @@
 import type { GetServerSideProps, NextPage } from "next";
-import {useGetPotExpenses, useGetUsers} from "@./expense-tracker-client";
+import { useGetPotExpenses, useGetUsers } from "@./expense-tracker-client";
+import React, { useState } from "react";
+import { ExpensesTable } from "../../components/expenses/expenses-table";
 
 type Props = { id: number };
 
@@ -28,38 +30,7 @@ const PotDetails: NextPage<Props> = ({ id }) => {
   return (
     <div className="p-4">
       <h1 className="mb-4 text-xl font-semibold">Pot {id} — Expenses</h1>
-
-      <div className="overflow-x-auto rounded border border-gray-200 dark:border-gray-800">
-        <table className="min-w-full table-auto text-left">
-          <thead className="bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-            <tr>
-              <th className="px-4 py-2">Description</th>
-              <th className="px-4 py-2">Amount</th>
-              <th className="px-4 py-2">Owner</th>
-              <th className="px-4 py-2">Paid</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {expenses.map((e) => {
-              const paid = e.splits?.filter((s) => s.is_paid).length ?? 0;
-              const total = e.splits?.length ?? 0;
-              const currencySymbol = e.currency?.symbol ?? "";
-              const amount = `${currencySymbol}${e.sum?.toFixed?.(2) ?? e.sum}`;
-
-              return (
-                <tr key={e.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <td className="px-4 py-2">{e.description}</td>
-                  <td className="px-4 py-2 whitespace-nowrap">{amount}</td>
-                  <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300">
-                    {users.find(u => u.uuid == e.owner_id)?.name}
-                  </td>
-                  <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300">{paid}/{total}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <ExpensesTable expenses={expenses} users={users}/>
     </div>
   );
 };
