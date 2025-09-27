@@ -173,17 +173,14 @@ pub mod expense_service {
                 .await
                 .map_err(check_error)?;
 
-            let requester_splits = expense
+            let splits = expense
                 .1
                 .iter()
-                .filter(|s| s.user_id() == requester_id)
                 .collect::<Vec<_>>();
 
-            if requester_splits.is_empty() {
-                return Err(Forbidden("You have no split in this expense!".to_string()));
-            }
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
-            for split in requester_splits {
+            for split in splits {
                 if !split.is_paid() {
                     if split.amount() > payment_amount {
                         return Err(Conflict("Can't overpay!".to_string()));
@@ -191,7 +188,13 @@ pub mod expense_service {
                         return Err(Conflict("Can't underpay!".to_string()));
                     }
 
-                    // update is_paid to true
+                    diesel::update(expense_splits)
+                        .filter(split_expense_id.eq(target_id))
+                        .set(expense_tracker_db::schema::expense_splits::is_paid.eq(true))
+                        .execute(&mut conn)
+                        .await
+                        .map_err(internal_error)?;
+
                     return Ok(true);
                 }
             }

@@ -1,17 +1,19 @@
 "use client";
 
 import React, {useState} from "react";
-import { ExpenseDTO, SplitDTO } from "@./expense-tracker-client";
+import { ExpenseDTO, SplitDTO, usePayExpense, getGetPotExpensesQueryKey, useCurrentUser } from "@./expense-tracker-client";
 import { Collapse } from "../collapse";
+import { useQueryClient } from "@tanstack/react-query";
 
 export interface UserLite { uuid: string; name: string }
 
 interface ExpensesTableProps {
   expenses: ExpenseDTO[];
   users: UserLite[];
+  potId: number;
 }
 
-export function ExpensesTable({ expenses, users }: ExpensesTableProps) {
+export function ExpensesTable({ expenses, users, potId }: ExpensesTableProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const toggle = (id: number) => {
@@ -56,7 +58,14 @@ export function ExpensesTable({ expenses, users }: ExpensesTableProps) {
                 <tr className="bg-white dark:bg-gray-900">
                   <td colSpan={4} className="p-0">
                     <Collapse isOpen={isOpen} className="border-t border-gray-100 dark:border-gray-800">
-                      <ExpenseSplitDetails splits={e.splits ?? []} users={users} currencySymbol={currencySymbol} />
+                      <ExpenseSplitDetails
+                        splits={e.splits ?? []}
+                        users={users}
+                        currencySymbol={currencySymbol}
+                        expenseId={e.id}
+                        expenseOwnerId={e.owner_id}
+                        potId={potId}
+                      />
                     </Collapse>
                   </td>
                 </tr>
@@ -69,7 +78,27 @@ export function ExpensesTable({ expenses, users }: ExpensesTableProps) {
   );
 }
 
-function ExpenseSplitDetails({ splits, users, currencySymbol }: { splits: SplitDTO[]; users: UserLite[]; currencySymbol: string }) {
+function ExpenseSplitDetails({ splits, users, currencySymbol, expenseId, expenseOwnerId, potId }: { splits: SplitDTO[]; users: UserLite[]; currencySymbol: string; expenseId: number; expenseOwnerId: string; potId: number }) {
+  const { data: currentUser } = useCurrentUser();
+  const payExpense = usePayExpense();
+  const queryClient = useQueryClient();
+
+  const canMark = (splitUserId: string) => {
+    if (!currentUser) return false;
+    return currentUser.uuid === splitUserId || currentUser.uuid === expenseOwnerId;
+  };
+
+  const onMarkPaid = async (e: React.MouseEvent, amount: number) => {
+    e.stopPropagation();
+    try {
+      await payExpense.mutateAsync({ expenseId, data: { sum_paid: amount } });
+      await queryClient.invalidateQueries({ queryKey: getGetPotExpensesQueryKey(potId) });
+    } catch (err) {
+      console.error('Failed to mark split as paid', err);
+      // Non-intrusive: can add toast later
+    }
+  };
+
   if (!splits || splits.length === 0) {
     return (
       <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">No splits available for this expense.</div>
@@ -90,7 +119,8 @@ function ExpenseSplitDetails({ splits, users, currencySymbol }: { splits: SplitD
           <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
             {splits.map((s, idx) => {
               const userName = users.find(u => u.uuid == s.user_id)?.name ?? s.user_id;
-              const splitAmount = `${currencySymbol}${(typeof s.amount === 'number' ? s.amount.toFixed(2) : s.amount) ?? s.amount}`;
+              const splitAmount = `${currencySymbol}${s.amount.toFixed(2)}`;
+              const allowed = !s.is_paid && canMark(s.user_id);
               return (
                 <tr key={`split-${idx}`} className="bg-white dark:bg-gray-900">
                   <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-200">{userName}</td>
@@ -98,6 +128,15 @@ function ExpenseSplitDetails({ splits, users, currencySymbol }: { splits: SplitD
                   <td className="px-3 py-2">
                     {s.is_paid ? (
                       <span className="inline-flex items-center rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 px-2 py-0.5 text-xs font-medium">Paid</span>
+                    ) : allowed ? (
+                      <button
+                        onClick={(evt) => onMarkPaid(evt, s.amount)}
+                        disabled={payExpense.isPending}
+                        className="inline-flex items-center rounded-md bg-blue-600 text-white px-2 py-1 text-xs hover:bg-blue-700 disabled:opacity-50"
+                        title="Mark this split as paid"
+                      >
+                        {payExpense.isPending ? 'Marking…' : 'Mark paid'}
+                      </button>
                     ) : (
                       <span className="inline-flex items-center rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 px-2 py-0.5 text-xs font-medium">Open</span>
                     )}

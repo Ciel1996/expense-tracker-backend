@@ -19,7 +19,7 @@ use std::sync::LazyLock;
 use std::time::Duration;
 use clap::Parser;
 use tower::ServiceBuilder;
-use tower_http::cors::{Any, CorsLayer, MaxAge};
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 use utoipa::gen::serde_json::Value;

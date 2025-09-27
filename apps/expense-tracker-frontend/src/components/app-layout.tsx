@@ -4,6 +4,7 @@ import '../app/global.css';
 import { PropsWithChildren, useEffect } from 'react';
 import { useAuth } from '@./expense-tracker-client';
 import { UserDisplay } from './user-display';
+import Link from "next/link";
 
 /**
  * Centralized application layout used by both App Router and Pages Router.
@@ -31,7 +32,9 @@ export function AppLayout({ children }: PropsWithChildren) {
       {token && (
         <div className="w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-2">
           <div className="flex justify-between items-center">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Expense Tracker</h1>
+            <Link href="/">
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Expense Tracker</h1>
+            </Link>
             <UserDisplay />
           </div>
         </div>
