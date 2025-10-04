@@ -32,6 +32,7 @@ export function PotsOverview() {
               currency={e.default_currency.symbol}
               owner={e.users.find(u => u.uuid == e.owner_id)?.name ?? 'Unknown'}
               users={e.users.map(u => u.name)}
+              balance={e.net_balance}
               href={`/pots/${e.id}`}
             />
           </div>

@@ -36,7 +36,7 @@ export function ExpensesTable({ expenses, users, potId }: ExpensesTableProps) {
             const paid = e.splits?.filter((s) => s.is_paid).length ?? 0;
             const total = e.splits?.length ?? 0;
             const currencySymbol = e.currency?.symbol ?? "";
-            const amount = `${currencySymbol}${(typeof e.sum === 'number' ? e.sum.toFixed(2) : e.sum) ?? e.sum}`;
+            const amount = `${currencySymbol}${e.sum.toFixed(2)}`;
             const ownerName = users.find(u => u.uuid == e.owner_id)?.name ?? e.owner_id;
 
             const isOpen = expandedId === e.id;
@@ -49,7 +49,13 @@ export function ExpensesTable({ expenses, users, potId }: ExpensesTableProps) {
                   className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
                   <td className="px-4 py-2">{e.description}</td>
-                  <td className="px-4 py-2 whitespace-nowrap">{amount}</td>
+
+                  {e.sum >= 0 ? (
+                    <td className="px-4 py-2 whitespace-nowrap">{amount}</td>
+                    ) : (
+                      <td className="px-4 py-2 whitespace-nowrap text-red-600">{amount}</td>
+                    )
+                  }
                   <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300">{ownerName}</td>
                   <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300">{paid}/{total}</td>
                 </tr>

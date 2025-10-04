@@ -18,7 +18,6 @@ interface NewExpenseModalProps {
 export const NewExpenseModal: FC<NewExpenseModalProps> = ({ open, onClose, pot, potId }) => {
   const [description, setDescription] = useState("");
   const [amountInput, setAmountInput] = useState("");
-  const [payerId, setPayerId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
   const addExpense = useAddExpense();
@@ -30,14 +29,13 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({ open, onClose, pot, 
   const canSubmit = useMemo(() => {
     const amount = Number(amountInput);
     return (
-      !!pot && description.trim().length > 0 && !Number.isNaN(amount) && amount > 0 && payerId.length > 0
+      !!pot && description.trim().length > 0 && !Number.isNaN(amount) && amount > 0
     );
-  }, [pot, description, amountInput, payerId]);
+  }, [pot, description, amountInput]);
 
   const resetForm = () => {
     setDescription("");
     setAmountInput("");
-    setPayerId("");
     setError(null);
   };
 
@@ -65,8 +63,7 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({ open, onClose, pot, 
         const cents = baseShare + extra;
         return {
           user_id: u.uuid,
-          amount: cents / 100,
-          is_paid: u.uuid === payerId,
+          amount: cents / 100
         };
       });
 
@@ -124,26 +121,6 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({ open, onClose, pot, 
                   placeholder="0.00"
                   required
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Payer</label>
-                <select
-                  value={payerId}
-                  onChange={(e) => setPayerId(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="" disabled>
-                    Select the payer
-                  </option>
-                  {participants.map((u) => (
-                    <option key={u.uuid} value={u.uuid}>
-                      {u.name}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-gray-500">The payer's share will be marked as already paid.</p>
               </div>
 
               {error && (

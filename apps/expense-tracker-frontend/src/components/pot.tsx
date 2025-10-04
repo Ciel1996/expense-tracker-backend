@@ -9,10 +9,11 @@ type PotProps = {
   currency: string;
   owner: string;
   users: string[];
+  balance: number;
   href: string;
 };
 
-export const Pot: FC<PotProps> = ({name, currency, owner, users, href}) => {
+export const Pot: FC<PotProps> = ({name, currency, owner, users, balance, href}) => {
   return (
     <Link href={href} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg">
       <Card hover={true} padding="md" className="w-full min-w-[16rem] min-h-[120px] cursor-pointer">
@@ -30,6 +31,15 @@ export const Pot: FC<PotProps> = ({name, currency, owner, users, href}) => {
             <div className="flex justify-between items-center">
               <span className="font-medium text-gray-700 dark:text-gray-200">Currency:</span>
               <span className="font-mono text-green-600 dark:text-green-400">{currency}</span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className="font-medium text-gray-700 dark:text-gray-200">Balance:</span>
+              {balance >= 0 ? (
+                <span className="font-mono text-gray-700 dark:text-gray-200">{balance.toFixed(2)}</span>
+              ) : (
+                <span className="font-mono text-red-600 dark:text-red-400">{balance.toFixed(2)}</span>
+              )}
             </div>
 
             <div className="space-y-1">

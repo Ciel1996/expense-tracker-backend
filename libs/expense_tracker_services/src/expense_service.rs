@@ -1,7 +1,7 @@
 pub mod expense_service {
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
-    use crate::ExpenseError::{Conflict, Forbidden};
+    use crate::ExpenseError::Conflict;
     use crate::{check_error, internal_error, not_found_error, ExpenseError};
     use diesel::result::Error;
     use diesel::{BoolExpressionMethods, ExpressionMethods, JoinOnDsl, QueryDsl, SelectableHelper};
@@ -56,7 +56,7 @@ pub mod expense_service {
                             .await?;
 
                         let splits =
-                            NewExpenseSplit::splits_from_vector_with_id(splits, expense.id());
+                            NewExpenseSplit::splits_from_vector_with_id(splits, &expense);
 
                         let splits = diesel::insert_into(expense_splits)
                             .values(&splits)
@@ -158,6 +158,38 @@ pub mod expense_service {
             }
 
             Ok(result)
+        }
+
+        /// Gets the net_balance of the givne target_pot for the given requester_id.
+        /// If the balance returned is positive, the requester is owed money. If negative
+        /// they owe others money.
+        pub async fn get_pot_net_balance(&self, target_pot_id: i32, requester_id: Uuid)
+            -> Result<f64, ExpenseError> {
+            let joined_expenses = self
+                .get_expenses_by_pot_id(target_pot_id, requester_id)
+                .await
+                .map_err(check_error)?;
+
+            let mut net_balance = 0.0;
+
+            for joined_expense in joined_expenses {
+                let expense = joined_expense.0;
+                let splits = joined_expense.1;
+
+                splits.iter().for_each(|split| {
+                    if !split.is_paid() {
+                        if expense.owner_id() == requester_id
+                            && split.user_id() != expense.owner_id() {
+                            net_balance += split.amount();
+                        } else if expense.owner_id() != requester_id
+                            && split.user_id() == requester_id {
+                            net_balance -= split.amount();
+                        }
+                    }
+                })
+            }
+
+            Ok(net_balance)
         }
 
         /// The user with the given `requester_id` tries to pay the given `payment_amount` for the

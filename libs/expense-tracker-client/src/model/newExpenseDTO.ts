@@ -5,7 +5,7 @@
  * A REST Api that offers various endpoints for handling shared expenses.
  * OpenAPI spec version: 0.2.0
  */
-import type { SplitDTO } from './splitDTO';
+import type { NewSplitDTO } from './newSplitDTO';
 
 /**
  * DTO used when creating a new expense for the given pot.
@@ -13,5 +13,5 @@ import type { SplitDTO } from './splitDTO';
 export interface NewExpenseDTO {
   currency_id: number;
   description: string;
-  splits: SplitDTO[];
+  splits: NewSplitDTO[];
 }
