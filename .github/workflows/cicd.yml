@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   main:
-    runs-on: ubuntu-latest # TODO: change to macMini M4
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
         with:
