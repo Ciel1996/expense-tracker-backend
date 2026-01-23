@@ -34,7 +34,7 @@ jobs:
           docker push ghcr.io/ciel1996/expense-tracker/api:latest
           docker push ghcr.io/ciel1996/expense-tracker/api:$SOFTWARE_VERSION
         env:
-          TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          TOKEN: "${{ secrets.DOCKER_REGISTRY_TOKEN }}"
           SOFTWARE_VERSION: "${{ steps.get_version.outputs.app_version }}"
 
       - name: Build frontend image
@@ -46,5 +46,5 @@ jobs:
           docker push ghcr.io/ciel1996/expense-tracker/web:latest
           docker push ghcr.io/ciel1996/expense-tracker/web:$SOFTWARE_VERSION
         env:
-          TOKEN: "${{ secrets.DOCKER_REGISTRY_TOKEN}}"
+          TOKEN: "${{ secrets.DOCKER_REGISTRY_TOKEN }}"
           SOFTWARE_VERSION: "${{ steps.get_version.outputs.app_version }}"
