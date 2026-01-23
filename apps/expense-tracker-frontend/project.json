@@ -11,7 +11,8 @@
         "{workspaceRoot}/dist/apps/expense-tracker-frontend"
       ],
       "options": {
-        "root": "apps/expense-tracker-frontend"
+        "root": "apps/expense-tracker-frontend",
+        "outputPath": "dist/apps/expense-tracker-frontend"
       },
       "configurations": {
         "development": {},

@@ -2,7 +2,7 @@
 # Build stage
 FROM node:20-bookworm-slim AS builder
 
-ENV NODE_ENV=production
+# Do not set NODE_ENV in the builder stage so devDependencies (Nx and plugins) are installed
 WORKDIR /workspace
 
 # Optional build-time public env vars (e.g., API URL) used by Next.js on the client
@@ -20,6 +20,8 @@ COPY libs ./libs
 RUN npm ci --legacy-peer-deps
 
 # Build the Next.js app using Nx in production mode
+# Use default Nx output path: dist/apps/expense-tracker-frontend
+# Avoid custom --outputPath to keep copy paths stable in runtime stage
 RUN npx nx build expense-tracker-frontend --configuration=production
 
 # Runtime stage
@@ -32,13 +34,15 @@ ENV NEXT_PUBLIC_API_URL="http://localhost:3001"
 
 # Copy the standalone output produced by Next.js build
 # Nx outputs to dist/apps/<app-name>
+# Note: We intentionally rely on the default Nx output path (dist/...) to avoid mismatches.
 COPY --from=builder /workspace/dist/apps/expense-tracker-frontend/.next/standalone ./
-COPY --from=builder /workspace/dist/apps/expense-tracker-frontend/.next/static ./.next/static
-COPY --from=builder /workspace/apps/expense-tracker-frontend/public ./public
+# In Nx monorepos, server.js lives under apps/<app>/; static and public must be placed under the same nested path
+COPY --from=builder /workspace/dist/apps/expense-tracker-frontend/.next/static ./apps/expense-tracker-frontend/.next/static
+COPY --from=builder /workspace/apps/expense-tracker-frontend/public ./apps/expense-tracker-frontend/public
 
 # Next.js reads PORT env; default 3000
 ENV PORT=3000
 EXPOSE 3000
 
-# Start the server
-CMD ["node", "server.js"]
+# Start the server (nested path inside the standalone output)
+CMD ["node", "apps/expense-tracker-frontend/server.js"]
