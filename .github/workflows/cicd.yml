@@ -24,14 +24,6 @@ jobs:
         with:
           cargo_toml_folder: apps/expense_tracker/
 
-      # Cache node_modules
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - run: npm ci --legacy-peer-deps
-
       # Example: Build Docker images (self-hosted runner must have Docker)
       - name: Build and upload backend image
         run: | 
@@ -42,7 +34,7 @@ jobs:
           docker push ghcr.io/ciel1996/expense-tracker/api:latest
           docker push ghcr.io/ciel1996/expense-tracker/api:$SOFTWARE_VERSION
         env:
-          TOKEN: "${{ secrets.DOCKER_REGISTRY_TOKEN}}"
+          TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           SOFTWARE_VERSION: "${{ steps.get_version.outputs.app_version }}"
 
       - name: Build frontend image
