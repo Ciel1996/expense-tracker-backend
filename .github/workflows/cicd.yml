@@ -28,6 +28,17 @@ jobs:
 
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
       # - run: npx nx-cloud record -- echo Hello World
-      - run: npx nx run-many -t build # TODO: ensure optimized build
+      - run: npx nx run-many -t build --configuration=production --parallel
 
-      # TODO: docker the applications, create settings.toml and .env.local files and deploy to macMini M4
+      # Example: Build Docker images (self-hosted runner must have Docker)
+      - name: Build backend image
+        run: docker build -f apps/expense_tracker/Dockerfile -t expense-tracker/api:latest .
+
+      - name: Build frontend image
+        run: docker build -f apps/expense-tracker-frontend/Dockerfile -t expense-tracker/web:latest .
+
+      # Example: Deploy via docker compose on the self-hosted runner (adjust to your infra)
+      # - name: Deploy stack
+      #   run: |
+      #     cp -n config/settings.toml.example config/settings.toml || true
+      #     docker compose up -d --build

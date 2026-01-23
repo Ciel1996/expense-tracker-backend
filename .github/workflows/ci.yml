@@ -33,5 +33,5 @@ jobs:
 
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
       # - run: npx nx-cloud record -- echo Hello World
-      - run: npx nx run-many -t build
+      - run: npx nx run-many -t build --configuration=production --parallel
 

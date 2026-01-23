@@ -1,0 +1,18 @@
+# Example configuration for the Rust backend (apps/expense_tracker)
+# Copy this file to config/settings.toml and adjust values for your environment.
+
+[oidc]
+# URL of your Keycloak realm (or any OIDC provider)
+issuer_url = "http://localhost:8080/realms/master"
+# Expected audience for your API
+audience = "expense-tracker-api"
+
+[expense_tracker]
+# Port the API will bind to inside the container (and host mapping in docker-compose)
+port = 3001
+# PostgreSQL connection string (compose service name: db)
+# Format examples:
+#   Postgres without db selection: "postgres://admin:localpassword@db:5432"
+#   With database name:           "postgres://admin:localpassword@db:5432/expenses"
+# For local dev with compose we often create the DB in an init script; adjust as needed.
+db_connection_string = "postgres://admin:localpassword@db:5432/postgres"
