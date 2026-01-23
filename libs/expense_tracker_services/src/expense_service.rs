@@ -1,7 +1,7 @@
 pub mod expense_service {
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
-    use crate::ExpenseError::{Conflict, Forbidden};
+    use crate::ExpenseError::Conflict;
     use crate::{check_error, internal_error, not_found_error, ExpenseError};
     use diesel::result::Error;
     use diesel::{BoolExpressionMethods, ExpressionMethods, JoinOnDsl, QueryDsl, SelectableHelper};
@@ -56,7 +56,7 @@ pub mod expense_service {
                             .await?;
 
                         let splits =
-                            NewExpenseSplit::splits_from_vector_with_id(splits, expense.id());
+                            NewExpenseSplit::splits_from_vector_with_id(splits, &expense);
 
                         let splits = diesel::insert_into(expense_splits)
                             .values(&splits)
@@ -160,6 +160,38 @@ pub mod expense_service {
             Ok(result)
         }
 
+        /// Gets the net_balance of the givne target_pot for the given requester_id.
+        /// If the balance returned is positive, the requester is owed money. If negative
+        /// they owe others money.
+        pub async fn get_pot_net_balance(&self, target_pot_id: i32, requester_id: Uuid)
+            -> Result<f64, ExpenseError> {
+            let joined_expenses = self
+                .get_expenses_by_pot_id(target_pot_id, requester_id)
+                .await
+                .map_err(check_error)?;
+
+            let mut net_balance = 0.0;
+
+            for joined_expense in joined_expenses {
+                let expense = joined_expense.0;
+                let splits = joined_expense.1;
+
+                splits.iter().for_each(|split| {
+                    if !split.is_paid() {
+                        if expense.owner_id() == requester_id
+                            && split.user_id() != expense.owner_id() {
+                            net_balance += split.amount();
+                        } else if expense.owner_id() != requester_id
+                            && split.user_id() == requester_id {
+                            net_balance -= split.amount();
+                        }
+                    }
+                })
+            }
+
+            Ok(net_balance)
+        }
+
         /// The user with the given `requester_id` tries to pay the given `payment_amount` for the
         /// expense with the given `target_id`.
         pub async fn pay_expense(
@@ -173,17 +205,14 @@ pub mod expense_service {
                 .await
                 .map_err(check_error)?;
 
-            let requester_splits = expense
+            let splits = expense
                 .1
                 .iter()
-                .filter(|s| s.user_id() == requester_id)
                 .collect::<Vec<_>>();
 
-            if requester_splits.is_empty() {
-                return Err(Forbidden("You have no split in this expense!".to_string()));
-            }
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
-            for split in requester_splits {
+            for split in splits {
                 if !split.is_paid() {
                     if split.amount() > payment_amount {
                         return Err(Conflict("Can't overpay!".to_string()));
@@ -191,7 +220,13 @@ pub mod expense_service {
                         return Err(Conflict("Can't underpay!".to_string()));
                     }
 
-                    // update is_paid to true
+                    diesel::update(expense_splits)
+                        .filter(split_expense_id.eq(target_id))
+                        .set(expense_tracker_db::schema::expense_splits::is_paid.eq(true))
+                        .execute(&mut conn)
+                        .await
+                        .map_err(internal_error)?;
+
                     return Ok(true);
                 }
             }

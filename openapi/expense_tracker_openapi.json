@@ -668,7 +668,7 @@
           "splits": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SplitDTO"
+              "$ref": "#/components/schemas/NewSplitDTO"
             }
           }
         }
@@ -687,6 +687,24 @@
           },
           "name": {
             "type": "string"
+          }
+        }
+      },
+      "NewSplitDTO": {
+        "type": "object",
+        "description": "DTO used when creating new Splits for expenses.",
+        "required": [
+          "user_id",
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
@@ -711,7 +729,8 @@
           "owner_id",
           "name",
           "default_currency",
-          "users"
+          "users",
+          "net_balance"
         ],
         "properties": {
           "default_currency": {
@@ -723,6 +742,11 @@
           },
           "name": {
             "type": "string"
+          },
+          "net_balance": {
+            "type": "number",
+            "format": "double",
+            "description": "Indicates the amount of money, the user is owed or owes others. If positive, other users\nneed to pay that amount to the user. If negative, the user has to pay the given amount."
           },
           "owner_id": {
             "type": "string",

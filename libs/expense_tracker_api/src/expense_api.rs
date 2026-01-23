@@ -108,11 +108,6 @@ pub mod expense_api {
     }
 
     impl SplitDTO {
-        /// Turns this SplitDTO into a db NewExpenseSplit.
-        fn to_new_db(&self) -> NewExpenseSplit {
-            NewExpenseSplit::new(self.user_id, self.amount, self.is_paid)
-        }
-
         fn from(split: Split) -> Self {
             Self {
                 user_id: split.user_id(),
@@ -132,12 +127,26 @@ pub mod expense_api {
         }
     }
 
+    /// DTO used when creating new Splits for expenses.
+    #[derive(Clone, ToSchema, Serialize, Deserialize)]
+    pub struct NewSplitDTO {
+        user_id: Uuid,
+        amount: f64
+    }
+
+    impl NewSplitDTO {
+        /// Turns this SplitDTO into a db NewExpenseSplit.
+        fn to_new_db(&self) -> NewExpenseSplit {
+            NewExpenseSplit::new(self.user_id, self.amount)
+        }
+    }
+
     /// DTO used when creating a new expense for the given pot.
     #[derive(ToSchema, Serialize, Deserialize)]
     pub struct NewExpenseDTO {
         description: String,
         currency_id: i32,
-        splits: Vec<SplitDTO>,
+        splits: Vec<NewSplitDTO>,
     }
 
     impl NewExpenseDTO {

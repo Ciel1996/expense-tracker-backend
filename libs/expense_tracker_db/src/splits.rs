@@ -79,12 +79,16 @@ pub mod splits {
     }
 
     impl NewExpenseSplit {
-        pub fn new(user_id: Uuid, amount: f64, is_paid: bool) -> Self {
+        pub fn new(user_id: Uuid, amount: f64) -> Self {
             Self {
                 user_id,
                 amount,
-                is_paid,
+                is_paid: false
             }
+        }
+
+        pub fn set_payment_status(&mut self, is_paid : bool) {
+            self.is_paid = is_paid
         }
 
         /// Turns this NewExpenseSplit into a NewSplit with the given expense_id.
@@ -93,12 +97,15 @@ pub mod splits {
             NewSplit::new(expense_id, self.user_id, self.amount, self.is_paid)
         }
 
-        /// Takes in the given `Vec<NewExpenseSplit>` and adds the given expense_id to each
+        /// Takes in the given `Vec<NewExpenseSplit>` and adds the given expense's id to each
         /// element.
-        pub fn splits_from_vector_with_id(from: Vec<Self>, expense_id: i32) -> Vec<NewSplit> {
+        pub fn splits_from_vector_with_id(from: Vec<Self>, expense: &Expense) -> Vec<NewSplit> {
             let mut destination = vec![];
 
-            for without in from {
+            let expense_id = expense.id();
+
+            for mut without in from {
+                without.set_payment_status(expense.owner_id() == without.user_id);
                 destination.push(without.with_id(expense_id));
             }
 

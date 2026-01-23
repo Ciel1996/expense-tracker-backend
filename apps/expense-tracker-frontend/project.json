@@ -4,6 +4,53 @@
   "sourceRoot": "apps/expense-tracker-frontend",
   "projectType": "application",
   "tags": [],
-  "// targets": "to see all targets run: nx show project expense-tracker-frontend --web",
-  "targets": {}
+  "targets": {
+    "build": {
+      "executor": "@nx/next:build",
+      "outputs": [
+        "{workspaceRoot}/dist/apps/expense-tracker-frontend"
+      ],
+      "options": {
+        "root": "apps/expense-tracker-frontend",
+        "outputPath": "dist/apps/expense-tracker-frontend"
+      },
+      "configurations": {
+        "development": {},
+        "production": {
+          "optimization": true,
+          "generatePackageJson": true
+        }
+      }
+    },
+    "dev": {
+      "executor": "@nx/next:dev-server",
+      "options": {
+        "root": "apps/expense-tracker-frontend",
+        "port": 3000
+      }
+    },
+    "start": {
+      "executor": "@nx/next:start-server",
+      "defaultConfiguration": "production",
+      "options": {
+        "root": "apps/expense-tracker-frontend",
+        "port": 3000
+      },
+      "configurations": {
+        "production": {}
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:linter",
+      "outputs": ["{options.outputFile}"]
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/apps/expense-tracker-frontend"],
+      "options": {
+        "jestConfig": "apps/expense-tracker-frontend/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  }
 }

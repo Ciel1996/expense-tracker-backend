@@ -1,29 +1,24 @@
 'use client';
 
-import {useAuth, useCurrentUser, useHealthCheck,} from '@./expense-tracker-client';
+import {useAuth} from '@./expense-tracker-client';
+import {PotsOverview} from "../components/pots-overview";
 
 export default function Index() {
   const token = useAuth();
-  const { data: healthStatus} = useHealthCheck();
-  // The `useCurrentUser` query will only run when `token` is not null.
-  const { data: currentUser } = useCurrentUser({
-    query: {
-      enabled: !!token,
-    },
-  });
-
 
   if (token) {
-    return (
-      <h1>
-        Welcome to expense-tracker-frontend 👋 <br/>
-        <span>Hello {currentUser?.name ?? 'Anonymous'}, </span>
-        <span>Message from ExpenseTracker: {healthStatus}</span>
-        <br/>
-        <button onClick={() => window.location.href = '/api/auth/signout'}>Sign out</button>
-      </h1>
-    );
+    // AppLayout handles the header and padding; just render the main content.
+    return <PotsOverview/>;
   }
 
-  return <button onClick={() => window.location.href = '/api/auth/signin'}>Sign in</button>;
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <button
+        onClick={() => window.location.href = '/api/auth/signin'}
+        className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+      >
+        Sign in
+      </button>
+    </div>
+  );
 }

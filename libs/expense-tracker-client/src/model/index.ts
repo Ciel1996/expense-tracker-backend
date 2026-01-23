@@ -12,6 +12,7 @@ export * from './expenseDTO';
 export * from './newCurrencyDTO';
 export * from './newExpenseDTO';
 export * from './newPotDTO';
+export * from './newSplitDTO';
 export * from './payExpenseDTO';
 export * from './potDTO';
 export * from './removeUserFromPotDTO';

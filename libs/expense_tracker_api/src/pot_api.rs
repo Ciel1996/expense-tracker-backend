@@ -58,23 +58,31 @@ pub mod pot_api {
         name: String,
         default_currency: CurrencyDTO,
         users: Vec<UserDTO>,
+        /// Indicates the amount of money, the user is owed or owes others. If positive, other users
+        /// need to pay that amount to the user. If negative, the user has to pay the given amount.
+        net_balance: f64
     }
 
     impl PotDTO {
         /// Creates a new PotDTO from a db Pot.
-        pub fn from(pot: Pot, default_currency: CurrencyDTO, users: Vec<UserDTO>) -> Self {
+        pub fn from(
+            pot: Pot,
+            default_currency: CurrencyDTO,
+            users: Vec<UserDTO>,
+            net_balance: f64) -> Self {
             PotDTO {
                 id: pot.id(),
                 owner_id: pot.owner_id(),
                 name: pot.name().to_string(),
                 default_currency,
                 users,
+                net_balance
             }
         }
 
         /// Create a vec<PotDTO> from a vec<Pot>.
         pub fn from_vec(
-            pot_vec: Vec<(Pot, Vec<User>)>,
+            pot_vec: Vec<(Pot, Vec<User>, f64)>,
             currency_vec: Vec<CurrencyDTO>,
         ) -> Vec<Self> {
             let mut dtos: Vec<PotDTO> = vec![];
@@ -89,6 +97,7 @@ pub mod pot_api {
                         pot.0,
                         (*pot_currency).clone(),
                         UserDTO::from_vec(pot.1),
+                        pot.2
                     ))
                 }
             }
@@ -165,6 +174,7 @@ pub mod pot_api {
                 result.0,
                 CurrencyDTO::from(result.1),
                 UserDTO::from_vec(result.2),
+                0.0
             )),
         ))
     }
@@ -201,9 +211,21 @@ pub mod pot_api {
 
         let all_currencies = CurrencyDTO::from_vec(all_currencies);
 
+        let mut loaded_pots_with_balance = vec![];
+
+        for (pot, users) in loaded_pots {
+            let balance = pot_api_state
+                .expense_service
+                .get_pot_net_balance(pot.id(), subject_id)
+                .await
+                .map_err(check_error)?;
+
+            loaded_pots_with_balance.push((pot, users, balance))
+        }
+
         Ok((
             StatusCode::OK,
-            Json(PotDTO::from_vec(loaded_pots, all_currencies)),
+            Json(PotDTO::from_vec(loaded_pots_with_balance, all_currencies)),
         ))
     }
 

@@ -1,0 +1,62 @@
+name: CI/CD to macMini M4
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  main:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      - name: Get Rust App Version
+        id: get_version
+        uses: dante-signal31/rust-app-version@v1.2.0
+        with:
+          cargo_toml_folder: .
+
+      # Cache node_modules
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - run: npm ci --legacy-peer-deps
+
+      # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
+      # - run: npx nx-cloud record -- echo Hello World
+      - run: npx nx run-many -t build --configuration=production --parallel
+
+      # Example: Build Docker images (self-hosted runner must have Docker)
+      - name: Build and upload backend image
+        run: | 
+          echo $TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+          docker build -f apps/expense_tracker/Dockerfile -t ghcr.io/ciel1996/expense-tracker/api:latest .          
+          docker tag ghcr.io/ciel1996/expense-tracker/api:latest ghcr.io/ciel1996/expense-tracker/api:$SOFTWARE_VERSION
+          
+          docker push ghcr.io/ciel1996/expense-tracker/api:latest
+          docker push ghcr.io/ciel1996/expense-tracker/api:$SOFTWARE_VERSION
+        env:
+          TOKEN: "${{ secrets.DOCKER_REGISTRY_TOKEN}}"
+          SOFTWARE_VERSION: "${{ steps.get_version.outputs.app_version }}"
+
+      - name: Build frontend image
+        run: | 
+          echo $TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+          docker build -f apps/expense-tracker-frontend/Dockerfile -t ghcr.io/ciel1996/expense-tracker/web:latest .          
+          docker tag ghcr.io/ciel1996/expense-tracker/web:latest ghcr.io/ciel1996/expense-tracker/web:$SOFTWARE_VERSION
+          
+          docker push ghcr.io/ciel1996/expense-tracker/web:latest
+          docker push ghcr.io/ciel1996/expense-tracker/web:$SOFTWARE_VERSION
+        env:
+          TOKEN: "${{ secrets.DOCKER_REGISTRY_TOKEN}}"
+          SOFTWARE_VERSION: "${{ steps.get_version.outputs.app_version }}"
