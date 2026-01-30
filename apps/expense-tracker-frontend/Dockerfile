@@ -1,46 +1,49 @@
-# Multi-stage Dockerfile for Next.js frontend (expense-tracker-frontend)
-# Build stage
-FROM node:20-bookworm-slim AS builder
+# syntax=docker.io/docker/dockerfile:1
 
-# Do not set NODE_ENV in the builder stage so devDependencies (Nx and plugins) are installed
-WORKDIR /workspace
+FROM node:20-alpine AS base
 
-# Optional build-time public env vars (e.g., API URL) used by Next.js on the client
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Copy package files from monorepo root
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
-# Install system deps
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 
-# Copy workspace and install dependencies
-COPY package.json package-lock.json nx.json tsconfig.base.json jest.preset.js jest.config.ts eslint.config.mjs ./
-COPY apps ./apps
-COPY libs ./libs
-
-RUN npm ci --legacy-peer-deps
-
-# Build the Next.js app using Nx in production mode
-# Use default Nx output path: dist/apps/expense-tracker-frontend
-# Avoid custom --outputPath to keep copy paths stable in runtime stage
+# Build the frontend using Nx
 RUN npx nx build expense-tracker-frontend --configuration=production
 
-# Runtime stage
-FROM node:20-bookworm-slim AS runtime
-ENV NODE_ENV=production
+# Production image, copy all the files and run next
+FROM base AS runner
 WORKDIR /app
 
-COPY --from=builder /workspace/dist/apps/expense-tracker-frontend/.next/standalone ./
+ENV NODE_ENV=production
 
-# Copy static files to BOTH locations (Nx standalone quirk)
-COPY --from=builder /workspace/dist/apps/expense-tracker-frontend/.next/static ./.next/static
-COPY --from=builder /workspace/dist/apps/expense-tracker-frontend/.next/static ./apps/expense-tracker-frontend/.next/static
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-# Copy public folder
-COPY --from=builder /workspace/apps/expense-tracker-frontend/public ./apps/expense-tracker-frontend/public
+# Copy standalone output from Nx build location
+COPY --from=builder --chown=nextjs:nodejs /app/dist/apps/expense-tracker-frontend/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/dist/apps/expense-tracker-frontend/.next/static ./apps/expense-tracker-frontend/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/expense-tracker-frontend/public ./apps/expense-tracker-frontend/public
 
-WORKDIR /app/apps/expense-tracker-frontend
+USER nextjs
 
-ENV PORT=3000
 EXPOSE 3000
 
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+WORKDIR /app/apps/expense-tracker-frontend
 CMD ["node", "server.js"]
