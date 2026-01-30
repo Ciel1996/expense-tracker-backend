@@ -241,7 +241,7 @@ async fn main() {
         return;
     }
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], APP_SETTINGS.expense_tracker().port()));
+    let addr = SocketAddr::from(([0, 0, 0, 0], APP_SETTINGS.expense_tracker().port()));
 
     info!("listening on {}", addr);
 
