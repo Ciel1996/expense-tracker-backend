@@ -29,20 +29,16 @@ FROM node:20-bookworm-slim AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 
-# Runtime env default; can be overridden by compose
-ENV NEXT_PUBLIC_API_URL="http://localhost:3001"
-
-# Copy the standalone output produced by Next.js build
-# Nx outputs to dist/apps/<app-name>
-# Note: We intentionally rely on the default Nx output path (dist/...) to avoid mismatches.
 COPY --from=builder /workspace/dist/apps/expense-tracker-frontend/.next/standalone ./
-# In Nx monorepos, server.js lives under apps/<app>/; static and public must be placed under the same nested path
-COPY --from=builder /workspace/dist/apps/expense-tracker-frontend/.next/static ./apps/expense-tracker-frontend/.next/static
-COPY --from=builder /workspace/apps/expense-tracker-frontend/public ./apps/expense-tracker-frontend/public
 
-# Next.js reads PORT env; default 3000
+# Change to the app directory
+WORKDIR /app/apps/expense-tracker-frontend
+
+# Copy static files relative to new WORKDIR
+COPY --from=builder /workspace/dist/apps/expense-tracker-frontend/.next/static ./.next/static
+COPY --from=builder /workspace/apps/expense-tracker-frontend/public ./public
+
 ENV PORT=3000
 EXPOSE 3000
 
-# Start the server (nested path inside the standalone output)
-CMD ["node", "apps/expense-tracker-frontend/server.js"]
+CMD ["node", "server.js"]
