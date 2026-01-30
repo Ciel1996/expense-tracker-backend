@@ -31,12 +31,14 @@ WORKDIR /app
 
 COPY --from=builder /workspace/dist/apps/expense-tracker-frontend/.next/standalone ./
 
-# Change to the app directory
-WORKDIR /app/apps/expense-tracker-frontend
-
-# Copy static files relative to new WORKDIR
+# Copy static files to BOTH locations (Nx standalone quirk)
 COPY --from=builder /workspace/dist/apps/expense-tracker-frontend/.next/static ./.next/static
-COPY --from=builder /workspace/apps/expense-tracker-frontend/public ./public
+COPY --from=builder /workspace/dist/apps/expense-tracker-frontend/.next/static ./apps/expense-tracker-frontend/.next/static
+
+# Copy public folder
+COPY --from=builder /workspace/apps/expense-tracker-frontend/public ./apps/expense-tracker-frontend/public
+
+WORKDIR /app/apps/expense-tracker-frontend
 
 ENV PORT=3000
 EXPOSE 3000
