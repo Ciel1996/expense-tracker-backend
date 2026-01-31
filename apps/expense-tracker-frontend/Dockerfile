@@ -36,7 +36,9 @@ RUN adduser --system --uid 1001 nextjs
 
 # Copy standalone output from Nx build location
 COPY --from=builder --chown=nextjs:nodejs /app/dist/apps/expense-tracker-frontend/.next/standalone ./
+# Copy static files to BOTH locations (root and app-level) for standalone server compatibility
 COPY --from=builder --chown=nextjs:nodejs /app/dist/apps/expense-tracker-frontend/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/dist/apps/expense-tracker-frontend/.next/static ./apps/expense-tracker-frontend/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/expense-tracker-frontend/public ./apps/expense-tracker-frontend/public
 
 USER nextjs

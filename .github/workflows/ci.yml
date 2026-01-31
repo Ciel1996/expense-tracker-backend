@@ -16,9 +16,13 @@ jobs:
           filter: tree:0
           fetch-depth: 0
 
+      - name: Run backend tests
+        run: |
+          cargo test --manifest-path apps/expense_tracker/Cargo.toml
+
       - name: Build backend image
         run: |
-          docker build -f apps/expense_tracker/Dockerfile .          
+          docker build -f apps/expense_tracker/Dockerfile .
 
       - name: Build frontend image
         run: |
