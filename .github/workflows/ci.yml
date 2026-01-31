@@ -16,22 +16,11 @@ jobs:
           filter: tree:0
           fetch-depth: 0
 
+      - name: Build backend image
+        run: |
+          docker build -f apps/expense_tracker/Dockerfile .          
 
-      # This enables task distribution via Nx Cloud
-      # Run this command as early as possible, before dependencies are installed
-      # Learn more at https://nx.dev/ci/reference/nx-cloud-cli#npx-nxcloud-startcirun
-      # Uncomment this line to enable task distribution
-      # - run: npx nx start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
-
-      # Cache node_modules
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - run: npm ci --legacy-peer-deps
-
-      # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
-      # - run: npx nx-cloud record -- echo Hello World
-      - run: npx nx run-many -t build --configuration=production --parallel
+      - name: Build frontend image
+        run: |
+          docker build -f apps/expense-tracker-frontend/Dockerfile .   
 

@@ -24,7 +24,6 @@ jobs:
         with:
           cargo_toml_folder: apps/expense_tracker/
 
-      # Example: Build Docker images (self-hosted runner must have Docker)
       - name: Build and upload backend image
         run: | 
           echo $TOKEN | docker login ghcr.io -u USERNAME --password-stdin
@@ -37,7 +36,7 @@ jobs:
           TOKEN: "${{ secrets.DOCKER_REGISTRY_TOKEN }}"
           SOFTWARE_VERSION: "${{ steps.get_version.outputs.app_version }}"
 
-      - name: Build frontend image
+      - name: Build and upload frontend image
         run: | 
           echo $TOKEN | docker login ghcr.io -u USERNAME --password-stdin
           docker build -f apps/expense-tracker-frontend/Dockerfile -t ghcr.io/ciel1996/expense-tracker/web:latest .          
