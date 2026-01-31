@@ -18,6 +18,9 @@ jobs:
 
       - name: Run backend tests
         run: |
+          cargo test --manifest-path libs/expense_tracker_db/Cargo.toml
+          cargo test --manifest-path libs/expense_tracker_services/Cargo.toml
+          cargo test --manifest-path libs/expense_tracker_api/Cargo.toml
           cargo test --manifest-path apps/expense_tracker/Cargo.toml
 
       - name: Build backend image
