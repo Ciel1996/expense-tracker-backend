@@ -8,7 +8,8 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy package files from monorepo root
-COPY package.json package-lock.json ./
+COPY package.json ./
+COPY package-lock.json ./
 RUN npm ci
 
 # Rebuild the source code only when needed
@@ -35,7 +36,7 @@ RUN adduser --system --uid 1001 nextjs
 
 # Copy standalone output from Nx build location
 COPY --from=builder --chown=nextjs:nodejs /app/dist/apps/expense-tracker-frontend/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/dist/apps/expense-tracker-frontend/.next/static ./apps/expense-tracker-frontend/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/dist/apps/expense-tracker-frontend/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/expense-tracker-frontend/public ./apps/expense-tracker-frontend/public
 
 USER nextjs
