@@ -82,9 +82,6 @@ export default NextAuth({
     async session({ session, token }) {
       if (token.accessToken) {
         session.accessToken = token.accessToken as string;
-
-        // TODO: remove
-        console.log(token.accessToken)
       }
       return session;
     },

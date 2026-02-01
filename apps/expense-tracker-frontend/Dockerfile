@@ -36,8 +36,8 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
     NEXT_TELEMETRY_DISABLED=1
 
-# Keep the build-time default available at runtime as well (can be overridden)
-ARG NEXT_PUBLIC_API_URL=http://localhost:3001
+# Build-time configurable public API URL - use placeholder for runtime replacement
+ARG NEXT_PUBLIC_API_URL=__NEXT_PUBLIC_API_URL__
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 # App directory inside the container
@@ -55,10 +55,15 @@ COPY --chown=node:node --from=builder /workspace/dist/apps/expense-tracker-front
 # Public assets are also expected in the project-specific public folder
 COPY --chown=node:node --from=builder /workspace/apps/expense-tracker-frontend/public /app/apps/expense-tracker-frontend/public
 
+# Add entrypoint script
+COPY --chown=node:node apps/expense-tracker-frontend/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 # Non-root user for security (provided by the Node image)
 USER node
 
 EXPOSE 3000
 
+ENTRYPOINT ["/app/entrypoint.sh"]
 # Start the Next.js standalone server from the root of the standalone output
 CMD ["node", "apps/expense-tracker-frontend/server.js"]
