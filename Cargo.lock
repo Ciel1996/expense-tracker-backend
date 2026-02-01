@@ -597,7 +597,7 @@ dependencies = [
 
 [[package]]
 name = "expense_tracker"
-version = "0.2.10"
+version = "0.2.11"
 dependencies = [
  "axum",
  "clap",

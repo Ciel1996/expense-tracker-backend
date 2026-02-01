@@ -8,8 +8,8 @@ ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     NPM_CONFIG_PRODUCTION=false
 
-# Build-time configurable public API URL
-ARG NEXT_PUBLIC_API_URL=http://localhost:3001
+# Build-time configurable public API URL - use placeholder for runtime replacement
+ARG NEXT_PUBLIC_API_URL=__NEXT_PUBLIC_API_URL__
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 # Set workdir at the monorepo root (Nx workspace)
@@ -35,10 +35,6 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
     NEXT_TELEMETRY_DISABLED=1
-
-# Build-time configurable public API URL - use placeholder for runtime replacement
-ARG NEXT_PUBLIC_API_URL=__NEXT_PUBLIC_API_URL__
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 # App directory inside the container
 WORKDIR /app
