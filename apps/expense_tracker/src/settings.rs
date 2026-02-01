@@ -13,6 +13,7 @@ pub struct Oidc {
 pub struct ExpenseTracker {
     port: u16,
     db_connection_string: String,
+    cors_url: String,
 }
 
 impl ExpenseTracker {
@@ -25,6 +26,8 @@ impl ExpenseTracker {
     pub fn db_connection_string(&self) -> &str {
         &self.db_connection_string
     }
+
+    pub fn cors_url(&self) -> &str { &self.cors_url }
 }
 
 impl Oidc {
