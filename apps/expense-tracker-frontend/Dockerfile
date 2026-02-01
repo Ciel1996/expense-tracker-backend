@@ -1,50 +1,64 @@
-# syntax=docker.io/docker/dockerfile:1
+# Multi-stage Dockerfile for Next.js (Nx workspace) frontend
+# Builds a standalone server and runs on a minimal Node runtime.
 
-FROM node:20-alpine AS base
+# ---------- Build stage ----------
+FROM node:20-bookworm-slim AS builder
 
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
-WORKDIR /app
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    NPM_CONFIG_PRODUCTION=false
 
-# Copy package files from monorepo root
-COPY package.json ./
-COPY package-lock.json ./
-RUN npm ci
-
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-
-ARG NEXT_PUBLIC_API_URL
+# Build-time configurable public API URL
+ARG NEXT_PUBLIC_API_URL=http://localhost:3001
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
-COPY --from=deps /app/node_modules ./node_modules
+# Set workdir at the monorepo root (Nx workspace)
+WORKDIR /workspace
+
+# Install dependencies first (better layer caching)
+COPY package.json package-lock.json ./
+# Prefer locked, but fall back if lockfile is out of sync in CI/build envs
+RUN npm ci --prefer-offline --no-audit --no-fund || npm install --no-audit --no-fund
+
+# Copy the rest of the workspace (apps, libs, configs, etc.)
 COPY . .
 
-# Build the frontend using Nx
+# Build the Next.js app using Nx in production mode
+# This produces a standalone output under dist/apps/expense-tracker-frontend/.next/standalone
 RUN npx nx build expense-tracker-frontend --configuration=production
 
-# Production image, copy all the files and run next
-FROM base AS runner
+
+# ---------- Runtime stage ----------
+FROM node:20-bookworm-slim AS runner
+
+ENV NODE_ENV=production \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0 \
+    NEXT_TELEMETRY_DISABLED=1
+
+# Keep the build-time default available at runtime as well (can be overridden)
+ARG NEXT_PUBLIC_API_URL=http://localhost:3001
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
+# App directory inside the container
 WORKDIR /app
 
-ENV NODE_ENV=production
+# Copy standalone server and static assets from the builder.
+# Nx + Next (output: 'standalone') expects this layout to preserve monorepo paths.
+COPY --chown=node:node --from=builder /workspace/dist/apps/expense-tracker-frontend/.next/standalone /app/
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Place static assets where the standalone server expects them
+# For this monorepo setup, it expects them in dist/apps/expense-tracker-frontend/.next/static
+# relative to the workspace root.
+COPY --chown=node:node --from=builder /workspace/dist/apps/expense-tracker-frontend/.next/static /app/dist/apps/expense-tracker-frontend/.next/static
 
-# Copy standalone output from Nx build location
-COPY --from=builder --chown=nextjs:nodejs /app/dist/apps/expense-tracker-frontend/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/dist/apps/expense-tracker-frontend/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/apps/expense-tracker-frontend/public ./apps/expense-tracker-frontend/public
+# Public assets are also expected in the project-specific public folder
+COPY --chown=node:node --from=builder /workspace/apps/expense-tracker-frontend/public /app/apps/expense-tracker-frontend/public
 
-USER nextjs
+# Non-root user for security (provided by the Node image)
+USER node
 
 EXPOSE 3000
 
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
-WORKDIR /app/apps/expense-tracker-frontend
-CMD ["node", "server.js"]
+# Start the Next.js standalone server from the root of the standalone output
+CMD ["node", "apps/expense-tracker-frontend/server.js"]

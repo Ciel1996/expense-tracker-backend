@@ -23,18 +23,26 @@
       }
     },
     "dev": {
-      "executor": "@nx/next:dev-server",
+      "executor": "@nx/next:server",
+      "defaultConfiguration": "development",
       "options": {
         "root": "apps/expense-tracker-frontend",
-        "port": 3000
+        "port": 3000,
+        "buildTarget": "expense-tracker-frontend:build"
+      },
+      "configurations": {
+        "development": {
+          "dev": true
+        }
       }
     },
     "start": {
-      "executor": "@nx/next:start-server",
+      "executor": "@nx/next:server",
       "defaultConfiguration": "production",
       "options": {
         "root": "apps/expense-tracker-frontend",
-        "port": 3000
+        "port": 3000,
+        "buildTarget": "expense-tracker-frontend:build:production"
       },
       "configurations": {
         "production": {}
