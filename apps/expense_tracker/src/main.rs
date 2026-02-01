@@ -195,7 +195,7 @@ async fn main() {
     // To get a JWT: curl -X POST 'http://localhost:8080/realms/expense-tracker-dev/protocol/openid-connect/token' -H 'Content-Type: application/x-www-form-urlencoded' -d 'client_id=<CLIENT_ID>' -d 'username=<USER>' -d 'password=<PASSWORD>' -d 'grant_type=password' -d 'scope=email profile' -d 'client_secret=<CLIENT_SECRET>'
 
     let origins = [
-        "http://localhost:3000".parse::<HeaderValue>().unwrap()
+        APP_SETTINGS.expense_tracker().cors_url().parse::<HeaderValue>().unwrap()
     ];
 
     let cors_layer = CorsLayer::new()
