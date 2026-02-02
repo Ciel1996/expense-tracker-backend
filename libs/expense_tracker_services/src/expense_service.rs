@@ -15,7 +15,7 @@ pub mod expense_service {
     use expense_tracker_db::schema::expense_splits::expense_id as split_expense_id;
     use expense_tracker_db::schema::expenses::dsl::expenses;
     use expense_tracker_db::schema::expenses::{
-        id as expense_id, owner_id, pot_id as expense_pot_id,
+        id as expense_id, pot_id as expense_pot_id,
     };
     use expense_tracker_db::schema::pots::dsl::pots;
     use expense_tracker_db::schema::pots::id as pots_id;
@@ -126,7 +126,7 @@ pub mod expense_service {
                 .filter(
                     expense_pot_id
                         .eq(target_pot_id)
-                        .and(owner_id.eq(requester_id).or(user_id.eq(requester_id))),
+                        .and(user_id.eq(requester_id)),
                 )
                 .select(Expense::as_select())
                 .get_results::<Expense>(&mut conn)

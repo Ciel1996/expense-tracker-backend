@@ -597,7 +597,7 @@ dependencies = [
 
 [[package]]
 name = "expense_tracker"
-version = "0.2.13"
+version = "0.2.15"
 dependencies = [
  "axum",
  "clap",
@@ -653,6 +653,7 @@ dependencies = [
  "diesel",
  "diesel-async",
  "expense_tracker_db",
+ "log",
  "uuid",
 ]
 

@@ -9,3 +9,4 @@ expense_tracker_db = { path = "../expense_tracker_db" }
 diesel = "2.2.9"
 diesel-async = "0.5.2"
 uuid = { version = ">=0.7.0,<2.0.0", features = ["serde", "v4"] }
+log = "0.4.27"
