@@ -18,6 +18,7 @@ pub mod pot_service {
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::users::users::User;
     use uuid::Uuid;
+    use log::error;
 
     /// A service offering interfaces related to Pots.
     #[derive(Clone)]
@@ -57,6 +58,13 @@ pub mod pot_service {
                 .await
                 .map_err(internal_error)?;
 
+            let pot_to_user = PotToUser::new(pot.id().clone(), pot.owner_id().clone());
+            let result = self.add_user_to_joined_table(pot_to_user).await?;
+
+            if result > 0 {
+                error!("Could not add user '{}' to joined table", pot.owner_id().clone());
+            }
+
             Ok((pot, currency, pot_users))
         }
 
@@ -67,7 +75,6 @@ pub mod pot_service {
             pot_to_user: PotToUser,
             requester_id: Uuid,
         ) -> Result<bool, ExpenseError> {
-            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
             let the_pot_id = pot_to_user.pot_id();
 
             let get_pot_by_id_and_owner =
@@ -89,13 +96,22 @@ pub mod pot_service {
                 )));
             }
 
-            let result = diesel::insert_into(pots_to_users)
+            let result = self.add_user_to_joined_table(pot_to_user).await?;
+
+            Ok(result > 0)
+        }
+
+        async fn add_user_to_joined_table(
+            &self,
+            pot_to_user: PotToUser
+        ) -> Result<usize, ExpenseError> {
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+
+            diesel::insert_into(pots_to_users)
                 .values(pot_to_user)
                 .execute(&mut conn)
                 .await
-                .map_err(internal_error)?;
-
-            Ok(result > 0)
+                .map_err(internal_error)
         }
 
         /// Removes `user_id` from the pot with the given `the_pot_id` if the user with the `requester_id`
