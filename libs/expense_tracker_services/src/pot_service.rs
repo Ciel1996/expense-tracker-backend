@@ -215,18 +215,7 @@ pub mod pot_service {
                     .await
                     .map_err(internal_error)?;
 
-                let owner = users
-                    .filter(db_user_id.eq(pot.owner_id()))
-                    .select(User::as_select())
-                    .get_results(&mut conn)
-                    .await
-                    .map_err(not_found_error)?;
-
-                let mut users_and_owner = vec![];
-                users_and_owner.extend(owner);
-                users_and_owner.extend(loaded_users);
-
-                pots_with_users.push((pot, users_and_owner))
+                pots_with_users.push((pot, loaded_users))
             }
 
             Ok(pots_with_users)
