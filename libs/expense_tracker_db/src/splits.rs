@@ -1,4 +1,6 @@
 pub mod splits {
+    use std::collections::HashSet;
+    use std::hash::{Hash, Hasher};
     use crate::expenses::expenses::Expense;
     use crate::schema::expense_splits;
     use diesel::{Associations, Insertable, Queryable, Selectable};
@@ -71,6 +73,21 @@ pub mod splits {
         }
     }
 
+    impl PartialEq<Self> for NewSplit {
+        fn eq(&self, other: &Self) -> bool {
+            self.user_id == other.user_id && self.expense_id == other.expense_id
+        }
+    }
+
+    impl Eq for NewSplit {}
+
+    impl Hash for NewSplit {
+        fn hash<H: Hasher>(&self, state: &mut H) {
+            self.user_id.hash(state);
+            self.expense_id.hash(state);
+        }
+    }
+
     /// Use this struct if you want to create a new Expense with splits.
     pub struct NewExpenseSplit {
         user_id: Uuid,
@@ -110,6 +127,10 @@ pub mod splits {
             }
 
             destination
+                .into_iter()
+                .collect::<HashSet<_>>()
+                .into_iter()
+                .collect()
         }
     }
 }
