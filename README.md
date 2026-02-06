@@ -123,7 +123,7 @@ This repository contains a Rust backend (Axum) and a Next.js frontend, managed w
 
 Notes:
 - Backend release builds use LTO (see Cargo.toml [profile.release]).
-- next.config.js sets output: 'standalone' for smaller runtime images.
+- next.config.mjs sets output: 'standalone' for smaller runtime images.
 
 ## Configuration details
 - Backend reads config from config/settings.toml (mounted into the container). The example selects:

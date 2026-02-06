@@ -12,7 +12,8 @@
       ],
       "options": {
         "root": "apps/expense-tracker-frontend",
-        "outputPath": "dist/apps/expense-tracker-frontend"
+        "outputPath": "dist/apps/expense-tracker-frontend",
+        "turbo": false
       },
       "configurations": {
         "development": {},
