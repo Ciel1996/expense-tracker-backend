@@ -23,9 +23,13 @@ RUN npm ci --prefer-offline --no-audit --no-fund || npm install --no-audit --no-
 # Copy the rest of the workspace (apps, libs, configs, etc.)
 COPY . .
 
+# Remove the implicit dependency on the rust api for the client library
+# This prevents Nx from trying to build/check the rust project during the frontend build.
+RUN sed -i 's/"implicitDependencies": \["expense_tracker_api"\]/"implicitDependencies": []/' libs/expense-tracker-client/project.json
+
 # Build the Next.js app using Nx in production mode
 # This produces a standalone output under dist/apps/expense-tracker-frontend/.next/standalone
-RUN npx nx build expense-tracker-frontend --configuration=production --exclude=expense_tracker_api
+RUN npx nx build expense-tracker-frontend --configuration=production --skip-nx-cache
 
 
 # ---------- Runtime stage ----------
@@ -54,6 +58,9 @@ COPY --chown=node:node --from=builder /workspace/apps/expense-tracker-frontend/p
 # Add entrypoint script
 COPY --chown=node:node apps/expense-tracker-frontend/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
+
+# Ensure Node uses CommonJS in the standalone output by removing "type": "module" from /app/package.json
+RUN node -e "const fs=require('fs');const p='/app/package.json';const j=JSON.parse(fs.readFileSync(p,'utf8'));if(j.type==='module'){delete j.type;fs.writeFileSync(p,JSON.stringify(j,null,2));}console.log('Adjusted /app/package.json: removed type=module if present');"
 
 # Non-root user for security (provided by the Node image)
 USER node
