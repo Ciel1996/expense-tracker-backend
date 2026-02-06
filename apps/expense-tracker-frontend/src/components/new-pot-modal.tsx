@@ -114,7 +114,7 @@ export const NewPotModal: FC<{ open: boolean; onClose: () => void }> = ({ open, 
                         onChange={() => onToggleUser(u.uuid)}
                         className="h-4 w-4"
                       />
-                      <span className="truncate">{u.name} <span className="text-xs text-gray-500">({u.uuid})</span></span>
+                      <span className="truncate">{u.name}</span>
                     </label>
                   ))}
                   {(!users || users.length === 0) && (

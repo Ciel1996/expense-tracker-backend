@@ -1,6 +1,6 @@
 [oidc]
-issuer_url = "https://nas.home:8443/realms/dev"
-audience = "expense-tracker"
+issuer_url = "https://nas.cielcat.ch:8443/realms/dev"
+audience = "expense-tracker-local-dev"
 
 [expense_tracker]
 port = 3001
