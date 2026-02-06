@@ -93,6 +93,9 @@ This repository contains a Rust backend (Axum) and a Next.js frontend, managed w
   - Frontend project.json now has proper build/start targets and a production configuration
   - CI workflows use --configuration=production
 
+To create the frontend's docker container locally run:
+`docker build -t frontend -f apps/expense-tracker-frontend/Dockerfile .`
+
 ## Why these choices
 - Multi-stage Docker images: keep final images small and reduce attack surface; build deps aren’t shipped.
 - Next.js standalone output: runs with a minimal Node image without dev dependencies, speeding starts and reducing size.

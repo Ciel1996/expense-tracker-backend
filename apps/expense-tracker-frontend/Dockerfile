@@ -38,10 +38,7 @@ ENV NODE_ENV=production \
 
 # App directory inside the container
 WORKDIR /app
- => CANCELED [builder 2/6] WORKDIR /workspace                                                                                                                                                                                                                                                                       0.0s
- => ERROR [builder 3/6] COPY package.json package-lock.json ./                                                                                                                                                                                                                                                      0.0s
- => CANCELED [runner 2/7] WORKDIR /app                                                                                                                                                                                                                                                                              0.0s
-------
+
 # Copy standalone server and static assets from the builder.
 # Nx + Next (output: 'standalone') expects this layout to preserve monorepo paths.
 COPY --chown=node:node --from=builder /workspace/dist/apps/expense-tracker-frontend/.next/standalone /app/

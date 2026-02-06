@@ -1,5 +1,10 @@
 import type { GetServerSideProps, NextPage } from "next";
-import { useGetPotExpenses, useGetUsers, useDeletePot, useGetPots } from "@./expense-tracker-client";
+import {
+  useGetPotExpenses,
+  useGetUsers,
+  useDeletePot,
+  useGetPots
+} from "@./expense-tracker-client";
 import React, { useState } from "react";
 import { useRouter } from "next/router";
 import { ExpensesTable } from "../../components/expenses/expenses-table";
@@ -14,6 +19,7 @@ const PotDetails: NextPage<Props> = ({ id }) => {
   const { data: users, isLoading: isLoadingUsers, isError: isErrorUsers } = useGetUsers();
   const { data: pots, isLoading: isLoadingPots, isError: isErrorPots } = useGetPots();
   const pot = (pots ?? []).find((p) => p.id === id) ?? null;
+  const pot_name = pot?.name ?? `Pot ${id}`;
   const { mutate: deletePot, isPending: isDeleting, error: deleteError } = useDeletePot({
     mutation: {
       onSuccess: async () => {
@@ -65,7 +71,7 @@ const PotDetails: NextPage<Props> = ({ id }) => {
   return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-2">
-        <h1 className="text-xl font-semibold">Pot {id} — Expenses</h1>
+        <h1 className="text-xl font-semibold">{pot_name}</h1>
         <button
           onClick={() => setNewExpenseOpen(true)}
           disabled={!pot}
