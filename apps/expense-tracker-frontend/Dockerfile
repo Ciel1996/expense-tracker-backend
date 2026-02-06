@@ -25,7 +25,7 @@ COPY . .
 
 # Build the Next.js app using Nx in production mode
 # This produces a standalone output under dist/apps/expense-tracker-frontend/.next/standalone
-RUN npx nx build expense-tracker-frontend --configuration=production
+RUN npx nx build expense-tracker-frontend --configuration=production --exclude=expense_tracker_api
 
 
 # ---------- Runtime stage ----------
