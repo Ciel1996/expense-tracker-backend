@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   main:
-    runs-on: [m4-mac-mini]
+    runs-on: [self-hosted, macOS]
     steps:
       - uses: actions/checkout@v4
         with:
