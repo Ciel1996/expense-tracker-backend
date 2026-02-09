@@ -10,6 +10,8 @@ permissions:
   contents: read
 
 jobs:
+  # Skip the entire job on direct pushes to master
+  if: github.event_name != 'push'
   main:
     runs-on: [self-hosted, macOS]
     steps:
