@@ -3,18 +3,14 @@ name: CI
 on:
   pull_request:
     branches: [ master ]
-  push:
-    branches: [ master ]
 
 permissions:
   actions: read
   contents: read
 
 jobs:
-  # Skip the entire job on direct pushes to master
-  # if: github.event_name != 'push'
   main:
-    runs-on: [self-hosted, macOS]
+    runs-on: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
         with:
