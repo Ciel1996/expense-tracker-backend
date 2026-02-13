@@ -1,0 +1,40 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # npm should be checked for updates daily
+  - package-ecosystem: "npm"
+    directories:
+      - "/"
+      - "/apps/expense-tracker-frontend"
+      - "/libs/expense-tracker-client"
+    schedule:
+      interval: "daily"
+
+  # cargo should be checked for updates weekly
+  - package-ecosystem: "cargo"
+    directories:
+        - "/apps/expense_tracker"
+        - "/libs/expense_tracker_api"
+        - "/libs/expense_tracker_services"
+        - "/libs/expense_tracker_db"
+    schedule:
+      interval: "weekly"
+
+  # docker should be checked for updates weekly
+  - package-ecosystem: "docker"
+    directories:
+      - "/apps/expense_tracker"
+      - "/apps/expense-tracker-ui"
+    schedule:
+      interval: "weekly"
+
+  # docker should be checked for updates weekly
+  - package-ecosystem: "docker-compose"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
