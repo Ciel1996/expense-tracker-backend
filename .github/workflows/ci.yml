@@ -3,28 +3,37 @@ name: CI
 on:
   pull_request:
     branches: [ master ]
+  merge_group:
+    types: [ checks_requested ]
 
 permissions:
   actions: read
   contents: read
 
 jobs:
-  main:
-    runs-on: [self-hosted]
+  test:
+    name: Run tests
+    runs-on: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
-        with:
-          filter: tree:0
-          fetch-depth: 0
-
       - name: Run backend tests
         run: |
           cargo test
 
+  backend:
+    name: Build backend image
+    runs-on: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
       - name: Build backend image
         run: |
           docker build -f apps/expense_tracker/Dockerfile .
 
+  frontend:
+    name: Build frontend image
+    runs-on: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
       - name: Build frontend image
         run: |
           docker build -f apps/expense-tracker-frontend/Dockerfile .

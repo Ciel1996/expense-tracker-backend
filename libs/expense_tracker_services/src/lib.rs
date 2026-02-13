@@ -35,14 +35,6 @@ where
     ExpenseError::Internal(err.to_string())
 }
 
-/// Produces a `Conflict` from the given `err`.
-fn conflict_error<E>(err: E) -> ExpenseError
-where
-    E: std::error::Error,
-{
-    ExpenseError::Conflict(err.to_string())
-}
-
 /// A helper used when unwrapping in case of an error.
 fn check_error(err: ExpenseError) -> ExpenseError {
     err

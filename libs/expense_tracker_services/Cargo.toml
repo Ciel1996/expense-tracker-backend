@@ -3,10 +3,12 @@
 name = "expense_tracker_services"
 version = "0.1.0"
 edition = "2021"
+license = "GPL-3.0-or-later"
+authors = ["Ciel1996"]
 
 [dependencies]
 expense_tracker_db = { path = "../expense_tracker_db" }
-diesel = "2.2.9"
-diesel-async = "0.5.2"
+diesel = "2.3.6"
+diesel-async = "0.7.4"
 uuid = { version = ">=0.7.0,<2.0.0", features = ["serde", "v4"] }
-log = "0.4.27"
+log = "0.4.29"

@@ -10,14 +10,10 @@ permissions:
   contents: read
 
 jobs:
-  main:
-    runs-on: self-hosted
+  backend:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          filter: tree:0
-          fetch-depth: 0
-
       - name: Get Rust App Version
         id: get_version
         uses: dante-signal31/rust-app-version@v1.2.0
@@ -35,6 +31,16 @@ jobs:
         env:
           TOKEN: "${{ secrets.DOCKER_REGISTRY_TOKEN }}"
           SOFTWARE_VERSION: "${{ steps.get_version.outputs.app_version }}"
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get Rust App Version
+        id: get_version
+        uses: dante-signal31/rust-app-version@v1.2.0
+        with:
+          cargo_toml_folder: apps/expense_tracker/
 
       - name: Build and upload frontend image
         run: | 
