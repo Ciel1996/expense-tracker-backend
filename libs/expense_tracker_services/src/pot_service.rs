@@ -3,14 +3,15 @@ pub mod pot_service {
     use crate::currency_service::currency_service::CurrencyService;
     use crate::expense_service::expense_service;
     use crate::expense_service::expense_service::ExpenseService;
-    use crate::ExpenseError::{Conflict, Forbidden, NotFound};
+    use crate::ExpenseError::{Conflict, Forbidden, Locked, NotFound};
     use crate::{check_error, internal_error, not_found_error, ExpenseError};
-    use diesel::{BoolExpressionMethods, ExpressionMethods, JoinOnDsl, QueryDsl, SelectableHelper};
+    use diesel::{BoolExpressionMethods, ExpressionMethods, JoinOnDsl, OptionalExtension, QueryDsl, SelectableHelper};
+    use diesel::internal::derives::multiconnection::chrono::{DateTime, Utc};
     use diesel_async::RunQueryDsl;
     use expense_tracker_db::currencies::currencies::Currency;
     use expense_tracker_db::pots::pots::{NewPot, Pot, PotToUser};
     use expense_tracker_db::schema::pots::dsl::pots;
-    use expense_tracker_db::schema::pots::{id as pots_id, id, owner_id};
+    use expense_tracker_db::schema::pots::{archived, archived_at, id as pots_id, id, owner_id};
     use expense_tracker_db::schema::pots_to_users::dsl::pots_to_users;
     use expense_tracker_db::schema::pots_to_users::{pot_id, user_id};
     use expense_tracker_db::schema::users::dsl::users;
@@ -80,8 +81,14 @@ pub mod pot_service {
             let get_pot_by_id_and_owner =
                 Self::get_pot_by_id_and_owner(self, the_pot_id, requester_id).await?;
 
-            if get_pot_by_id_and_owner.is_empty() {
+            if get_pot_by_id_and_owner.is_none() {
                 return Ok(false);
+            }
+
+            let pot = get_pot_by_id_and_owner.unwrap();
+
+            if pot.is_archived() {
+                return Err(Locked(format!("Pot {} is archived", the_pot_id)))
             }
 
             let new_user_id = pot_to_user.user_id();
@@ -127,8 +134,14 @@ pub mod pot_service {
             let get_pot_by_id_and_owner =
                 Self::get_pot_by_id_and_owner(self, the_pot_id, requester_id).await?;
 
-            if get_pot_by_id_and_owner.is_empty() {
+            if get_pot_by_id_and_owner.is_none() {
                 return Ok(false);
+            }
+
+            let pot = get_pot_by_id_and_owner.unwrap();
+
+            if pot.is_archived() {
+                return Err(Locked(format!("Pot {} is archived", the_pot_id)))
             }
 
             let to_delete_user_id = pot_to_user.user_id();
@@ -156,13 +169,15 @@ pub mod pot_service {
             &self,
             the_pot_id: i32,
             requester_id: Uuid,
-        ) -> Result<Vec<Pot>, ExpenseError> {
+        ) -> Result<Option<Pot>, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
-            pots.filter(id.eq(the_pot_id).and(owner_id.eq(requester_id)))
+            pots
+                .filter(id.eq(the_pot_id).and(owner_id.eq(requester_id)))
                 .select(Pot::as_select())
-                .load(&mut conn)
+                .first(&mut conn)
                 .await
+                .optional()
                 .map_err(internal_error)
         }
 
@@ -273,6 +288,17 @@ pub mod pot_service {
                 )));
             }
 
+            let is_archived = pots
+                .filter(id.eq(to_delete))
+                .select(archived)
+                .first::<bool>(&mut conn)
+                .await
+                .map_err(internal_error)?;
+
+            if is_archived {
+                return Err(Locked(format!("Pot {} is archived", to_delete)));
+            }
+
             // check if pot has outstanding expenses
             let outstanding = self
                 .expense_service
@@ -301,6 +327,56 @@ pub mod pot_service {
                     .map_err(not_found_error)?;
 
             Ok(deleted == 1)
+        }
+
+        /// Mark this pot as archived.
+        pub async fn archive(&self, pot_id_to_archive: i32, requester_id: Uuid)
+            -> Result<bool, ExpenseError> {
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+
+            let pot = pots
+                .filter(id.eq(pot_id_to_archive))
+                .select(Pot::as_select())
+                .first::<Pot>(&mut conn)
+                .await
+                .map_err(not_found_error)?;
+
+            if pot.is_archived() {
+                return Err(Conflict(format!("Pot {} is already archived", pot_id_to_archive)));
+            }
+
+            diesel::update(pots.filter(id.eq(pot_id_to_archive).and(owner_id.eq(requester_id))))
+                .set((archived.eq(true), archived_at.eq(Utc::now())))
+                .execute(&mut conn)
+                .await
+                .map_err(not_found_error)?;
+
+            Ok(true)
+        }
+
+        /// Unarchives a pot. Meaning that the archived flag will be set to false and the archived_at field will be set to null/None.
+        pub async fn unarchive(&self, pot_id_to_unarchive: i32, requester_id: Uuid)
+            -> Result<bool, ExpenseError> {
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+
+            let pot = pots
+                .filter(id.eq(pot_id_to_unarchive))
+                .select(Pot::as_select())
+                .first::<Pot>(&mut conn)
+                .await
+                .map_err(not_found_error)?;
+
+            if !pot.is_archived() {
+                return Err(Conflict(format!("Pot {} is not archived", pot_id_to_unarchive)));
+            }
+
+            diesel::update(pots.filter(id.eq(pot_id_to_unarchive).and(owner_id.eq(requester_id))))
+                .set((archived.eq(false), archived_at.eq(None::<DateTime<Utc>>)))
+                .execute(&mut conn)
+                .await
+                .map_err(not_found_error)?;
+
+            Ok(true)
         }
     }
 

@@ -61,7 +61,7 @@ pub mod pots {
         }
 
         /// Getter for archived.
-        pub fn archived(&self) -> bool { self.archived }
+        pub fn is_archived(&self) -> bool { self.archived }
 
         /// Getter for created_at.
         pub fn created_at(&self) -> DateTime<Utc> { self.created_at }

@@ -36,7 +36,7 @@ pub mod api {
             .nest(VERSION_ONE, expense_api::register(pool.clone()))
     }
 
-    /// Registers the health API without token validation so it is always possible to
+    /// Registers the health API without token validation, so it is always possible to
     /// check if the service is running or not.
     pub async fn add_health_api() -> OpenApiRouter {
         OpenApiRouter::new().nest(VERSION_ONE, health_api::register())
@@ -54,6 +54,7 @@ pub mod api {
             ExpenseError::NotFound(message) => (StatusCode::NOT_FOUND, Json(message)),
             ExpenseError::Internal(message) => (StatusCode::INTERNAL_SERVER_ERROR, Json(message)),
             ExpenseError::Conflict(message) => (StatusCode::CONFLICT, Json(message)),
+            ExpenseError::Locked(message) => (StatusCode::LOCKED, Json(message)),
         }
     }
 

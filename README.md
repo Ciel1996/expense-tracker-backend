@@ -1,3 +1,8 @@
+# Expense Tracker
+
+Expense Tracker is a web application that allows users to track their expenses, for example when living with a family member.
+Expense Tracker allows users to create Pots, which is a group of expenses. Expenses can be created and spent amounts can be split between multiple users.
+
 # 
 
 <a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
