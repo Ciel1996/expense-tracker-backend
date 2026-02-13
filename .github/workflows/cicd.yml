@@ -43,7 +43,7 @@ jobs:
             ghcr.io/ciel1996/expense-tracker/api:${{ steps.get_version.outputs.app_version }}-amd64
 
   backend-arm64:
-    runs-on: windows-11-arm
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
       - name: Get Rust App Version
@@ -136,7 +136,7 @@ jobs:
             ghcr.io/ciel1996/expense-tracker/web:${{ steps.get_version.outputs.app_version }}-amd64
 
   frontend-arm64:
-    runs-on: windows-11-arm
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
       - name: Get Rust App Version

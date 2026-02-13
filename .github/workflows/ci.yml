@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-11-arm]
+        os: [ubuntu-latest, self-hosted]
     steps:
       - uses: actions/checkout@v4
       - name: Run backend tests
@@ -28,7 +28,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-11-arm]
+        os: [ubuntu-latest, self-hosted]
     steps:
       - uses: actions/checkout@v4
 
