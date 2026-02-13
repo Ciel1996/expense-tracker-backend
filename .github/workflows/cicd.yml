@@ -11,38 +11,7 @@ permissions:
   packages: write
 
 jobs:
-  backend-amd64:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Get Rust App Version
-        id: get_version
-        uses: dante-signal31/rust-app-version@v1.2.0
-        with:
-          cargo_toml_folder: apps/expense_tracker/
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
-
-      - name: Build and push backend image (AMD64)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: apps/expense_tracker/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ghcr.io/ciel1996/expense-tracker/api:latest-amd64
-            ghcr.io/ciel1996/expense-tracker/api:${{ steps.get_version.outputs.app_version }}-amd64
-
-  backend-arm64:
+  backend:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
@@ -52,6 +21,9 @@ jobs:
         with:
           cargo_toml_folder: apps/expense_tracker/
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -62,80 +34,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
 
-      - name: Build and push backend image (ARM64)
+      - name: Build and push backend image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: apps/expense_tracker/Dockerfile
-          platforms: linux/arm64
+          platforms: linux/arm64, linux/amd64
           push: true
           tags: |
-            ghcr.io/ciel1996/expense-tracker/api:latest-arm64
-            ghcr.io/ciel1996/expense-tracker/api:${{ steps.get_version.outputs.app_version }}-arm64
+            ghcr.io/ciel1996/expense-tracker/api:latest
+            ghcr.io/ciel1996/expense-tracker/api:${{ steps.get_version.outputs.app_version }}
 
-  backend-manifest:
-    needs: [backend-amd64, backend-arm64]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Get Rust App Version
-        id: get_version
-        uses: dante-signal31/rust-app-version@v1.2.0
-        with:
-          cargo_toml_folder: apps/expense_tracker/
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
-
-      - name: Create and push manifest
-        run: |
-          VERSION=${{ steps.get_version.outputs.app_version }}
-          REPO=ghcr.io/ciel1996/expense-tracker/api
-          
-          docker buildx imagetools create -t ${REPO}:latest \
-            ${REPO}:latest-amd64 \
-            ${REPO}:latest-arm64
-            
-          docker buildx imagetools create -t ${REPO}:${VERSION} \
-            ${REPO}:${VERSION}-amd64 \
-            ${REPO}:${VERSION}-arm64
-
-  frontend-amd64:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Get Rust App Version
-        id: get_version
-        uses: dante-signal31/rust-app-version@v1.2.0
-        with:
-          cargo_toml_folder: apps/expense_tracker/
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
-
-      - name: Build and push frontend image (AMD64)
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: apps/expense-tracker-frontend/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: |
-            ghcr.io/ciel1996/expense-tracker/web:latest-amd64
-            ghcr.io/ciel1996/expense-tracker/web:${{ steps.get_version.outputs.app_version }}-amd64
-
-  frontend-arm64:
+  frontend:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
@@ -145,6 +55,9 @@ jobs:
         with:
           cargo_toml_folder: apps/expense_tracker/
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -155,44 +68,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
 
-      - name: Build and push frontend image (ARM64)
+      - name: Build and push frontend image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: apps/expense-tracker-frontend/Dockerfile
-          platforms: linux/arm64
+          platforms: linux/arm64,linux/amd64
           push: true
           tags: |
-            ghcr.io/ciel1996/expense-tracker/web:latest-arm64
-            ghcr.io/ciel1996/expense-tracker/web:${{ steps.get_version.outputs.app_version }}-arm64
-
-  frontend-manifest:
-    needs: [frontend-amd64, frontend-arm64]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Get Rust App Version
-        id: get_version
-        uses: dante-signal31/rust-app-version@v1.2.0
-        with:
-          cargo_toml_folder: apps/expense_tracker/
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
-
-      - name: Create and push manifest
-        run: |
-          VERSION=${{ steps.get_version.outputs.app_version }}
-          REPO=ghcr.io/ciel1996/expense-tracker/web
-          
-          docker buildx imagetools create -t ${REPO}:latest \
-            ${REPO}:latest-amd64 \
-            ${REPO}:latest-arm64
-            
-          docker buildx imagetools create -t ${REPO}:${VERSION} \
-            ${REPO}:${VERSION}-amd64 \
-            ${REPO}:${VERSION}-arm64
+            ghcr.io/ciel1996/expense-tracker/web:latest
+            ghcr.io/ciel1996/expense-tracker/web:${{ steps.get_version.outputs.app_version }}

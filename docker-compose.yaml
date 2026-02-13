@@ -1,56 +1,79 @@
 # Use postgres/example user/password credentials
 services:
-
   db:
-    image: postgres:14.15-alpine3.21
+    image: postgres:18.1-alpine3.23
     restart: always
     environment:
       POSTGRES_PASSWORD: localpassword
       POSTGRES_USER: admin
+    volumes:
+      - ./postgres-data:/var/lib/postgresql
     ports:
       - 5432:5432
 
-#  keycloak:
-#    image: quay.io/keycloak/keycloak:26.1.4
-#    restart: always
-#    environment:
-#      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-#      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-#    command:
-#      - start-dev
-#    ports:
-#      - 8080:8080
+  db-keycloak:
+    image: postgres:18.1-alpine3.23
+    restart: always
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_PASSWORD: localpassword
+      POSTGRES_USER: admin
+    volumes:
+      - ./postgres-data-keycloak:/var/lib/postgresql
+    ports:
+      - 15000:5432
 
-#  api:
-#    build:
-#      context: .
-#      dockerfile: apps/expense_tracker/Dockerfile
-#    image: expense-tracker/api:dev
-#    restart: unless-stopped
-#    environment:
-#      RUST_LOG: info
-#      # Uncomment to disable TLS validation when talking to Keycloak in dev
-#      # EXPENSE_TRACKER_IGNORE_TLS: "1"
-#    volumes:
-#      - ./config/settings.toml:/app/config/settings.toml:ro
-#    depends_on:
-#      - db
-#      - keycloak
-#    ports:
-#      - 3001:3001
+  ## TODO: setup client expense-tracker in keycloak at http://localhost:8080/admin/master/console/
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5.3
+    restart: always
+    environment:
+      KC_DB: postgres
+      KC_DB_USERNAME: admin
+      KC_DB_PASSWORD: localpassword
+      KC_DB_URL: jdbc:postgresql://db-keycloak/keycloak
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    command:
+      - start-dev
+    ports:
+      - 8080:8080
+    depends_on:
+      - db-keycloak
 
-#  web:
-#    build:
-#      context: .
-#      dockerfile: apps/expense-tracker-frontend/Dockerfile
-#      args:
-#        NEXT_PUBLIC_API_URL: http://localhost:3001
-#    image: expense-tracker/web:dev
-#    restart: unless-stopped
-#    environment:
-#      NODE_ENV: production
-#      NEXT_PUBLIC_API_URL: http://localhost:3001
-#    depends_on:
-#      - api
-#    ports:
-#      - 3000:3000
+  api:
+    build:
+      context: .
+      dockerfile: apps/expense_tracker/Dockerfile
+    restart: unless-stopped
+    environment:
+      RUST_LOG: info
+      # Uncomment to disable TLS validation when talking to Keycloak in dev
+      # EXPENSE_TRACKER_IGNORE_TLS: "1"
+    volumes:
+      - ./config/settings_compose.toml:/app/config/settings.toml:ro
+    depends_on:
+      - db
+      - keycloak
+    ports:
+      - 3001:3001
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/expense-tracker-frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3001
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXTAUTH_SECRET: very-secrety-secret
+      NEXTAUTH_URL: http://localhost:3000
+      EXPENSE_TRACKER_CLIENT_ID: expense-tracker
+      EXPENSE_TRACKER_CLIENT_SECRET: secret-from-keycloak # TODO: copy secret from keycloak!
+      EXPENSE_TRACKER_ISSUER: http://keycloak:8080/realms/master #needs to be different for your setup using keycloak above!!
+    depends_on:
+      - api
+    ports:
+      - 3000:3000

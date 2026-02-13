@@ -103,9 +103,9 @@ To create the frontend's docker container locally run:
 - docker-compose: local, reproducible stack including Postgres and Keycloak.
 
 ## Quick start (local)
-1. Create config files:
-   - cp config/settings.toml.example config/settings.toml
-   - cp apps/expense-tracker-frontend/.env.local.example apps/expense-tracker-frontend/.env.local
+1. Adjust config files:
+   - config/settings_compose.toml
+   - for Frontend, either adjust Docker Compose file environment variables or .env.local and mount .env.local into your container
 2. Start everything:
    - docker compose up -d --build
 3. Open services:

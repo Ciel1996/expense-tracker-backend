@@ -1,0 +1,8 @@
+[oidc]
+issuer_url = "http://keycloak:8080/realms/master"
+audience = "expense-tracker"
+
+[expense_tracker]
+port = 3001
+db_connection_string = "postgres://admin:localpassword@db/postgres"
+cors_url="http://localhost:3000"
