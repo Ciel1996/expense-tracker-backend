@@ -9,7 +9,7 @@
     "@monodon/rust": "2.3.0",
     "@tanstack/react-query": "^5.83.0",
     "@types/next-auth": "^3.13.0",
-    "next": "15.1.4",
+    "next": "15.5.12",
     "next-auth": "4.24.11",
     "react": "19.0.0",
     "react-dom": "19.0.0"
