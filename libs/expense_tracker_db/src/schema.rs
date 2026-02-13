@@ -51,8 +51,8 @@ diesel::table! {
         owner_id -> Uuid,
         name -> Text,
         default_currency_id -> Int4,
-        created_at -> Timestamp,
-        archive_at -> Nullable<Timestamp>,
+        created_at -> Timestamptz,
+        archived_at -> Nullable<Timestamptz>,
         archived -> Bool,
     }
 }

@@ -242,7 +242,8 @@ pub mod pot_service {
                     .eq(to_search)
                     .and(owner_id.eq(requester_id).or(pots_id.eq_any(pot_ids))),
             )
-            .get_result::<Pot>(&mut conn)
+                .select(Pot::as_select())
+                .get_result::<Pot>(&mut conn)
             .await
             .map_err(not_found_error)
         }
@@ -256,7 +257,7 @@ pub mod pot_service {
         ) -> Result<bool, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
-            // check if user is even allowed to try to delete the pot
+            // check if the user is even allowed to try to delete the pot
             let is_allowed_to_delete = pots
                 .filter(id.eq(to_delete).and(owner_id.eq(requester_id)))
                 .count()

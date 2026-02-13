@@ -9,6 +9,7 @@ pub mod pot_api {
     use axum::http::request::Parts;
     use axum::http::StatusCode;
     use axum::Json;
+    use chrono::{DateTime, Utc};
     use expense_tracker_db::pots::pots::{NewPot, Pot, PotToUser};
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::users::users::User;
@@ -60,7 +61,10 @@ pub mod pot_api {
         users: Vec<UserDTO>,
         /// Indicates the amount of money, the user is owed or owes others. If positive, other users
         /// need to pay that amount to the user. If negative, the user has to pay the given amount.
-        net_balance: f64
+        net_balance: f64,
+        archived: bool,
+        created_at: DateTime<Utc>,
+        archived_at: Option<DateTime<Utc>>
     }
 
     impl PotDTO {
@@ -70,13 +74,16 @@ pub mod pot_api {
             default_currency: CurrencyDTO,
             users: Vec<UserDTO>,
             net_balance: f64) -> Self {
-            PotDTO {
+            Self {
                 id: pot.id(),
                 owner_id: pot.owner_id(),
                 name: pot.name().to_string(),
                 default_currency,
                 users,
-                net_balance
+                net_balance,
+                archived: pot.archived(),
+                created_at: pot.created_at(),
+                archived_at: pot.archived_at()
             }
         }
 

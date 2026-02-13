@@ -8,9 +8,10 @@ authors = ["Ciel1996"]
 expense_tracker_db = { path = "../expense_tracker_db" }
 expense_tracker_services = { path = "../expense_tracker_services" }
 axum = "0.8.8"
-utoipa = { version = "5.4.0", features = ["uuid"] }
+utoipa = { version = "5.4.0", features = ["uuid", "chrono"] }
 utoipa-axum = "0.2.0"
 serde = { version = "1.0.228", features = ["derive"] }
 hyper = { version = "1.8.1", features = ["full"] }
 uuid = ">=0.7.0,<2.0.0"
 log = "0.4.29"
+chrono = { version = "0.4.43", features = ["serde"] }
