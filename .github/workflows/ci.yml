@@ -24,6 +24,7 @@ jobs:
     name: Build backend image
     runs-on: [ubuntu-latest]
     steps:
+      - uses: actions/checkout@v4
       - name: Build backend image
         run: |
           docker build -f apps/expense_tracker/Dockerfile .
@@ -32,6 +33,7 @@ jobs:
     name: Build frontend image
     runs-on: [ubuntu-latest]
     steps:
+      - uses: actions/checkout@v4
       - name: Build frontend image
         run: |
           docker build -f apps/expense-tracker-frontend/Dockerfile .
