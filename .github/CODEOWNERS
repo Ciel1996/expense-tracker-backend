@@ -1,2 +1,5 @@
 # Ciel is the global owner of all code in the repository.
 * @Ciel1996
+
+# Ciel is the owner of the CODEOWNERS file, thus preventing unauthorized access to it.
+/.github/CODEOWNERS @Ciel1996
