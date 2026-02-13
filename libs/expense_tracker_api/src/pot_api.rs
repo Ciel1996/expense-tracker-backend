@@ -109,6 +109,7 @@ pub mod pot_api {
     /// DTO used when creating a new Pot.
     #[derive(ToSchema, Serialize, Deserialize)]
     pub struct NewPotDTO {
+        #[schema(max_length=24)]
         name: String,
         default_currency_id: i32,
     }

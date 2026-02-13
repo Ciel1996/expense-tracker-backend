@@ -16,3 +16,5 @@ port = 3001
 #   With database name:           "postgres://admin:localpassword@db:5432/expenses"
 # For local dev with compose we often create the DB in an init script; adjust as needed.
 db_connection_string = "postgres://admin:localpassword@db:5432/postgres"
+# CORS URL for frontend, required if frontend is running on a different host or port than the backend.
+cors_url = "http://localhost:3000"

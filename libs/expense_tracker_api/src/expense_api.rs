@@ -144,6 +144,7 @@ pub mod expense_api {
     /// DTO used when creating a new expense for the given pot.
     #[derive(ToSchema, Serialize, Deserialize)]
     pub struct NewExpenseDTO {
+        #[schema(max_length=24)]
         description: String,
         currency_id: i32,
         splits: Vec<NewSplitDTO>,

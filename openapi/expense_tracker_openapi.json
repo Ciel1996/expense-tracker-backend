@@ -7,10 +7,10 @@
       "name": "Ciel1996"
     },
     "license": {
-      "name": "MIT",
-      "identifier": "MIT"
+      "name": "GPL-3.0-or-later",
+      "identifier": "GPL-3.0-or-later"
     },
-    "version": "0.2.18"
+    "version": "0.3.0"
   },
   "paths": {
     "/api/v1/currencies": {
@@ -663,7 +663,8 @@
             "format": "int32"
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 24
           },
           "splits": {
             "type": "array",
@@ -686,7 +687,8 @@
             "format": "int32"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 24
           }
         }
       },
