@@ -1,6 +1,6 @@
 [package]
 name = "expense_tracker"
-version = "0.3.0"
+version = "1.0.0"
 edition = "2021"
 description = "A REST Api that offers various endpoints for handling shared expenses."
 license = "GPL-3.0-or-later"

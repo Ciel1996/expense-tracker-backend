@@ -136,8 +136,8 @@ Notes:
 - Frontend needs NEXT_PUBLIC_API_URL to call the API from the browser. Compose and Dockerfile set it to http://localhost:3001 by default.
 
 ## CI
-- .github/workflows/ci.yml and cicd.yml run production builds via Nx.
-- cicd.yml contains example steps to build Docker images on a self-hosted runner; optionally run docker compose up -d --build to deploy.
+- .github/workflows/ci.yml and cicd.yml run production builds.
+- cicd.yml contains example steps to build Docker images on a public runner; optionally run docker compose up -d --build to deploy.
 
 ## Troubleshooting
 - If Keycloak TLS causes JWKS fetch issues in dev, set EXPENSE_TRACKER_IGNORE_TLS=1 for the api service in compose (not recommended in prod).
