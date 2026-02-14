@@ -1,0 +1,55 @@
+# compiled output
+dist
+tmp
+out-tsc
+.next
+out
+
+# dependencies
+node_modules
+target
+
+# IDEs and editors
+.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.cursor/
+
+# misc
+.sass-cache
+connect.lock
+coverage
+libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+typings
+
+# System Files
+.[Dd]S_Store
+Thumbs.db
+
+# Nx
+.nx/cache
+.nx/workspace-data
+
+# local env files
+*.local
+.env.local
+
+# postgresql
+postgres-data/
+postgres-data-keycloak/
+
+# Docker
+docker-compose.yml
+.dockerignore

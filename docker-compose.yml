@@ -1,9 +1,9 @@
-# Use postgres/example user/password credentials
 services:
   db:
     image: postgres:18.1-alpine3.23
     restart: always
     environment:
+      POSTGRES_DB: postgres
       POSTGRES_PASSWORD: localpassword
       POSTGRES_USER: admin
     volumes:
@@ -23,8 +23,6 @@ services:
     ports:
       - 15000:5432
 
-  ## TODO: setup client expense-tracker in keycloak at http://localhost:8080/admin/master/console/
-  ## if for some reason keycloak claims that HTTPS is required: Restart your Docker Engine and try again.
   keycloak:
     image: quay.io/keycloak/keycloak:26.5.3
     restart: always
@@ -35,13 +33,19 @@ services:
       KC_DB_URL: jdbc:postgresql://db-keycloak/keycloak
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KC_HOSTNAME: host.docker.internal
-      KC_HOSTNAME_STRICT: false
-      KC_HTTP_ENABLED: true
+      KC_HOSTNAME: 127.0.0.1
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
     command:
       - start-dev
+      - --import-realm
+    volumes:
+      - ./keycloak-realm.json:/opt/keycloak/data/import/realm.json:ro
     ports:
       - 8080:8080
+      - 3001:3001
+      - 3000:3000
     depends_on:
       - db-keycloak
 
@@ -50,16 +54,15 @@ services:
       context: .
       dockerfile: apps/expense_tracker/Dockerfile
     restart: unless-stopped
+    network_mode: "service:keycloak"
     environment:
       RUST_LOG: info
-      # Comment or set to 0 to enable TLS validation when talking to Keycloak in Prod
       EXPENSE_TRACKER_IGNORE_TLS: "1"
-    ports:
-      - 3001:3001
     volumes:
       - ./config/settings_compose.toml:/app/config/settings.toml:ro
     depends_on:
       - db
+      - keycloak
 
   web:
     build:
@@ -68,9 +71,9 @@ services:
       args:
         NODE_ENV: development
     restart: unless-stopped
-    ports:
-      - 3000:3000
+    network_mode: "service:keycloak"
     env_file:
       - apps/expense-tracker-frontend/.env.compose
     depends_on:
       - api
+      - keycloak
