@@ -35,6 +35,10 @@ RUN npx nx build expense-tracker-frontend --configuration=production --skip-nx-c
 # ---------- Runtime stage ----------
 FROM node:20-bookworm-slim AS runner
 
+LABEL org.opencontainers.image.source=https://github.com/Ciel1996/expense-tracker-backend
+LABEL org.opencontainers.image.description="The frontend of Expense Tracker."
+LABEL org.opencontainers.image.licenses=GPL-3.0-or-later
+
 ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
