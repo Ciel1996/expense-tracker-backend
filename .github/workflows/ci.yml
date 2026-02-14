@@ -13,7 +13,7 @@ permissions:
 jobs:
   test:
     name: Run tests
-    runs-on: [ubuntu-latest]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Run backend tests
@@ -22,19 +22,41 @@ jobs:
 
   backend:
     name: Build backend image
-    runs-on: [ubuntu-latest]
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build backend image
-        run: |
-          docker build -f apps/expense_tracker/Dockerfile .
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/expense_tracker/Dockerfile
+          platforms: linux/arm64,linux/amd64
+          push: false
 
   frontend:
     name: Build frontend image
-    runs-on: [ubuntu-latest]
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build frontend image
-        run: |
-          docker build -f apps/expense-tracker-frontend/Dockerfile .
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/expense-tracker-frontend/Dockerfile
+          platforms: linux/arm64,linux/amd64
+          push: false
 
