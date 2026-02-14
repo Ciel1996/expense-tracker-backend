@@ -24,6 +24,7 @@ services:
       - 15000:5432
 
   ## TODO: setup client expense-tracker in keycloak at http://localhost:8080/admin/master/console/
+  ## if for some reason keycloak claims that HTTPS is required: Restart your Docker Engine and try again.
   keycloak:
     image: quay.io/keycloak/keycloak:26.5.3
     restart: always
@@ -34,6 +35,9 @@ services:
       KC_DB_URL: jdbc:postgresql://db-keycloak/keycloak
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: host.docker.internal
+      KC_HOSTNAME_STRICT: false
+      KC_HTTP_ENABLED: true
     command:
       - start-dev
     ports:
@@ -48,32 +52,25 @@ services:
     restart: unless-stopped
     environment:
       RUST_LOG: info
-      # Uncomment to disable TLS validation when talking to Keycloak in dev
-      # EXPENSE_TRACKER_IGNORE_TLS: "1"
+      # Comment or set to 0 to enable TLS validation when talking to Keycloak in Prod
+      EXPENSE_TRACKER_IGNORE_TLS: "1"
+    ports:
+      - 3001:3001
     volumes:
       - ./config/settings_compose.toml:/app/config/settings.toml:ro
     depends_on:
       - db
-      - keycloak
-    ports:
-      - 3001:3001
 
   web:
     build:
       context: .
       dockerfile: apps/expense-tracker-frontend/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:3001
+        NODE_ENV: development
     restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      NEXT_PUBLIC_API_URL: http://localhost:3001
-      NEXTAUTH_SECRET: very-secrety-secret
-      NEXTAUTH_URL: http://localhost:3000
-      EXPENSE_TRACKER_CLIENT_ID: expense-tracker
-      EXPENSE_TRACKER_CLIENT_SECRET: secret-from-keycloak # TODO: copy secret from keycloak!
-      EXPENSE_TRACKER_ISSUER: http://keycloak:8080/realms/master #needs to be different for your setup using keycloak above!!
-    depends_on:
-      - api
     ports:
       - 3000:3000
+    env_file:
+      - apps/expense-tracker-frontend/.env.compose
+    depends_on:
+      - api

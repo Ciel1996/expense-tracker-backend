@@ -1,5 +1,5 @@
 [oidc]
-issuer_url = "http://keycloak:8080/realms/master"
+issuer_url = "http://host.docker.internal:8080/realms/local"
 audience = "expense-tracker"
 
 [expense_tracker]
