@@ -46,14 +46,8 @@ services:
       - 8080:8080
       - 3001:3001
       - 3000:3000
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
     depends_on:
-      db-keycloak:
-        condition: service_started
+      - db-keycloak
 
   api:
     build:
@@ -67,10 +61,8 @@ services:
     volumes:
       - ./config/settings_compose.toml:/app/config/settings.toml:ro
     depends_on:
-      db:
-        condition: service_started
-      keycloak:
-        condition: service_healthy
+      - db
+      - keycloak
 
   web:
     build:
@@ -83,7 +75,5 @@ services:
     env_file:
       - apps/expense-tracker-frontend/.env.compose
     depends_on:
-      api:
-        condition: service_started
-      keycloak:
-        condition: service_healthy
+      - api
+      - keycloak

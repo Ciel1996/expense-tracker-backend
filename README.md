@@ -106,28 +106,13 @@ To create the frontend's docker container locally run:
 1. Adjust config files:
    - config/settings_compose.toml
    - for Frontend, either adjust Docker Compose file environment variables or .env.local and mount .env.local into your container
-2. Start everything:
+2. Start everything (this might take a while):
    - docker compose up -d --build
 3. Open services:
-   - Frontend: http://localhost:3000
+   - Frontend: http://localhost:3000 (go here after Keycloak is ready, you might need to restart docker compose, if nothing can be found. Click "Sign in to keycloak twice")
    - API: http://localhost:3001
    - Keycloak: http://localhost:8080
-4. Go to http://localhost:8080/admin and login with admin/admi
-# TODO: add instructions for Keycloak as soon as it works
-5. Go to "clients" and create a new client, as shown in the screenshots below:
-![CreateClient_1.png](docs/keycloak/CreateClient_1.png)
-![CreateClient_2.png](docs/keycloak/CreateClient_2.png)
-![CreateClient_3.png](docs/keycloak/CreateClient_3.png)
-Confirm the client creation.
-6. Get the client secret of the created client:
-![CreateClient_4.png](docs/keycloak/CreateClient_4.png)
-Paste the secret into config/settings_compose.toml under "client_secret" and apps/expense-tracker-frontend/.env.compose under "EXPENSE_TRACKER_CLIENT_SECRET" (optionally create a .env.local file and paste it there, too).
-7. Go to client's "Client Scope" tab and click on "expense-tracker-dedicated"
-![CreateClient_5.png](docs/keycloak/CreateClient_5.png)
-8. Select mapper type "Audience" and configure as shown in the screenshot below:
-![CreateClient_6.png](docs/keycloak/CreateClient_6.png)
-9. Try out the app at http://localhost:3000!
-10. Disable the component you would like to work on in the docker compose file. ☺️
+4. Go to http://localhost:8080/admin and login with admin/admin to view the Keycloak configuration.
 
 ## Build images manually
 - Backend:
