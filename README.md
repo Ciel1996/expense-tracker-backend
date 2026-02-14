@@ -103,15 +103,16 @@ To create the frontend's docker container locally run:
 - docker-compose: local, reproducible stack including Postgres and Keycloak.
 
 ## Quick start (local)
-1. Create config files:
-   - cp config/settings.toml.example config/settings.toml
-   - cp apps/expense-tracker-frontend/.env.local.example apps/expense-tracker-frontend/.env.local
-2. Start everything:
+1. Adjust config files:
+   - config/settings_compose.toml
+   - for Frontend, either adjust Docker Compose file environment variables or .env.local and mount .env.local into your container
+2. Start everything (this might take a while):
    - docker compose up -d --build
 3. Open services:
-   - Frontend: http://localhost:3000
+   - Frontend: http://localhost:3000 (go here after Keycloak is ready, you might need to restart docker compose, if nothing can be found. Click "Sign in to keycloak twice")
    - API: http://localhost:3001
    - Keycloak: http://localhost:8080
+4. Go to http://localhost:8080/admin and login with admin/admin to view the Keycloak configuration.
 
 ## Build images manually
 - Backend:

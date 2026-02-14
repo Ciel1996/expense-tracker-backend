@@ -1,6 +1,8 @@
 # Multi-stage Dockerfile for Rust backend (expense_tracker)
+# This Dockerfile should be built from the project root to include workspace dependencies and config.
+# Usage: docker build -f apps/expense_tracker/Dockerfile . -t api-test
 # Builder stage
-FROM rust:1.93-slim AS builder
+FROM rust:slim-bookworm AS builder
 
 # Install build dependencies for crates like openssl
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -20,10 +22,13 @@ RUN cargo build --release --bin expense_tracker --target-dir ./target
 # Runtime stage
 FROM debian:bookworm-slim AS runtime
 
+LABEL org.opencontainers.image.source=https://github.com/Ciel1996/expense-tracker-backend
+LABEL org.opencontainers.image.description="The backend of Expense Tracker."
+LABEL org.opencontainers.image.licenses=GPL-3.0-or-later
+
 # Install runtime deps and create non-root user
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates libssl3 libpq5 && \
-#    cargo install diesel_cli --no-default-features --features postgres-bundled && \
     rm -rf /var/lib/apt/lists/* && \
     useradd -m -u 10001 appuser
 
