@@ -1,4 +1,48 @@
-# 
+# What is Expense-Tracker?
+Expense-Tracker is a simple application that allows the users to track their household expenses.
+A user can create pots, invite other users, and add expenses to be split among them.
+
+## Wait, why is the repository called expense-tracker-backend, there is a frontend in here too?
+Initially I wanted to create a Rust backend and then write a native iOS app (which I called expense-tracker) in SwiftUI. But soon after I realized that the backend would need a web UI so that users can self-host it and access it via their browser on any device they want.
+This doesn't mean that the iOS app won't be available sometime in the future. But for now, I would like to focus on the backend and the web frontend.
+
+Additionally I wanted to experiment with a tool which was new to me: Nx. So I decided to turn my backend repo into an Nx workspace.
+
+# How to contribute
+First: Thank you for your interest in contributing! I'm eager to see what we can learn from each other!
+
+1. Clone the repository
+2. if you are on macOS, I'd recommend using homebrew to install rustup and node: 
+```bash
+brew install rustup
+brew install node
+```
+
+On Linux, I'd recommend using the official installers.
+
+3. If you want to work on the backend, you will also need to install diesel_cli using this command:
+```bash
+cargo install diesel_cli --no-default-features --features postgres
+```
+
+Additionally you will need to install libpq on your system. The Dockerfile shows a way to do this on Debian-based systems.
+
+On macOS you can use homebrew:
+```bash
+brew install libpq
+```
+
+(Honestly I haven't developed on Linux since early 2025, so I might have forgotten some details, please let me know if you run into any issues, and we'll figure out how to solve them 😊)
+
+4. Run `npm install` to install the dependencies (crucial, otherwise you can't use Nx)
+5. Modify docker compose to setup keycloak and postgreSQL (and the backend, if you want to work on the frontend 😊
+6. Adjust the settings.toml file in the config directory to your needs, currently I'm using my NAS's URL as my keycloak server, but you can use localhost:8080/realms/local as the issuer address. In that case, the client would also be `expense-tracker`
+7. If you want to run the frontend, make a copy of .env.local.example and rename it to .env.local. Then adjust the variables to your needs. 
+8. If you want to run the backend use `cargo run` from the repo root (recommended), alternatively you can use `npx nx run expense_tracker`, but this creates a production build. 
+9. If you want to run the frontend use `npx nx dev expense-tracker-frontend` from the repo root. 
+10. If you made changes to the backend's API, e.g. adding a new endpoint, modifying or removing an existing one, you can use `npx nx swagger expense_tracker`, this will automatically update the OpenApi Spec and generate a new expense-tracker-client which can then be used by the frontend.
+
+#
 
 <a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
 
