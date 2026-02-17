@@ -47,7 +47,7 @@
     "eslint-plugin-jsx-a11y": "6.10.2",
     "eslint-plugin-playwright": "^1.6.2",
     "eslint-plugin-react": "7.35.0",
-    "eslint-plugin-react-hooks": "5.0.0",
+    "eslint-plugin-react-hooks": "7.0.1",
     "jest": "^30.0.2",
     "jest-environment-jsdom": "^30.0.2",
     "jest-environment-node": "^30.0.2",
