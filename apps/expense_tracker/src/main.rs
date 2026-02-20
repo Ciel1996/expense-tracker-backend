@@ -206,7 +206,7 @@ async fn main() {
             http::header::ACCEPT,
             http::header::CONTENT_TYPE,
         ])
-        .max_age(Duration::from_secs(3600));
+        .max_age(Duration::from_secs(APP_SETTINGS.expense_tracker().cors_lifespan()));
 
 
     let cors = ServiceBuilder::new()

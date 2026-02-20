@@ -18,3 +18,5 @@ port = 3001
 db_connection_string = "postgres://admin:localpassword@db:5432/postgres"
 # CORS URL for frontend, required if frontend is running on a different host or port than the backend.
 cors_url = "http://localhost:3000"
+# CORS lifespan in seconds. (Defaults to 3600)
+# cors_lifespan=500

@@ -1,4 +1,5 @@
 pub mod pots {
+    use chrono::{DateTime, Utc};
     use crate::schema::pots;
     use crate::schema::pots_to_users;
     use diesel::{Insertable, Queryable, Selectable};
@@ -15,15 +16,27 @@ pub mod pots {
         owner_id: Uuid,
         name: String,
         default_currency_id: i32,
+        archived: bool,
+        created_at: DateTime<Utc>,
+        archived_at: Option<DateTime<Utc>>,
     }
 
     impl Pot {
-        pub fn new(id: i32, owner_id: Uuid, name: String, default_currency_id: i32) -> Self {
+        pub fn new(
+            id: i32,
+            owner_id: Uuid,
+            name: String,
+            default_currency_id: i32,
+            created_at: DateTime<Utc>
+        ) -> Self {
             Self {
                 id,
                 owner_id,
                 name,
                 default_currency_id,
+                archived: false,
+                created_at,
+                archived_at: None,
             }
         }
 
@@ -46,6 +59,15 @@ pub mod pots {
         pub fn default_currency_id(&self) -> i32 {
             self.default_currency_id
         }
+
+        /// Getter for archived.
+        pub fn is_archived(&self) -> bool { self.archived }
+
+        /// Getter for created_at.
+        pub fn created_at(&self) -> DateTime<Utc> { self.created_at }
+
+        /// Getter for archived_at.
+        pub fn archived_at(&self) -> Option<DateTime<Utc>> { self.archived_at }
     }
 
     /// This struct is used to create a new pot in the database.
@@ -55,6 +77,7 @@ pub mod pots {
         owner_id: Uuid,
         name: String,
         default_currency_id: i32,
+        created_at: DateTime<Utc>,
     }
 
     impl NewPot {
@@ -64,6 +87,7 @@ pub mod pots {
                 owner_id,
                 name,
                 default_currency_id,
+                created_at: Utc::now(),
             }
         }
 

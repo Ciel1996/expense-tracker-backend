@@ -14,6 +14,7 @@ pub struct ExpenseTracker {
     port: u16,
     db_connection_string: String,
     cors_url: String,
+    cors_lifespan: Option<u64>,
 }
 
 impl ExpenseTracker {
@@ -28,6 +29,8 @@ impl ExpenseTracker {
     }
 
     pub fn cors_url(&self) -> &str { &self.cors_url }
+
+    pub fn cors_lifespan(&self) -> u64 { self.cors_lifespan.unwrap_or(3600) }
 }
 
 impl Oidc {

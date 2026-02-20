@@ -11,9 +11,10 @@ interface ExpensesTableProps {
   expenses: ExpenseDTO[];
   users: UserLite[];
   potId: number;
+  isArchived?: boolean;
 }
 
-export function ExpensesTable({ expenses, users, potId }: ExpensesTableProps) {
+export function ExpensesTable({ expenses, users, potId, isArchived }: ExpensesTableProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const toggle = (id: number) => {
@@ -71,6 +72,7 @@ export function ExpensesTable({ expenses, users, potId }: ExpensesTableProps) {
                         expenseId={e.id}
                         expenseOwnerId={e.owner_id}
                         potId={potId}
+                        isArchived={isArchived}
                       />
                     </Collapse>
                   </td>
@@ -84,7 +86,7 @@ export function ExpensesTable({ expenses, users, potId }: ExpensesTableProps) {
   );
 }
 
-function ExpenseSplitDetails({ splits, users, currencySymbol, expenseId, expenseOwnerId, potId }: { splits: SplitDTO[]; users: UserLite[]; currencySymbol: string; expenseId: number; expenseOwnerId: string; potId: number }) {
+function ExpenseSplitDetails({ splits, users, currencySymbol, expenseId, expenseOwnerId, potId, isArchived }: { splits: SplitDTO[]; users: UserLite[]; currencySymbol: string; expenseId: number; expenseOwnerId: string; potId: number; isArchived?: boolean }) {
   const { data: currentUser } = useCurrentUser();
   const payExpense = usePayExpense();
   const queryClient = useQueryClient();
@@ -134,7 +136,7 @@ function ExpenseSplitDetails({ splits, users, currencySymbol, expenseId, expense
                   <td className="px-3 py-2">
                     {s.is_paid ? (
                       <span className="inline-flex items-center rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 px-2 py-0.5 text-xs font-medium">Paid</span>
-                    ) : allowed ? (
+                    ) : (allowed && !isArchived) ? (
                       <button
                         onClick={(evt) => onMarkPaid(evt, s.amount)}
                         disabled={payExpense.isPending}

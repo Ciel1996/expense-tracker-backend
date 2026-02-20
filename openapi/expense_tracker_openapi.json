@@ -10,7 +10,7 @@
       "name": "GPL-3.0-or-later",
       "identifier": "GPL-3.0-or-later"
     },
-    "version": "0.3.0"
+    "version": "1.0.0"
   },
   "paths": {
     "/api/v1/currencies": {
@@ -376,6 +376,9 @@
           "409": {
             "description": "The user was already added to the pot."
           },
+          "423": {
+            "description": "The user can't be added, as the pot is archived."
+          },
           "500": {
             "description": "An internal server error occurred"
           }
@@ -427,6 +430,9 @@
           },
           "404": {
             "description": "Indicates that the pot for this expense does not exist."
+          },
+          "423": {
+            "description": "The user can't be added, as the pot is archived."
           }
         },
         "security": [
@@ -474,6 +480,45 @@
         ]
       }
     },
+    "/api/v1/pots/{pot_id}/archive": {
+      "put": {
+        "tags": [
+          "Pots"
+        ],
+        "operationId": "archive",
+        "parameters": [
+          {
+            "name": "pot_id",
+            "in": "path",
+            "description": "Pot database id for the pot",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pot has been successfully archived."
+          },
+          "403": {
+            "description": "The pot could not be archived due to the caller not being the owner of the given pot."
+          },
+          "409": {
+            "description": "The pot was already archived."
+          },
+          "500": {
+            "description": "An internal server error occurred"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/pots/{pot_id}/remove_user": {
       "put": {
         "tags": [
@@ -512,6 +557,48 @@
           },
           "404": {
             "description": "The user is not part of the pot."
+          },
+          "423": {
+            "description": "The user can't be removed, as the pot is archived."
+          },
+          "500": {
+            "description": "An internal server error occurred"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/pots/{pot_id}/unarchive": {
+      "put": {
+        "tags": [
+          "Pots"
+        ],
+        "operationId": "unarchive",
+        "parameters": [
+          {
+            "name": "pot_id",
+            "in": "path",
+            "description": "Pot database id for the pot",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pot has been successfully unarchived."
+          },
+          "403": {
+            "description": "The pot could not be unarchived due to the caller not being the owner of the given pot."
+          },
+          "409": {
+            "description": "The pot is not archived."
           },
           "500": {
             "description": "An internal server error occurred"
@@ -732,9 +819,25 @@
           "name",
           "default_currency",
           "users",
-          "net_balance"
+          "net_balance",
+          "archived",
+          "created_at"
         ],
         "properties": {
+          "archived": {
+            "type": "boolean"
+          },
+          "archived_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
           "default_currency": {
             "$ref": "#/components/schemas/CurrencyDTO"
           },

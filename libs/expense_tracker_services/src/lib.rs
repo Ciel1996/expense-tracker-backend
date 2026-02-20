@@ -17,6 +17,8 @@ pub enum ExpenseError {
     Internal(String),
     /// Indicates a conflict, thus resulting in cancelation of the task.
     Conflict(String),
+    /// Indicates that the resource is locked, most likely due to it being archived.
+    Locked(String),
 }
 
 /// Produces a `NotFound` from the given `err`.
