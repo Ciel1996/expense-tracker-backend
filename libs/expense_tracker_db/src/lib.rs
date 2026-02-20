@@ -4,6 +4,7 @@ pub mod pots;
 pub mod schema;
 pub mod splits;
 pub mod users;
+pub mod template_pots;
 
 pub mod setup {
     use diesel::pg::PgConnection;

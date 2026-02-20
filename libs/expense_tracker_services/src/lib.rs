@@ -5,6 +5,7 @@ pub mod expense_service;
 pub mod health_service;
 pub mod pot_service;
 pub mod user_service;
+pub mod template_service;
 
 #[derive(Debug)]
 /// An enumeration defining all errors of the application.

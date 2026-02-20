@@ -4,6 +4,7 @@ mod health_api;
 mod pot_api;
 mod user_api;
 mod generate_openapi;
+mod template_api;
 
 pub mod api {
     use crate::currency_api::currency_api;
