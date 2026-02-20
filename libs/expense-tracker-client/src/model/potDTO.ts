@@ -3,8 +3,9 @@
  * Do not edit manually.
  * expense_tracker
  * A REST Api that offers various endpoints for handling shared expenses.
- * OpenAPI spec version: 0.3.0
+ * OpenAPI spec version: 1.0.0
  */
+import type { PotDTOArchivedAt } from './potDTOArchivedAt';
 import type { CurrencyDTO } from './currencyDTO';
 import type { UserDTO } from './userDTO';
 
@@ -12,6 +13,9 @@ import type { UserDTO } from './userDTO';
  * DTO used when working with existing Pots.
  */
 export interface PotDTO {
+  archived: boolean;
+  archived_at?: PotDTOArchivedAt;
+  created_at: string;
   default_currency: CurrencyDTO;
   id: number;
   name: string;

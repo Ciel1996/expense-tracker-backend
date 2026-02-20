@@ -11,69 +11,69 @@ services:
     ports:
       - 5432:5432
 
-  db-keycloak:
-    image: postgres:18.2-alpine3.23
-    restart: always
-    environment:
-      POSTGRES_DB: keycloak
-      POSTGRES_PASSWORD: localpassword
-      POSTGRES_USER: admin
-    volumes:
-      - ./postgres-data-keycloak:/var/lib/postgresql
-    ports:
-      - 15000:5432
+#  db-keycloak:
+#    image: postgres:18.2-alpine3.23
+#    restart: always
+#    environment:
+#      POSTGRES_DB: keycloak
+#      POSTGRES_PASSWORD: localpassword
+#      POSTGRES_USER: admin
+#    volumes:
+#      - ./postgres-data-keycloak:/var/lib/postgresql
+#    ports:
+#      - 15000:5432
+#
+#  keycloak:
+#    image: quay.io/keycloak/keycloak:26.5.3
+#    restart: always
+#    environment:
+#      KC_DB: postgres
+#      KC_DB_USERNAME: admin
+#      KC_DB_PASSWORD: localpassword
+#      KC_DB_URL: jdbc:postgresql://db-keycloak/keycloak
+#      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+#      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+#      KC_HOSTNAME: 127.0.0.1
+#      KC_HOSTNAME_STRICT: "false"
+#      KC_HTTP_ENABLED: "true"
+#      KC_HEALTH_ENABLED: "true"
+#    command:
+#      - start-dev
+#      - --import-realm
+#    volumes:
+#      - ./keycloak-realm.json:/opt/keycloak/data/import/realm.json:ro
+#    ports:
+#      - 8080:8080
+#      - 3001:3001
+#      - 3000:3000
+#    depends_on:
+#      - db-keycloak
 
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.5.3
-    restart: always
-    environment:
-      KC_DB: postgres
-      KC_DB_USERNAME: admin
-      KC_DB_PASSWORD: localpassword
-      KC_DB_URL: jdbc:postgresql://db-keycloak/keycloak
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KC_HOSTNAME: 127.0.0.1
-      KC_HOSTNAME_STRICT: "false"
-      KC_HTTP_ENABLED: "true"
-      KC_HEALTH_ENABLED: "true"
-    command:
-      - start-dev
-      - --import-realm
-    volumes:
-      - ./keycloak-realm.json:/opt/keycloak/data/import/realm.json:ro
-    ports:
-      - 8080:8080
-      - 3001:3001
-      - 3000:3000
-    depends_on:
-      - db-keycloak
-
-  api:
-    build:
-      context: .
-      dockerfile: apps/expense_tracker/Dockerfile
-    restart: unless-stopped
-    network_mode: "service:keycloak"
-    environment:
-      RUST_LOG: info
-      EXPENSE_TRACKER_IGNORE_TLS: "1"
-    volumes:
-      - ./config/settings_compose.toml:/app/config/settings.toml:ro
-    depends_on:
-      - db
-      - keycloak
-
-  web:
-    build:
-      context: .
-      dockerfile: apps/expense-tracker-frontend/Dockerfile
-      args:
-        NODE_ENV: development
-    restart: unless-stopped
-    network_mode: "service:keycloak"
-    env_file:
-      - apps/expense-tracker-frontend/.env.compose
-    depends_on:
-      - api
-      - keycloak
+#  api:
+#    build:
+#      context: .
+#      dockerfile: apps/expense_tracker/Dockerfile
+#    restart: unless-stopped
+#    network_mode: "service:keycloak"
+#    environment:
+#      RUST_LOG: info
+#      EXPENSE_TRACKER_IGNORE_TLS: "1"
+#    volumes:
+#      - ./config/settings_compose.toml:/app/config/settings.toml:ro
+#    depends_on:
+#      - db
+#      - keycloak
+#
+#  web:
+#    build:
+#      context: .
+#      dockerfile: apps/expense-tracker-frontend/Dockerfile
+#      args:
+#        NODE_ENV: development
+#    restart: unless-stopped
+#    network_mode: "service:keycloak"
+#    env_file:
+#      - apps/expense-tracker-frontend/.env.compose
+#    depends_on:
+#      - api
+#      - keycloak

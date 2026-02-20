@@ -6,10 +6,4 @@
  * OpenAPI spec version: 1.0.0
  */
 
-/**
- * DTO used when creating new Splits for expenses.
- */
-export interface NewSplitDTO {
-  amount: number;
-  user_id: string;
-}
+export type PotDTOArchivedAt = string | null;
