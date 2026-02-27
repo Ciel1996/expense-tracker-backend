@@ -100,7 +100,7 @@ pub mod user_api {
     pub async fn get_users(
         State(service): State<UserService>,
     ) -> Result<ApiResponse<Vec<UserDTO>>, ApiResponse<String>> {
-        let res = service.get_users().await.map_err(check_error)?;
+        let res = service.get_users(None).await.map_err(check_error)?;
         Ok((StatusCode::OK, Json(UserDTO::from_vec(res))))
     }
 }

@@ -31,7 +31,7 @@ pub mod user_service {
         /// Gets all users in the database.
         /// The optionally provided filter is a list of user ids to filter by.
         /// If set to None or empty, all users are returned.
-        /// Otherwise only a list of users matching the filter is returned.
+        /// Otherwise, only a list of users matching the filter is returned.
         pub async fn get_users(&self, filter: Option<Vec<Uuid>>) -> Result<Vec<User>, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 

@@ -51,13 +51,14 @@ pub mod template_api {
         name: String,
         default_currency: CurrencyDTO,
         create_at: Option<chrono::DateTime<chrono::Utc>>,
+        users: Vec<UserDTO>
     }
 
     impl PotTemplateDTO {
         pub fn from(
             pot_template: PotTemplate,
             default_currency: CurrencyDTO,
-            owner: UserDTO) -> Self
+            users: Vec<UserDTO>) -> Self
         {
             Self {
                 id: pot_template.id(),
@@ -65,19 +66,8 @@ pub mod template_api {
                 name: pot_template.name().to_string(),
                 default_currency,
                 create_at: pot_template.create_at(),
+                users
             }
-        }
-    }
-
-    impl UserDTO {
-        fn from_template_vec(users: Vec<PotTemplateUser>) -> Vec<UserDTO> {
-            let mut dtos = vec![];
-
-            for user in users {
-                dtos.push(UserDTO::from_template(user));
-            }
-
-            dtos
         }
     }
 
@@ -112,7 +102,7 @@ pub mod template_api {
             Json(PotTemplateDTO::from(
                 result.0,
                 CurrencyDTO::from(result.1),
-                UserDTO::from_template_vec(result.2)
+                UserDTO::from_vec(result.2)
             ))
         ))
     }

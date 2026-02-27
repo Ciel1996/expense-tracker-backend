@@ -59,7 +59,7 @@ pub mod pot_template_service {
                             .get_results::<PotTemplateUser>(conn)
                             .await?;
 
-                        let users = self.user_service.get_users().await?;
+                        let users = self.user_service.get_users(None).await?;
 
                         let currency = self
                             .currency_service
@@ -67,7 +67,7 @@ pub mod pot_template_service {
                             .await
                             .map_err(check_error)?;
 
-                        Ok((template_pot, currency, template_users))
+                        Ok((template_pot, currency, users))
                     }
                     .scope_boxed()
                 })
