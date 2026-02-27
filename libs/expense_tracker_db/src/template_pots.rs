@@ -6,7 +6,7 @@ pub mod template_pots {
     use serde::{Deserialize, Serialize};
     use uuid::Uuid;
 
-    #[derive(Serialize, Selectable, Queryable)]
+    #[derive(Clone, Serialize, Selectable, Queryable)]
     #[diesel(table_name = pot_templates)]
     #[diesel(check_for_backend(diesel::pg::Pg))]
     pub struct PotTemplate {
@@ -14,7 +14,7 @@ pub mod template_pots {
         owner_id: Uuid,
         name: String,
         default_currency_id: i32,
-        create_at: Option<DateTime<Utc>>,
+        create_at: DateTime<Utc>
     }
     
     impl PotTemplate {
@@ -23,7 +23,7 @@ pub mod template_pots {
             owner_id: Uuid,
             name: String,
             default_currency_id: i32,
-            create_at: Option<DateTime<Utc>>
+            create_at: DateTime<Utc>
         ) -> Self {
             Self {
                 id,
@@ -50,18 +50,18 @@ pub mod template_pots {
             self.default_currency_id
         }
 
-        pub fn create_at(&self) -> Option<DateTime<Utc>> {
+        pub fn create_at(&self) -> DateTime<Utc> {
             self.create_at
         }
     }
 
-    #[derive(Deserialize, Insertable)]
+    #[derive(Clone, Deserialize, Insertable)]
     #[diesel(table_name = pot_templates)]
     pub struct NewPotTemplate {
         owner_id: Uuid,
         name: String,
         default_currency_id: i32,
-        create_at: Option<DateTime<Utc>>,
+        create_at: DateTime<Utc>,
     }
 
     impl NewPotTemplate {
@@ -69,12 +69,13 @@ pub mod template_pots {
             owner_id: Uuid, 
             name: String,
             default_currency_id: i32,
+            create_at: DateTime<Utc>
         ) -> Self {
             Self {
                 owner_id,
                 name,
                 default_currency_id,
-                create_at: Some(Utc::now())
+                create_at
             }
         }
 
@@ -90,7 +91,7 @@ pub mod template_pots {
             self.default_currency_id
         }
 
-        pub fn create_at(&self) -> Option<DateTime<Utc>> {
+        pub fn create_at(&self) -> DateTime<Utc> {
             self.create_at
         }
     }

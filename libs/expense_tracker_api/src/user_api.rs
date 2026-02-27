@@ -47,6 +47,10 @@ pub mod user_api {
 
             dtos
         }
+
+        pub fn uuid(&self) -> Uuid {
+            self.uuid
+        }
     }
 
     /// Creates a new user from the given DTO.

@@ -17,9 +17,10 @@ pub mod api {
     use axum::Json;
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_services::ExpenseError;
-    use utoipa::gen::serde_json::Value;
+    use utoipa::r#gen::serde_json::Value;
     use utoipa_axum::router::OpenApiRouter;
     use uuid::Uuid;
+    use crate::template_api::template_api;
 
     /// The generic response that is returned by APIs.
     pub type ApiResponse<T> = (StatusCode, Json<T>);
@@ -35,6 +36,7 @@ pub mod api {
             .nest(VERSION_ONE, pot_api::register(pool.clone()))
             .nest(VERSION_ONE, currency_api::register(pool.clone()))
             .nest(VERSION_ONE, expense_api::register(pool.clone()))
+            .nest(VERSION_ONE, template_api::register(pool.clone()))
     }
 
     /// Registers the health API without token validation, so it is always possible to

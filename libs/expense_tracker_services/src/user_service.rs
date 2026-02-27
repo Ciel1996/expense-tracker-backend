@@ -35,7 +35,7 @@ pub mod user_service {
         pub async fn get_users(&self, filter: Option<Vec<Uuid>>) -> Result<Vec<User>, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
-            if let Some(filter) = filter {
+            if let Some(filter) = filter && !filter.is_empty() {
                 let users = expense_tracker_db_schema::users::table
                     .filter(id.eq_any(filter))
                     .get_results(&mut conn)

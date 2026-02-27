@@ -1,6 +1,6 @@
 [package]
 name = "expense_tracker_db"
-edition = "2021"
+edition = "2024"
 license = "GPL-3.0-or-later"
 authors = ["Ciel1996"]
 

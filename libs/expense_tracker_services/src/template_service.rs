@@ -3,6 +3,7 @@ pub mod pot_template_service {
     use diesel::result::Error;
     use diesel_async::{AsyncConnection, RunQueryDsl};
     use diesel_async::scoped_futures::ScopedFutureExt;
+    use uuid::Uuid;
     use expense_tracker_db::currencies::currencies::Currency;
     use expense_tracker_db::schema::pot_template_users::dsl::pot_template_users;
     use expense_tracker_db::schema::pot_templates::dsl::{pot_templates, id, owner_id};
@@ -35,17 +36,21 @@ pub mod pot_template_service {
         }
 
         /// Creates a new template with associated users.
+        /// The owner will be added to the list of users automatically inside the function.
         pub async fn create_template(
             &self,
             new_template: NewPotTemplate,
-            new_template_users: Vec<NewPotTemplateUser>
+            mut new_template_user_ids: Vec<Uuid>
         ) -> Result<(PotTemplate, Currency, Vec<User>), ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
+            // Using a transaction to ensure that the template is created together with the users in the template users table
             let result = conn
                 .transaction::<_, Error, _>(|conn| {
                     async move {
+                        // cloning variables for later use and before they are moved
                         let currency_id_clone = new_template.default_currency_id().clone();
+                        let new_template_clone = new_template.clone();
 
                         let template_pot = diesel::insert_into(pot_templates)
                             .values(new_template)
@@ -53,13 +58,39 @@ pub mod pot_template_service {
                             .get_result::<PotTemplate>(conn)
                             .await?;
 
+                        // although the code documentation states that the owner is always the first user in the template users list,
+                        // we are checking if the owner is already in the list of users, if not, we add him to the list of users
+                        if !new_template_user_ids.iter().any(|u| u.eq(&new_template_clone.owner_id())){
+                            new_template_user_ids.push(new_template_clone.owner_id());
+                        }
+
+                        // converting the vector of uuids to a vector of NewPotTemplateUser, which diesel
+                        // can understand and insert into the database with a reference to the PotTemplates
+                        let mut template_users = vec![];
+                        for user_id in new_template_user_ids {
+                            template_users.push(NewPotTemplateUser::new(user_id, template_pot.clone().id()));
+                        }
+
                         let template_users = diesel::insert_into(pot_template_users)
-                            .values(new_template_users)
+                            .values(template_users)
                             .returning(PotTemplateUser::as_returning())
                             .get_results::<PotTemplateUser>(conn)
                             .await?;
 
-                        let users = self.user_service.get_users(None).await?;
+                        // since user_service.get_users expects an Option<Vec<Uuid>>, we wrap the result
+                        // in a Some(Vec<Uuid>)
+                        let template_user_uuids = Some(
+                            template_users
+                            .iter()
+                            .map(|u| u.user_id())
+                            .collect()
+                        );
+
+                        // get the users from the general users table,
+                        // because a user can only be added to a template if he is already a user in general!
+                        let users = self.user_service
+                            .get_users(template_user_uuids)
+                            .await?;
 
                         let currency = self
                             .currency_service
