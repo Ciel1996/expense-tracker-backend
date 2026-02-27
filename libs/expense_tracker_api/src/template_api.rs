@@ -11,11 +11,12 @@ pub mod template_api {
     use utoipa_axum::routes;
     use uuid::Uuid;
     use expense_tracker_db::setup::DbPool;
-    use expense_tracker_db::template_pots::template_pots::{NewPotTemplate, PotTemplate};
+    use expense_tracker_db::template_pots::template_pots::{NewPotTemplate, Occurrence, PotTemplate};
     use expense_tracker_services::template_service::pot_template_service::PotTemplateService;
     use crate::api::{check_error, get_sub_claim, ApiResponse};
     use crate::currency_api::currency_api::CurrencyDTO;
-    use crate::user_api::user_api::UserDTO;
+    use crate::user_api::user_api::UserDTO;    
+
 
     pub struct TemplateApiState {
         pot_template_service: PotTemplateService
@@ -42,7 +43,8 @@ pub mod template_api {
         /// The owner does not need to be part of this list, as they are automatically added
         /// by the service.
         user_ids: Vec<Uuid>,
-        create_at: DateTime<Utc>
+        create_at: DateTime<Utc>,
+        occurrence: Occurrence,
     }
 
     impl NewPotTemplateDTO {
@@ -51,7 +53,8 @@ pub mod template_api {
                 owner_id,
                 self.name.clone(),
                 self.default_currency_id,
-                self.create_at
+                self.create_at,
+                self.occurrence
             )
         }
 
@@ -71,6 +74,7 @@ pub mod template_api {
         name: String,
         default_currency: CurrencyDTO,
         create_at: DateTime<Utc>,
+        occurrence: Occurrence,
         users: Vec<UserDTO>
     }
 
@@ -88,6 +92,7 @@ pub mod template_api {
                 name: pot_template.name().to_string(),
                 default_currency,
                 create_at: pot_template.create_at(),
+                occurrence: pot_template.occurrence(),
                 users
             }
         }
@@ -115,7 +120,7 @@ pub mod template_api {
 
         let result = template_api_state
             .pot_template_service
-            .create_template(new_pot_tempalte.to_db(subject_id), new_pot_tempalte.user_ids)
+            .create_template(new_pot_tempalte.to_db(subject_id), new_pot_tempalte.user_ids().clone())
             .await
             .map_err(check_error)?;
 

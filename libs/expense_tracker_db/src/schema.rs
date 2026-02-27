@@ -42,6 +42,7 @@ diesel::table! {
         name -> Text,
         default_currency_id -> Int4,
         create_at -> Timestamptz,
+        occurrence -> Varchar,
     }
 }
 

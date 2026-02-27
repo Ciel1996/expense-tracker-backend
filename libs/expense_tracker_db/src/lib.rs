@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 pub mod currencies;
 pub mod expenses;
 pub mod pots;
@@ -5,6 +7,22 @@ pub mod schema;
 pub mod splits;
 pub mod users;
 pub mod template_pots;
+
+#[derive(Debug, Error)]
+#[error("ExpenseTrackerDBError: {msg}, {status}")]
+pub struct ExpenseTrackerDBError {
+    msg: String,
+    status: u16,
+}
+
+impl ExpenseTrackerDBError {
+    pub fn not_found(msg: String) -> Self {
+        Self {
+            msg,
+            status: 404,
+        }
+    }
+}
 
 pub mod setup {
     use diesel::pg::PgConnection;
