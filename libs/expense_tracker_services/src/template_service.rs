@@ -3,31 +3,50 @@ pub mod pot_template_service {
     use diesel::result::Error;
     use diesel_async::{AsyncConnection, RunQueryDsl};
     use diesel_async::scoped_futures::ScopedFutureExt;
+    use expense_tracker_db::currencies::currencies::Currency;
     use expense_tracker_db::schema::pot_template_users::dsl::pot_template_users;
     use expense_tracker_db::schema::pot_templates::dsl::{pot_templates, id, owner_id};
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::template_pots::template_pots::{NewPotTemplate, NewPotTemplateUser, PotTemplate, PotTemplateUser};
-    use crate::{internal_error, not_found_error, ExpenseError};
+    use expense_tracker_db::users::users::User;
+    use crate::{check_error, internal_error, not_found_error, ExpenseError};
+    use crate::currency_service::currency_service;
+    use crate::currency_service::currency_service::CurrencyService;
     use crate::ExpenseError::Forbidden;
+    use crate::user_service::user_service;
+    use crate::user_service::user_service::UserService;
 
     /// A service offering interfaces related to Templates.
     #[derive(Clone)]
     pub struct PotTemplateService {
-        db_pool: DbPool
+        db_pool: DbPool,
+        currency_service: CurrencyService,
+        user_service: UserService,
     }
 
     impl PotTemplateService {
+        /// Creates a new instance of PotTemplateService.
+        pub fn new_service(db_pool: DbPool) -> Self {
+            Self {
+                db_pool: db_pool.clone(),
+                currency_service: currency_service::new_service(db_pool.clone()),
+                user_service: user_service::new_service(db_pool.clone()),
+            }
+        }
+
         /// Creates a new template with associated users.
         pub async fn create_template(
             &self,
             new_template: NewPotTemplate,
             new_template_users: Vec<NewPotTemplateUser>
-        ) -> Result<(PotTemplate, Vec<PotTemplateUser>), ExpenseError> {
+        ) -> Result<(PotTemplate, Currency, Vec<User>), ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
             let result = conn
                 .transaction::<_, Error, _>(|conn| {
                     async move {
+                        let currency_id_clone = new_template.default_currency_id().clone();
+
                         let template_pot = diesel::insert_into(pot_templates)
                             .values(new_template)
                             .returning(PotTemplate::as_returning())
@@ -40,7 +59,15 @@ pub mod pot_template_service {
                             .get_results::<PotTemplateUser>(conn)
                             .await?;
 
-                        Ok((template_pot, template_users))
+                        let users = self.user_service.get_users().await?;
+
+                        let currency = self
+                            .currency_service
+                            .get_currency_by_id(currency_id_clone)
+                            .await
+                            .map_err(check_error)?;
+
+                        Ok((template_pot, currency, template_users))
                     }
                     .scope_boxed()
                 })

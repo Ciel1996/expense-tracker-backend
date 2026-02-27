@@ -29,8 +29,21 @@ pub mod user_service {
         }
 
         /// Gets all users in the database.
-        pub async fn get_users(&self) -> Result<Vec<User>, ExpenseError> {
+        /// The optionally provided filter is a list of user ids to filter by.
+        /// If set to None or empty, all users are returned.
+        /// Otherwise only a list of users matching the filter is returned.
+        pub async fn get_users(&self, filter: Option<Vec<Uuid>>) -> Result<Vec<User>, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+
+            if let Some(filter) = filter {
+                let users = expense_tracker_db_schema::users::table
+                    .filter(id.eq_any(filter))
+                    .get_results(&mut conn)
+                    .await
+                    .map_err(internal_error)?;
+
+                return Ok(users);
+            }
 
             let users = expense_tracker_db_schema::users::table
                 .get_results(&mut conn)
@@ -56,7 +69,7 @@ pub mod user_service {
     }
 
     /// Creates a new UserService.
-    pub fn create_service(pool: DbPool) -> UserService {
+    pub fn new_service(pool: DbPool) -> UserService {
         UserService { db_pool: pool }
     }
 }

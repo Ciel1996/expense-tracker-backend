@@ -19,7 +19,7 @@ pub mod user_api {
         OpenApiRouter::new()
             .routes(routes!(current_user))
             .routes(routes!(get_users))
-            .with_state(user_service::create_service(pool))
+            .with_state(user_service::new_service(pool))
     }
 
     /// The DTO representing a user from DB.
@@ -30,11 +30,12 @@ pub mod user_api {
     }
 
     impl UserDTO {
+        pub fn new(uuid: Uuid, name: String) -> Self {
+            Self { uuid, name }
+        }
+
         pub fn from(user: User) -> UserDTO {
-            UserDTO {
-                uuid: user.id(),
-                name: user.name().to_string(),
-            }
+            Self::new(user.id(),user.name().to_string())
         }
 
         pub fn from_vec(users: Vec<User>) -> Vec<UserDTO> {
