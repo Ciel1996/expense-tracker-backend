@@ -24,7 +24,7 @@
     "minimatch": "^10.2.1",
     "@eslint/compat": "^1.1.1",
     "@eslint/eslintrc": "^3.3.3",
-    "@eslint/js": "^9.8.0",
+    "@eslint/js": "^10.0.1",
     "@next/eslint-plugin-next": "15.1.4",
     "@nx/devkit": "22.4.5",
     "@nx/eslint": "22.4.5",
