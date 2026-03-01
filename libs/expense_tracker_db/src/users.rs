@@ -6,7 +6,7 @@ pub mod users {
 
     /// Defines a user of the systems.
     /// A user can hold pots, expenses and so on.
-    #[derive(Serialize, Selectable, Queryable, Insertable)]
+    #[derive(Clone, Debug, PartialEq, Serialize, Selectable, Queryable, Insertable)]
     pub struct User {
         id: Uuid,
         name: String,

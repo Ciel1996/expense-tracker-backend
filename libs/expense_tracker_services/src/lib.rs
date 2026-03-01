@@ -6,7 +6,7 @@ pub mod health_service;
 pub mod pot_service;
 pub mod user_service;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 /// An enumeration defining all errors of the application.
 pub enum ExpenseError {
     /// Indicates that the requested resource could not be found.

@@ -17,3 +17,14 @@ pub mod health_service {
         PingHealthService {}
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ping() {
+        let service = health_service::new_service();
+        assert_eq!(service.ping(), "Pong".to_string());
+    }
+}

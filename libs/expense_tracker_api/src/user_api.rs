@@ -19,7 +19,7 @@ pub mod user_api {
         OpenApiRouter::new()
             .routes(routes!(current_user))
             .routes(routes!(get_users))
-            .with_state(user_service::create_service(pool))
+            .with_state(user_service::new(pool))
     }
 
     /// The DTO representing a user from DB.
