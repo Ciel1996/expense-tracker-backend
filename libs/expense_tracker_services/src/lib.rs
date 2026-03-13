@@ -1,3 +1,5 @@
+use cron_tab::Cron;
+use diesel::internal::derives::multiconnection::chrono::Local;
 use diesel::result::Error;
 
 pub mod currency_service;
@@ -6,6 +8,22 @@ pub mod health_service;
 pub mod pot_service;
 pub mod user_service;
 pub mod template_service;
+mod background_service;
+
+// TODO: this works and prints out 'Hello, world!' 10 times!
+// Now we need to setup a service that sets up cron jobs which then run at midnight on the CreateAt date for each PotTemplate!
+// Additionally we need to make sure that the user can specify template parameters like {day}.{month}.{year} and that the cron job runs at the specified time
+pub fn cron_test() {
+    let mut test_cron = Cron::new(Local);
+
+    test_cron.add_fn("* * * * * *", || {
+        println!("Hello, world!");
+    }).unwrap();
+
+    test_cron.start();
+    std::thread::sleep(std::time::Duration::from_secs(10));
+    test_cron.stop();
+}
 
 #[derive(Debug)]
 /// An enumeration defining all errors of the application.
