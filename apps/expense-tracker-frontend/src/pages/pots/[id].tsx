@@ -3,7 +3,7 @@ import {
   useGetPotExpenses,
   useGetUsers,
   useDeletePot,
-  useGetPots, useArchive, useUnarchive, getGetPotsQueryKey
+  useGetPots, useArchive, useUnarchive, getGetPotsQueryKey, useCurrentUser
 } from "@./expense-tracker-client";
 import React, { useState } from "react";
 import { useRouter } from "next/router";
@@ -15,6 +15,7 @@ type Props = { id: number };
 
 const PotDetails: NextPage<Props> = ({ id }) => {
   const router = useRouter();
+  const { data: user } = useCurrentUser();
   const [isNewExpenseOpen, setNewExpenseOpen] = useState(false);
   const { data: expenses, isLoading, isError } = useGetPotExpenses(id);
   const { data: users, isLoading: isLoadingUsers, isError: isErrorUsers } = useGetUsers();
@@ -63,6 +64,7 @@ const PotDetails: NextPage<Props> = ({ id }) => {
   // Compute derived state
   const hasExpenses = !!expenses && expenses.length > 0;
   const totalBalance = hasExpenses ? expenses.reduce((acc, e) => acc + (e.sum ?? 0), 0) : 0;
+  const isOwner = pot?.owner_id === user?.uuid;
   const canArchive = totalBalance === 0;
   const canDelete = (!hasExpenses || totalBalance === 0) && !isArchived;
 
@@ -85,7 +87,7 @@ const PotDetails: NextPage<Props> = ({ id }) => {
 
   const actionSection = (
     <div className="mt-4 flex gap-2">
-      {(!isArchived && (canDelete || isDeleting)) && (
+      {(isOwner && !isArchived && (canDelete || isDeleting)) && (
         <button
           onClick={handleDelete}
           disabled={isDeleting}
@@ -96,7 +98,7 @@ const PotDetails: NextPage<Props> = ({ id }) => {
         </button>
       )}
 
-      {(!isArchived && (canArchive || isArchiving)) && (
+      {(isOwner && !isArchived && (canArchive || isArchiving)) && (
         <button
           onClick={handleArchive}
           disabled={isArchiving}
