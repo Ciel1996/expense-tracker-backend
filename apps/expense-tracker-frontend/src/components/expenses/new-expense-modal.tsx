@@ -1,21 +1,21 @@
 "use client";
 
-import React, { FC, useMemo, useState } from "react";
+import React, {FC, useMemo, useState} from "react";
 import {
   PotDTO,
   useAddExpense,
   getGetPotExpensesQueryKey,
 } from "@./expense-tracker-client";
-import { useQueryClient } from "@tanstack/react-query";
+import {useQueryClient} from "@tanstack/react-query";
 
 interface NewExpenseModalProps {
-  open: boolean;
-  onClose: () => void;
-  pot: PotDTO | null;
-  potId: number;
+  open: boolean,
+  onClose: () => void,
+  pot: PotDTO | null,
+  potId: number
 }
 
-export const NewExpenseModal: FC<NewExpenseModalProps> = ({ open, onClose, pot, potId }) => {
+export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, potId}) => {
   const [description, setDescription] = useState("");
   const [amountInput, setAmountInput] = useState("");
   const [weights, setWeights] = useState<Record<string, number>>({});
@@ -42,6 +42,37 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({ open, onClose, pot, 
   const totalWeight = useMemo(() => {
     return Object.values(weights).reduce((sum, w) => sum + w, 0);
   }, [weights]);
+
+  const calculatedSplits = useMemo(() => {
+    if (!participants.length || !amountInput || totalWeight === 0) return [];
+
+    const totalCents = Math.round(Number(amountInput) * 100);
+    const splits = participants.map((u) => {
+      const weight = weights[u.uuid] ?? 0;
+      const shareRatio = totalWeight > 0 ? weight / totalWeight : 0;
+      return {
+        user_id: u.uuid,
+        cents: Math.floor(totalCents * shareRatio),
+        ratio: shareRatio
+      };
+    });
+
+    // Distribute remaining cents due to flooring
+    const distributedCents = splits.reduce((sum, s) => sum + s.cents, 0);
+    const remainingCents = totalCents - distributedCents;
+
+    // Give remainder to those with highest ratio/weight to minimize impact
+    const sortedByWeight = [...splits].sort((a, b) => b.ratio - a.ratio);
+    for (let i = 0; i < remainingCents; i++) {
+      sortedByWeight[i].cents += 1;
+    }
+
+    return splits.map(s => ({
+      user_id: s.user_id,
+      amount: s.cents / 100,
+      ratio: s.ratio
+    }));
+  }, [participants, amountInput, weights, totalWeight]);
 
   const canSubmit = useMemo(() => {
     const amount = Number(amountInput);
@@ -77,7 +108,7 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({ open, onClose, pot, 
     setWeights((prev) => {
       const otherUserIds = Object.keys(prev).filter((id) => id !== userId);
       if (otherUserIds.length === 0) {
-        return { [userId]: 100 };
+        return {[userId]: 100};
       }
 
       // Clamp newWeight between 0 and 100
@@ -85,7 +116,7 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({ open, onClose, pot, 
       const remainingTotal = 100 - clampedNewWeight;
       const currentOtherTotal = otherUserIds.reduce((sum, id) => sum + prev[id], 0);
 
-      const nextWeights = { ...prev, [userId]: clampedNewWeight };
+      const nextWeights = {...prev, [userId]: clampedNewWeight};
 
       if (currentOtherTotal > 0) {
         // Distribute remaining total proportionally
@@ -118,33 +149,10 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({ open, onClose, pot, 
 
     try {
       setError(null);
-      // Work in cents to avoid floating point issues
-      const totalCents = Math.round(Number(amountInput) * 100);
 
-      const splits = participants.map((u) => {
-        const weight = weights[u.uuid] ?? 0;
-        const shareRatio = totalWeight > 0 ? weight / totalWeight : 0;
-        // Basic calculation, but we need to handle rounding so it sums up exactly to totalCents
-        return {
-          user_id: u.uuid,
-          cents: Math.floor(totalCents * shareRatio),
-          ratio: shareRatio
-        };
-      });
-
-      // Distribute remaining cents due to flooring
-      let distributedCents = splits.reduce((sum, s) => sum + s.cents, 0);
-      let remainingCents = totalCents - distributedCents;
-
-      // Give remainder to those with highest ratio/weight to minimize impact
-      const sortedByWeight = [...splits].sort((a, b) => b.ratio - a.ratio);
-      for (let i = 0; i < remainingCents; i++) {
-        sortedByWeight[i].cents += 1;
-      }
-
-      const finalSplits = splits.map(s => ({
+      const splits = calculatedSplits.map(s => ({
         user_id: s.user_id,
-        amount: s.cents / 100
+        amount: s.amount
       }));
 
       await addExpense.mutateAsync({
@@ -152,12 +160,12 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({ open, onClose, pot, 
         data: {
           currency_id: currency.id,
           description: description.trim(),
-          splits: finalSplits,
+          splits: splits,
         },
       });
 
       // Refresh pot expenses list
-      await queryClient.invalidateQueries({ queryKey: getGetPotExpensesQueryKey(potId) });
+      await queryClient.invalidateQueries({queryKey: getGetPotExpensesQueryKey(potId)});
       handleClose();
     } catch (err) {
       console.error("Failed to add expense", err);
@@ -169,7 +177,7 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({ open, onClose, pot, 
 
   return (
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/30" onClick={handleClose} />
+      <div className="absolute inset-0 bg-black/30" onClick={handleClose}/>
       <div className="absolute inset-0 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4">
           <div className="w-full max-w-md overflow-hidden rounded-lg bg-white dark:bg-gray-900 p-6 text-left shadow-xl">
@@ -220,11 +228,13 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({ open, onClose, pot, 
                     Reset to equal
                   </button>
                 </div>
-                <div className="space-y-3 rounded-md border border-gray-200 dark:border-gray-800 p-3 bg-gray-50/50 dark:bg-gray-800/50">
+                <div
+                  className="space-y-3 rounded-md border border-gray-200 dark:border-gray-800 p-3 bg-gray-50/50 dark:bg-gray-800/50">
                   {participants.map((u) => {
                     const weight = weights[u.uuid] ?? 0;
                     const percentage = totalWeight > 0 ? (weight / totalWeight) * 100 : 0;
-                    const amount = totalWeight > 0 ? (Number(amountInput) * weight) / totalWeight : 0;
+                    const split = calculatedSplits.find(s => s.user_id === u.uuid);
+                    const amount = split ? split.amount : 0;
 
                     return (
                       <div key={u.uuid} className="flex flex-col gap-1">
@@ -259,7 +269,8 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({ open, onClose, pot, 
                               }}
                               className="w-20 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 pl-2 pr-6 py-0.5 text-right text-sm outline-none focus:ring-1 focus:ring-blue-500 appearance-none"
                             />
-                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none">%</span>
+                            <span
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none">%</span>
                           </div>
                         </div>
                       </div>
