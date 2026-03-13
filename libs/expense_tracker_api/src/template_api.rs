@@ -1,4 +1,5 @@
 pub mod template_api {
+    use std::collections::HashSet;
     use std::sync::Arc;
     use axum::extract::{Path, State};
     use axum::http::request::Parts;
@@ -15,8 +16,7 @@ pub mod template_api {
     use expense_tracker_services::template_service::pot_template_service::PotTemplateService;
     use crate::api::{check_error, get_sub_claim, ApiResponse};
     use crate::currency_api::currency_api::CurrencyDTO;
-    use crate::user_api::user_api::UserDTO;    
-
+    use crate::user_api::user_api::UserDTO;
 
     pub struct TemplateApiState {
         pot_template_service: PotTemplateService
@@ -31,6 +31,8 @@ pub mod template_api {
         OpenApiRouter::new()
             .routes(routes!(create_pot_template))
             .routes(routes!(delete_pot_template))
+            .routes(routes!(add_users_to_template))
+            .routes(routes!(remove_users_from_template))
             .with_state(shared_state)
     }
 
@@ -56,10 +58,6 @@ pub mod template_api {
                 self.create_at,
                 self.occurrence
             )
-        }
-
-        pub fn default_currency_id(&self) -> i32 {
-            self.default_currency_id
         }
 
         pub fn user_ids(&self) -> &Vec<Uuid> {
@@ -98,6 +96,24 @@ pub mod template_api {
         }
     }
 
+    #[derive(ToSchema, Serialize, Deserialize)]
+    pub struct UserListDTO {
+        users: Vec<Uuid>,
+    }
+
+    impl UserListDTO {
+        pub fn users(&self) -> Vec<Uuid> {
+            // deduplicating list on get
+            let mut users_hash_set = HashSet::new();
+
+            for u in self.users.iter().cloned() {
+                users_hash_set.insert(u);
+            }
+
+            users_hash_set.into_iter().collect::<Vec<Uuid>>()
+        }
+    }
+
     /// Creates a pot template from the given DTO for the bearer.
     #[utoipa::path(
         post,
@@ -131,6 +147,85 @@ pub mod template_api {
                 CurrencyDTO::from(result.1),
                 UserDTO::from_vec(result.2)
             ))
+        ))
+    }
+
+    /// Adds the given users to the given template if the calling user is the owner of the template.
+    #[utoipa::path(
+        put,
+        path = "/template/{template_id}/users/add",
+        tag = "Templates",
+        responses(
+            (status = 202, description = "The users has been added to the pot template."),
+            (status = 403, description = "Indicates that the users is not authorized to add users to the given pot template."),
+            (status = 404, description = "Indicates that the desired users or pot template does not exists."),
+            (status = 409, description = "Indicates that the desired users can't be added to the pot template.")
+        ),
+        request_body = UserListDTO,
+        params(
+            ("template_id" = i32, Path, description = "Database id for the pot template.  ")
+        ),
+        security(
+            ("bearer" = [])
+        )
+    )]
+    pub async fn add_users_to_template(
+        State(template_api_state): State<Arc<TemplateApiState>>,
+        Path(template_id): Path<i32>,
+        parts: Parts,
+        Json(add_users_dto): Json<UserListDTO>
+    ) -> Result<ApiResponse<String>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&parts)?;
+
+        template_api_state
+            .pot_template_service
+            .add_users_to(template_id, add_users_dto.users(), subject_id)
+            .await
+            .map_err(check_error)?;
+
+        Ok((
+            StatusCode::ACCEPTED,
+            Json(format!("The users have been added to the template with id {}.", template_id))
+        ))
+    }
+
+    /// Removes the given users from the given template if the calling user is the owner of the template.
+    #[utoipa::path(
+        put,
+        path = "/template/{template_id}/users/remove",
+        tag = "Templates",
+        responses(
+            (status = 202, description = "The users have been removed from the pot template."),
+            (status = 403, description = "Indicates that the user is not authorized to remove users from the given pot template."),
+            (status = 404, description = "Indicates that the desired users or pot template does not exists."),
+            (status = 409, description = "Indicates that the desired users can't be removed from the pot template.")
+        ),
+        request_body = UserListDTO,
+        params(
+            ("template_id" = i32, Path, description = "Database id for the pot template.  ")
+        ),
+
+        security(
+            ("bearer" = [])
+        )
+    )]
+    pub async fn remove_users_from_template(
+        State(template_api_state): State<Arc<TemplateApiState>>,
+        Path(template_id): Path<i32>,
+        parts: Parts,
+        Json(remove_users_dto): Json<UserListDTO>
+    ) -> Result<ApiResponse<String>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&parts)?;
+
+        template_api_state
+            .pot_template_service
+            .remove_users_from(template_id, remove_users_dto.users(), subject_id)
+            .await
+            .map_err(check_error)?;
+
+        Ok((
+            StatusCode::ACCEPTED,
+            Json(format!("The users have been removed from the template with id {}.", template_id))
         ))
     }
 

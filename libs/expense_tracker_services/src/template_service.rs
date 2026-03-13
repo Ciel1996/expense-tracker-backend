@@ -6,6 +6,7 @@ pub mod pot_template_service {
     use uuid::Uuid;
     use expense_tracker_db::currencies::currencies::Currency;
     use expense_tracker_db::schema::pot_template_users::dsl::pot_template_users;
+    use expense_tracker_db::schema::pot_template_users::{pot_template_id, user_id};
     use expense_tracker_db::schema::pot_templates::dsl::{pot_templates, id, owner_id};
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::template_pots::template_pots::{NewPotTemplate, NewPotTemplateUser, PotTemplate, PotTemplateUser};
@@ -67,8 +68,8 @@ pub mod pot_template_service {
                         // converting the vector of uuids to a vector of NewPotTemplateUser, which diesel
                         // can understand and insert into the database with a reference to the PotTemplates
                         let mut template_users = vec![];
-                        for user_id in new_template_user_ids {
-                            template_users.push(NewPotTemplateUser::new(user_id, template_pot.clone().id()));
+                        for user_uuid in new_template_user_ids {
+                            template_users.push(NewPotTemplateUser::new(user_uuid, template_pot.clone().id()));
                         }
 
                         let template_users = diesel::insert_into(pot_template_users)
@@ -108,29 +109,68 @@ pub mod pot_template_service {
             Ok(result)
         }
 
+        /// Adds the given users to the given pot template, if they exist and aren't already part of the template.
+        pub async fn add_users_to(&self, target_pot_template_id: i32, users_to_add: Vec<Uuid>, requester_id: Uuid)
+                                  -> Result<bool, ExpenseError> {
+            // if not requested by the owner, stop at once - the frontend should not allow this
+            if !self.is_owner(target_pot_template_id, requester_id).await? {
+                return Err(Forbidden(format!(
+                    "The user does not own the pot template with id {}",
+                    target_pot_template_id
+                )));
+            }
+
+            let mut new_pot_template_users = vec![];
+
+            for user_uuid in users_to_add {
+                new_pot_template_users.push(NewPotTemplateUser::new(user_uuid, target_pot_template_id))
+            }
+
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+            diesel::insert_into(pot_template_users)
+                .values(&new_pot_template_users)
+                .execute(&mut conn)
+                .await
+                .map_err(internal_error)?;
+            Ok(true)
+        }
+
+        /// Removes the given users from the given pot template, if they are part of the template.
+        pub async fn remove_users_from(&self, target_pot_template_id: i32, users_to_remove: Vec<Uuid>, requester_id: Uuid)
+                                       -> Result<bool, ExpenseError> {
+            // if not requested by the owner, stop at once - the frontend should not allow this
+            if !self.is_owner(target_pot_template_id, requester_id).await? {
+                return Err(Forbidden(format!(
+                    "The user does not own the pot template with id {}",
+                    target_pot_template_id
+                )));
+            }
+
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+
+            diesel::delete(pot_template_users
+                .filter(pot_template_id.eq(target_pot_template_id).and(user_id.eq_any(users_to_remove))))
+                .execute(&mut conn)
+                .await
+                .map_err(internal_error)?;
+
+            Ok(true)
+        }
+
         /// Deletes the template with the given id, only if the user with the given id is the owner of the template.
         pub async fn delete_template(
             &self,
             to_delete: i32,
             requester_id: uuid::Uuid) -> Result<bool, ExpenseError> {
-            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
-
-            // check if the user is even allowed to try to delete the pot
-            let is_allowed_to_delete = pot_templates
-                .filter(id.eq(to_delete).and(owner_id.eq(requester_id)))
-                .count()
-                .get_result::<i64>(&mut conn)
-                .await
-                .map_err(internal_error)?
-                == 1;
-
-            if !is_allowed_to_delete {
+            // if not requested by the owner, stop at once - the frontend should not allow this
+            if !self.is_owner(to_delete, requester_id).await? {
                 return Err(Forbidden(format!(
                     "The user does not own the pot template with id {}",
                     to_delete
                 )));
             }
 
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
             let deleted = diesel::delete(
                 pot_templates.filter(id.eq(to_delete).and(owner_id.eq(requester_id))))  
                 .execute(&mut conn)
@@ -138,6 +178,18 @@ pub mod pot_template_service {
                 .map_err(internal_error)?;
 
             Ok(deleted == 1)
+        }
+
+        /// Checks if the given requester_id is the owner of the pot template with the given pot_template_id.
+        async fn is_owner(&self, target_pot_template_id : i32, requester_id : Uuid) -> Result<bool, ExpenseError> {
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+            let result = pot_templates.filter(id.eq(target_pot_template_id).and(owner_id.eq(requester_id)))
+                .count()
+                .get_result::<i64>(&mut conn)
+                .await
+                .map_err(internal_error)? == 1;
+
+            Ok(result)
         }
     }
 }
