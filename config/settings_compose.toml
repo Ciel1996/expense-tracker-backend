@@ -1,8 +1,9 @@
 [oidc]
-issuer_url = "http://127.0.0.1:8080/realms/local"
+issuer_url = "http://127.0.0.1:8001/realms/local" # only adjust port
+jwks_uri = "http://keycloak:8080/realms/local" # leave as is, not required for environments where issuer_url == jwks_uri
 audience = "expense-tracker"
 
 [expense_tracker]
 port = 3001
-db_connection_string = "postgres://admin:localpassword@db/postgres"
+db_connection_string = "postgres://et:localpassword@db/expense_tracker"
 cors_url="http://127.0.0.1:3000"
