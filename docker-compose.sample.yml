@@ -14,7 +14,11 @@
 #      docker compose -f docker-compose.sample.yml up --build
 #      I recommend making a copy of the docker-compose.sample.yml file and calling it docker-compose.yml,
 #      so you can adjust the config to your needs.
+#
+#  HINT: if you have to adjust your port settings, remember about changing the ports inside the keycloak-realm.json file, too!
+#
 # 4. Visit http://localhost:3000 to access the app.
+#
 #
 # =============================================================================
 # CHANGING PORTS
