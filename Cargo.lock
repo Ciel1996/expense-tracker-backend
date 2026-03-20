@@ -927,6 +927,7 @@ dependencies = [
  "diesel-async",
  "expense_tracker_db",
  "log",
+ "tokio",
  "uuid",
 ]
 

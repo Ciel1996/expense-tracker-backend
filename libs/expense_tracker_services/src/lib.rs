@@ -8,7 +8,7 @@ pub mod health_service;
 pub mod pot_service;
 pub mod user_service;
 pub mod template_service;
-mod background_service;
+mod cron_manager_service;
 
 // TODO: this works and prints out 'Hello, world!' 10 times!
 // Now we need to setup a service that sets up cron jobs which then run at midnight on the CreateAt date for each PotTemplate!

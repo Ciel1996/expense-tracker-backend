@@ -1,39 +1,10 @@
 pub mod template_pots {
-    use crate::ExpenseTrackerDBError; //marked as unused but required by DbEnum
     use crate::schema::pot_templates;
     use crate::schema::pot_template_users;
-    use chrono::{DateTime, Utc};
-    use diesel::sql_types::VarChar; //marked as unused but required by DbEnum
-    use diesel::{AsExpression, FromSqlRow, Insertable, Queryable, Selectable};
-    use diesel_enum::DbEnum;
+    use diesel::{Insertable, Queryable, Selectable};
     use serde::{Deserialize, Serialize};
     use uuid::Uuid;
-    use utoipa::ToSchema;
 
-    /// An enumeration used to define how often a new pot should be created from the given template.
-    #[derive(
-        Debug,
-        Clone,
-        Copy,
-        PartialEq,
-        Eq,
-        FromSqlRow,
-        DbEnum,
-        Serialize,
-        Deserialize,
-        AsExpression,
-        ToSchema
-    )]
-    #[diesel(sql_type = VarChar)]
-    #[diesel_enum(error_fn = ExpenseTrackerDBError::not_found)]
-    #[diesel_enum(error_type = ExpenseTrackerDBError)]
-    pub enum Occurrence {
-        Once,
-        Daily,
-        Weekly,
-        Monthly,
-        Yearly,
-    }
 
     #[derive(Clone, Serialize, Selectable, Queryable)]
     #[diesel(table_name = pot_templates)]
@@ -43,8 +14,7 @@ pub mod template_pots {
         owner_id: Uuid,
         name: String,
         default_currency_id: i32,
-        create_at: DateTime<Utc>,
-        occurrence: Occurrence,
+        cron_expression: String
     }
     
     impl PotTemplate {
@@ -53,16 +23,14 @@ pub mod template_pots {
             owner_id: Uuid,
             name: String,
             default_currency_id: i32,
-            create_at: DateTime<Utc>,
-            occurrence: Occurrence
+            cron_expression: String,
         ) -> Self {
             Self {
                 id,
                 owner_id,
                 name,
                 default_currency_id,
-                create_at,
-                occurrence
+                cron_expression
             }
         }
         
@@ -82,13 +50,8 @@ pub mod template_pots {
             self.default_currency_id
         }
 
-        pub fn create_at(&self) -> DateTime<Utc> {
-            self.create_at
-        }
+        pub fn cron_expression(&self) -> &str { &self.cron_expression }
 
-        pub fn occurrence(&self) -> Occurrence {
-            self.occurrence
-        }
     }
 
     #[derive(Clone, Deserialize, Insertable)]
@@ -97,8 +60,7 @@ pub mod template_pots {
         owner_id: Uuid,
         name: String,
         default_currency_id: i32,
-        create_at: DateTime<Utc>,
-        occurrence: Occurrence,
+        cron_expression: String,
     }
 
     impl NewPotTemplate {
@@ -106,15 +68,13 @@ pub mod template_pots {
             owner_id: Uuid, 
             name: String,
             default_currency_id: i32,
-            create_at: DateTime<Utc>,
-            occurrence: Occurrence
+            cron_expression: String
         ) -> Self {
             Self {
                 owner_id,
                 name,
                 default_currency_id,
-                create_at,
-                occurrence,
+                cron_expression: cron_expression.to_string(),
             }
         }
 
@@ -130,13 +90,10 @@ pub mod template_pots {
             self.default_currency_id
         }
 
-        pub fn create_at(&self) -> DateTime<Utc> {
-            self.create_at
+        pub fn cron_expression(&self) -> &str {
+            &self.cron_expression
         }
 
-        pub fn occurrence(&self) -> Occurrence {
-            self.occurrence
-        }
     }
 
     #[derive(Serialize, Selectable, Queryable)]
