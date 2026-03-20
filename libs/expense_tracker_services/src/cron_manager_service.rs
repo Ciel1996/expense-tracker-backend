@@ -4,12 +4,12 @@ pub mod cron_manager_service {
     use diesel::internal::derives::multiconnection::chrono::Local;
     use log::error;
 
-    pub(crate) struct CronJobWrapper {
+    pub struct CronJobWrapper {
         pub async_cron: AsyncCron<Local>,
         pub id : u32
     }
 
-    pub(crate) struct CronManagerService {
+    pub struct CronManagerService {
         pub cron_jobs : Vec<CronJobWrapper>,
         next_id : u32
     }
@@ -46,7 +46,7 @@ pub mod cron_manager_service {
             }).await;
 
             if let Err(e) = job {
-                error!("add_cron_job_at failed with parameters {} and error {}", cron_expression, e);
+                error!("add_cron_job failed with parameters {} and error {}", cron_expression, e);
                 return Err(e);
             }
 

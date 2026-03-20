@@ -16,7 +16,7 @@ pub mod api {
     use axum::http::StatusCode;
     use axum::Json;
     use expense_tracker_db::setup::DbPool;
-    use expense_tracker_services::{cron_test, ExpenseError};
+    use expense_tracker_services::{ExpenseError};
     use utoipa::r#gen::serde_json::Value;
     use utoipa_axum::router::OpenApiRouter;
     use uuid::Uuid;
@@ -88,13 +88,5 @@ pub mod api {
 
         Ok(user_name?.to_string())
     }
-
-    // pub fn generate_my_openapi() -> String {
-    //     #[derive(OpenApi)]
-    //     #[openapi(schemas(components(CurrencyDTO)))]
-    //     struct ApiDoc;
-    //
-    //     ApiDoc::openapi().to_pretty_json().unwrap()
-    // }
 
 }

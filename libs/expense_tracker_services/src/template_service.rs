@@ -1,4 +1,5 @@
 pub mod pot_template_service {
+    use std::sync::Arc;
     use diesel::{SelectableHelper, ExpressionMethods, QueryDsl, BoolExpressionMethods};
     use diesel::result::Error;
     use diesel_async::{AsyncConnection, RunQueryDsl};
@@ -12,6 +13,7 @@ pub mod pot_template_service {
     use expense_tracker_db::template_pots::template_pots::{NewPotTemplate, NewPotTemplateUser, PotTemplate, PotTemplateUser};
     use expense_tracker_db::users::users::User;
     use crate::{check_error, internal_error, not_found_error, ExpenseError};
+    use crate::cron_manager_service::cron_manager_service::CronManagerService;
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
     use crate::ExpenseError::Forbidden;
@@ -24,15 +26,18 @@ pub mod pot_template_service {
         db_pool: DbPool,
         currency_service: CurrencyService,
         user_service: UserService,
+        cron_manager_service: Arc<CronManagerService>
     }
 
     impl PotTemplateService {
         /// Creates a new instance of PotTemplateService.
-        pub fn new_service(db_pool: DbPool) -> Self {
+        pub fn new_service(            db_pool: DbPool,
+            cron_manager_service: Arc<CronManagerService>) -> Self {
             Self {
                 db_pool: db_pool.clone(),
                 currency_service: currency_service::new_service(db_pool.clone()),
                 user_service: user_service::new_service(db_pool.clone()),
+                cron_manager_service
             }
         }
 
