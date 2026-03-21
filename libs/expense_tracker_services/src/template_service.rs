@@ -1,9 +1,10 @@
 pub mod pot_template_service {
-    use std::sync::Arc;
+    use std::sync::{Arc, Mutex};
     use diesel::{SelectableHelper, ExpressionMethods, QueryDsl, BoolExpressionMethods};
     use diesel::result::Error;
     use diesel_async::{AsyncConnection, RunQueryDsl};
     use diesel_async::scoped_futures::ScopedFutureExt;
+    use log::{debug, error};
     use uuid::Uuid;
     use expense_tracker_db::currencies::currencies::Currency;
     use expense_tracker_db::schema::pot_template_users::dsl::pot_template_users;
@@ -12,7 +13,7 @@ pub mod pot_template_service {
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::template_pots::template_pots::{NewPotTemplate, NewPotTemplateUser, PotTemplate, PotTemplateUser};
     use expense_tracker_db::users::users::User;
-    use crate::{check_error, internal_error, not_found_error, ExpenseError};
+    use crate::{check_error, internal_error, not_found_error, ExpenseError, CRON_MANAGER_SERVICE};
     use crate::cron_manager_service::cron_manager_service::CronManagerService;
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
@@ -26,18 +27,18 @@ pub mod pot_template_service {
         db_pool: DbPool,
         currency_service: CurrencyService,
         user_service: UserService,
-        cron_manager_service: Arc<CronManagerService>
+        cron_manager_service: Arc<Mutex<CronManagerService>>
     }
 
     impl PotTemplateService {
         /// Creates a new instance of PotTemplateService.
-        pub fn new_service(            db_pool: DbPool,
-            cron_manager_service: Arc<CronManagerService>) -> Self {
-            Self {
+        pub fn new_service(db_pool: DbPool) -> Self {
+             Self {
                 db_pool: db_pool.clone(),
                 currency_service: currency_service::new_service(db_pool.clone()),
                 user_service: user_service::new_service(db_pool.clone()),
-                cron_manager_service
+                // we need to clone the Arc because we want to be able to use the Arc in the background service
+                cron_manager_service: Arc::clone(&CRON_MANAGER_SERVICE)
             }
         }
 
@@ -166,7 +167,7 @@ pub mod pot_template_service {
         pub async fn delete_template(
             &self,
             to_delete: i32,
-            requester_id: uuid::Uuid) -> Result<bool, ExpenseError> {
+            requester_id: Uuid) -> Result<bool, ExpenseError> {
             // if not requested by the owner, stop at once - the frontend should not allow this
             if !self.is_owner(to_delete, requester_id).await? {
                 return Err(Forbidden(format!(
@@ -185,6 +186,16 @@ pub mod pot_template_service {
             Ok(deleted == 1)
         }
 
+        /// Used to get all templates from the database.
+        pub async fn get_templates(&self) -> Result<Vec<PotTemplate>, ExpenseError> {
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+            let result = pot_templates.load::<PotTemplate>(&mut conn)
+                .await
+                .map_err(internal_error)?;
+
+            Ok(result)
+        }
+
         /// Checks if the given requester_id is the owner of the pot template with the given pot_template_id.
         async fn is_owner(&self, target_pot_template_id : i32, requester_id : Uuid) -> Result<bool, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
@@ -195,6 +206,68 @@ pub mod pot_template_service {
                 .map_err(internal_error)? == 1;
 
             Ok(result)
+        }
+
+        /// Used to initialize the service, this is called when the service is first created.
+        /// This is necessary here so that the CronManagerService can schedule cron jobs after a
+        /// reboot.
+        async fn init_service(&self) {
+            debug!("Initializing TemplateService");
+
+            // load the template from the db
+            let templates = self.get_templates().await;
+
+            if let Err(e) = templates {
+                error!("Could not get templates from database: {}", e);
+                return;
+            }
+
+            // add cron jobs for each template
+            if let Ok(templates) = templates {
+                let cron_manager_service_mutex = Arc::clone(&self.cron_manager_service);
+                debug!("CronManagerService referenced");
+
+                for template in templates {
+                    if let Ok(mut cron_manager_service) = cron_manager_service_mutex.lock() {
+                        let cron_expression = template.cron_expression();
+                        let template_id = template.id();
+                        let template = template.clone();
+
+                        let db_pool_clone = self.db_pool.clone();
+                        let template_clone = template.clone();
+                        let function = Box
+                        ::new(move || {
+                            Self::cron_job_create_template(&template_clone, &db_pool_clone)
+                        });
+
+                        // add the cron job to the CronManagerService, using the cron expression and the function
+                        // defined above. If the cron job could not be added, log the error.
+                        let cron_result = cron_manager_service
+                            .add_cron_job_with_id(cron_expression, function, template_id)
+                            .await;
+
+                        if let Err(ref cron_error) = cron_result {
+                            error!("Could not add cron job for template {}: {}", template_id, cron_error);
+                        }
+
+                        if let Ok(cron_id) = cron_result {
+                            debug!(
+                                "Added cron job for template with id {} and cron expression {}",
+                                cron_id,
+                                cron_expression);
+                        }
+                    }
+
+                }
+            }
+        }
+
+       fn cron_job_create_template(template: &PotTemplate, db_pool: &DbPool) {
+            // TODO:
+            // 1. load the template from the db
+            // 2. fill in template placeholders: {month} {year} - leave rest unchanged, e.g. Home {month}.{year} should be turned into : Home 05.2026
+            // 3. load the users for the template
+            // 4. create a new pot automatically using the information from the pot template
         }
     }
 }

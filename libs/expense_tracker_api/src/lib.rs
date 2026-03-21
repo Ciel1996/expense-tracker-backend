@@ -58,6 +58,7 @@ pub mod api {
             ExpenseError::Internal(message) => (StatusCode::INTERNAL_SERVER_ERROR, Json(message)),
             ExpenseError::Conflict(message) => (StatusCode::CONFLICT, Json(message)),
             ExpenseError::Locked(message) => (StatusCode::LOCKED, Json(message)),
+            ExpenseError::CronConfigError(message) => (StatusCode::INTERNAL_SERVER_ERROR, Json(message)),
         }
     }
 
