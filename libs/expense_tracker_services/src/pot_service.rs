@@ -71,39 +71,44 @@ pub mod pot_service {
 
         /// Adds `new_user_id` to the pot with the given `the_pot_id` if the user with the `requester_id`
         /// is the owner of that given pot.
-        pub async fn add_user_to_pot(
+        pub async fn add_users_to_pot(
             &self,
-            pot_to_user: PotToUser,
+            pots_to_user: Vec<PotToUser>,
             requester_id: Uuid,
         ) -> Result<bool, ExpenseError> {
-            let the_pot_id = pot_to_user.pot_id();
+            // TODO: use batch insert
+            let mut result = 0;
 
-            let get_pot_by_id_and_owner =
-                Self::get_pot_by_id_and_owner(self, the_pot_id, requester_id).await?;
+            for pot_to_user in pots_to_user {
+                let the_pot_id = pot_to_user.pot_id();
 
-            if get_pot_by_id_and_owner.is_none() {
-                return Ok(false);
+                let get_pot_by_id_and_owner =
+                    Self::get_pot_by_id_and_owner(self, the_pot_id, requester_id).await?;
+
+                if get_pot_by_id_and_owner.is_none() {
+                    return Ok(false);
+                }
+
+                let pot = get_pot_by_id_and_owner.unwrap();
+
+                if pot.is_archived() {
+                    return Err(Locked(format!("Pot {} is archived", the_pot_id)))
+                }
+
+                let new_user_id = pot_to_user.user_id();
+
+                let pots_containing_user =
+                    Self::get_pots_containing_user(self, the_pot_id, new_user_id).await?;
+
+                if pots_containing_user > 0 {
+                    return Err(Conflict(format!(
+                        "User {} was previously added to pot {}",
+                        new_user_id, the_pot_id
+                    )));
+                }
+
+                result = self.add_user_to_joined_table(pot_to_user).await?;
             }
-
-            let pot = get_pot_by_id_and_owner.unwrap();
-
-            if pot.is_archived() {
-                return Err(Locked(format!("Pot {} is archived", the_pot_id)))
-            }
-
-            let new_user_id = pot_to_user.user_id();
-
-            let pots_containing_user =
-                Self::get_pots_containing_user(self, the_pot_id, new_user_id).await?;
-
-            if pots_containing_user > 0 {
-                return Err(Conflict(format!(
-                    "User {} was previously added to pot {}",
-                    new_user_id, the_pot_id
-                )));
-            }
-
-            let result = self.add_user_to_joined_table(pot_to_user).await?;
 
             Ok(result > 0)
         }

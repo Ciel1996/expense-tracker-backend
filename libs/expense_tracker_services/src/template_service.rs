@@ -1,12 +1,15 @@
 pub mod pot_template_service {
     use std::sync::{Arc, Mutex};
     use diesel::{SelectableHelper, ExpressionMethods, QueryDsl, BoolExpressionMethods};
+    use diesel::internal::derives::multiconnection::chrono;
+    use diesel::internal::derives::multiconnection::chrono::Datelike;
     use diesel::result::Error;
     use diesel_async::{AsyncConnection, RunQueryDsl};
     use diesel_async::scoped_futures::ScopedFutureExt;
-    use log::{debug, error};
+    use log::{debug, error, info, warn};
     use uuid::Uuid;
     use expense_tracker_db::currencies::currencies::Currency;
+    use expense_tracker_db::pots::pots::{NewPot, PotToUser};
     use expense_tracker_db::schema::pot_template_users::dsl::pot_template_users;
     use expense_tracker_db::schema::pot_template_users::{pot_template_id, user_id};
     use expense_tracker_db::schema::pot_templates::dsl::{pot_templates, id, owner_id};
@@ -18,6 +21,8 @@ pub mod pot_template_service {
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
     use crate::ExpenseError::Forbidden;
+    use crate::pot_service::pot_service;
+    use crate::pot_service::pot_service::PotService;
     use crate::user_service::user_service;
     use crate::user_service::user_service::UserService;
 
@@ -27,16 +32,18 @@ pub mod pot_template_service {
         db_pool: DbPool,
         currency_service: CurrencyService,
         user_service: UserService,
+        pot_service: PotService,
         cron_manager_service: Arc<Mutex<CronManagerService>>
     }
 
     impl PotTemplateService {
         /// Creates a new instance of PotTemplateService.
         pub fn new_service(db_pool: DbPool) -> Self {
-             Self {
+            Self {
                 db_pool: db_pool.clone(),
                 currency_service: currency_service::new_service(db_pool.clone()),
                 user_service: user_service::new_service(db_pool.clone()),
+                pot_service: pot_service::new_service(db_pool.clone()),
                 // we need to clone the Arc because we want to be able to use the Arc in the background service
                 cron_manager_service: Arc::clone(&CRON_MANAGER_SERVICE)
             }
@@ -67,7 +74,7 @@ pub mod pot_template_service {
 
                         // although the code documentation states that the owner is always the first user in the template users list,
                         // we are checking if the owner is already in the list of users, if not, we add him to the list of users
-                        if !new_template_user_ids.iter().any(|u| u.eq(&new_template_clone.owner_id())){
+                        if !new_template_user_ids.iter().any(|u| u.eq(&new_template_clone.owner_id())) {
                             new_template_user_ids.push(new_template_clone.owner_id());
                         }
 
@@ -88,9 +95,9 @@ pub mod pot_template_service {
                         // in a Some(Vec<Uuid>)
                         let template_user_uuids = Some(
                             template_users
-                            .iter()
-                            .map(|u| u.user_id())
-                            .collect()
+                                .iter()
+                                .map(|u| u.user_id())
+                                .collect()
                         );
 
                         // get the users from the general users table,
@@ -107,7 +114,7 @@ pub mod pot_template_service {
 
                         Ok((template_pot, currency, users))
                     }
-                    .scope_boxed()
+                        .scope_boxed()
                 })
                 .await
                 .map_err(not_found_error)?;
@@ -178,7 +185,7 @@ pub mod pot_template_service {
 
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
             let deleted = diesel::delete(
-                pot_templates.filter(id.eq(to_delete).and(owner_id.eq(requester_id))))  
+                pot_templates.filter(id.eq(to_delete).and(owner_id.eq(requester_id))))
                 .execute(&mut conn)
                 .await
                 .map_err(internal_error)?;
@@ -197,7 +204,7 @@ pub mod pot_template_service {
         }
 
         /// Checks if the given requester_id is the owner of the pot template with the given pot_template_id.
-        async fn is_owner(&self, target_pot_template_id : i32, requester_id : Uuid) -> Result<bool, ExpenseError> {
+        async fn is_owner(&self, target_pot_template_id: i32, requester_id: Uuid) -> Result<bool, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
             let result = pot_templates.filter(id.eq(target_pot_template_id).and(owner_id.eq(requester_id)))
                 .count()
@@ -235,9 +242,20 @@ pub mod pot_template_service {
 
                         let db_pool_clone = self.db_pool.clone();
                         let template_clone = template.clone();
+                        let pot_service_clone = self.pot_service.clone();
+
                         let function = Box
                         ::new(move || {
-                            Self::cron_job_create_template(&template_clone, &db_pool_clone)
+                            let template_clone = template_clone.clone();
+                            let db_pool_clone = db_pool_clone.clone();
+                            let pot_service_clone = pot_service_clone.clone();
+
+                            tokio::spawn(async move {
+                                Self::cron_job_create_template(
+                                    &template_clone,
+                                    &db_pool_clone,
+                                    &pot_service_clone).await;
+                            });
                         });
 
                         // add the cron job to the CronManagerService, using the cron expression and the function
@@ -257,17 +275,154 @@ pub mod pot_template_service {
                                 cron_expression);
                         }
                     }
-
                 }
             }
         }
 
-       fn cron_job_create_template(template: &PotTemplate, db_pool: &DbPool) {
-            // TODO:
-            // 1. load the template from the db
-            // 2. fill in template placeholders: {month} {year} - leave rest unchanged, e.g. Home {month}.{year} should be turned into : Home 05.2026
-            // 3. load the users for the template
-            // 4. create a new pot automatically using the information from the pot template
+        async fn cron_job_create_template(
+            template: &PotTemplate,
+            db_pool: &DbPool,
+            pot_service: &PotService) {
+            let mut conn = db_pool.get().await.unwrap();
+            // 1. load the users from the database
+            let template_id = template.id();
+
+            let template_users = pot_template_users
+                .filter(pot_template_id.eq(template_id))
+                .load::<PotTemplateUser>(&mut conn)
+                .await;
+
+            if let Err(e) = template_users {
+                error!("Could not load users for template {}: {}", template_id, e);
+                return;
+            }
+
+            // unwrap should be safe here, since we checked if the query was successful in the previous step!
+            let users = template_users.unwrap();
+
+            // 2. fill in template placeholders: {month} {year} - leave rest unchanged, e.g. Home {month}.{year} should be turned into: Home 05.2026
+            let template_name = Self::replace_placeholders(template.name());
+
+            // 3. create a new pot automatically using the information from the pot template
+            let new_pot = NewPot::from_template(template);
+
+            let create_pot_result = pot_service.create_pot(new_pot).await;
+            if let Err(error) = create_pot_result {
+                error!("Failed to create a new pot from template {}: {}", template_id, error);
+                return;
+            }
+
+            // pot creation must have been successful then!
+            let pot = create_pot_result.unwrap().0;
+            let pot_id = pot.id();
+            let pot_owner_id = pot.owner_id();
+            let mut pots_to_users = vec![];
+
+            for user in users {
+                pots_to_users.push(PotToUser::new(pot_id, user.user_id()));
+            }
+
+            // add users
+            let add_users_result = pot_service
+                .add_users_to_pot(pots_to_users, pot_owner_id)
+                .await;
+
+            if let Err(error) = add_users_result {
+                error!("Could not add users to pot {} on template creation: {}", pot_id, error);
+                return;
+            }
+
+            // no error, now check if any users have been added
+            if let Ok(users_added) = add_users_result
+            {
+                if !users_added {
+                    warn!(
+                        "No users added to pot {} on template creation, review database template {}!",
+                        pot_id,
+                        template_id);
+                    return;
+                }
+
+                info!("Added users to pot {} on template creation", pot_id);
+            }
         }
+
+        /// Replacing the placeholders inside a string with the current month and year.
+        /// The placeholders are {month} and {year}.
+        /// Example: "Home {month}.{year}" -> "Home 05.2026"
+        /// Example: "Home {month}" -> "Home 05"
+        /// Example: "Home" -> "Home"
+        /// Example: "{month}" -> "{month}"
+        /// Example: "{month}.{year}" -> "{month}.{year}"
+        /// Example: "{month} {year}" -> "{month} {year}"
+        /// Example: "{month} {year} {month}" -> "{month} {year} {month}"
+        /// Example: "{month} {year} {month} {year}" -> "{month} {year} {month} {year}"
+        pub(crate) fn replace_placeholders(template_name: &str) -> String {
+            let mut new_template_name = template_name.to_string();
+            new_template_name = new_template_name.replace("{month}", &format!("{:02}", chrono::Local::now().month()));
+            new_template_name = new_template_name.replace("{year}", &format!("{}", chrono::Local::now().year()));
+            new_template_name
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use diesel::internal::derives::multiconnection::chrono;
+    use diesel::internal::derives::multiconnection::chrono::Datelike;
+    use crate::template_service::pot_template_service::PotTemplateService;
+
+    // the built-in test framework does not support parametrized tests yet, so we either have
+    // to use a macro or define multiple tests for each parameter
+    #[test]
+    fn test_replace_placeholders() {
+        let now = chrono::Local::now();
+
+        let template_name = "Home {month}.{year}";
+        let expected = format!("Home {:02}.{}", now.month(), now.year());
+        let result = PotTemplateService::replace_placeholders(template_name);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_replace_placeholders_no_placeholders() {
+        let template_name = "Home";
+        let expected = "Home";
+        let result = PotTemplateService::replace_placeholders(template_name);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_replace_placeholders_fake_placeholders() {
+        let template_name = "Home {placeholder} {does} {not} {exist}";
+        let expected = "Home {placeholder} {does} {not} {exist}";
+        let result = PotTemplateService::replace_placeholders(template_name);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_replace_placeholders_empty_placeholders() {
+        let template_name = "Home {}";
+        let expected = "Home {}";
+        let result = PotTemplateService::replace_placeholders(template_name);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_replace_placeholders_american_format() {
+        let now = chrono::Local::now();
+        let template_name = "Home {year}/{month}";
+        let expected = format!("Home {}/{:02}", now.year(), now.month());
+        let result = PotTemplateService::replace_placeholders(template_name);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_replace_placeholders_crazy_format() {
+        let now = chrono::Local::now();
+        let template_name = "{year}Ho{month}me";
+        let expected = format!("{}Ho{:02}me", now.year(), now.month());
+        let result = PotTemplateService::replace_placeholders(template_name);
+        assert_eq!(result, expected);
     }
 }
