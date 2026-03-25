@@ -80,7 +80,7 @@ services:
       - keycloak-db
 
   keycloak-db:
-    image: postgres:18.2-alpine3.23
+    image: postgres:18.3-alpine3.23
     restart: always
     volumes:
       - ./postgres-data-keycloak:/var/lib/postgresql
@@ -92,7 +92,7 @@ services:
       - local_network
 
   db:
-    image: postgres:18.2-alpine3.23
+    image: postgres:18.3-alpine3.23
     restart: always
     environment:
       POSTGRES_DB: expense_tracker
