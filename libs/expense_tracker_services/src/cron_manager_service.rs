@@ -12,8 +12,43 @@ pub mod cron_manager_service {
     pub(crate) const CUSTOM_ID_NAMESPACE: Uuid = Uuid::from_bytes([0x58,0xf7,0xd6,0xe0,0xfb,0x17,0x45,0xba,0x9b,0xa2,0x04,0x10,0x52,0xfb,0xae,0xeb]);
 
     pub(crate) struct CronJobWrapper {
-        pub async_cron: AsyncCron<Local>,
-        pub id : Uuid
+        async_cron: AsyncCron<Local>,
+        id : Uuid,
+        started : bool
+    }
+
+    impl CronJobWrapper {
+        fn new(cron_job: AsyncCron<Local>, id: Uuid) -> Self {
+            Self {
+                async_cron: cron_job,
+                id,
+                started: false
+            }
+        }
+
+        /// Starts the cron job if it is not already started.
+        async fn start(&mut self) {
+            if self.started {
+                return;
+            }
+
+            self.async_cron.start().await;
+            self.started = true;
+        }
+
+        /// Stops the cron job if it is already started.
+        async fn stop(&mut self) {
+            if !self.started {
+                return;
+            }
+
+            self.async_cron.stop().await;
+            self.started = false;
+        }
+
+        pub fn id(&self) -> Uuid {
+            self.id
+        }
     }
 
     pub struct CronManagerService {
@@ -74,11 +109,7 @@ pub mod cron_manager_service {
                     )));
             }
 
-            let cron_job_wrapper = CronJobWrapper {
-                async_cron: cron_job,
-                id
-            };
-
+            let cron_job_wrapper = CronJobWrapper::new(cron_job, id);
             self.cron_jobs.push(cron_job_wrapper);
 
             Ok(id)
@@ -94,12 +125,18 @@ pub mod cron_manager_service {
         }
 
         /// Removes a cron job from the list of cron jobs.
+        pub async fn remove_cron_job_with_id(&mut self, id : i32) {
+            let calculated_custom_id = Uuid::new_v5(&CUSTOM_ID_NAMESPACE, &id.to_be_bytes());
+            self.remove_cron_job(&calculated_custom_id).await;
+        }
+
+        /// Removes a cron job from the list of cron jobs.
         pub async fn remove_cron_job(&mut self, id : &Uuid) {
-            for cron_job in self.cron_jobs.iter() {
+            for cron_job in self.cron_jobs.iter_mut() {
                 if cron_job.id.eq(id) {
                     // stop the cron job to avoid having a running cron job that is neither scheduled
                     // to run nor tracked by the CronManagerService
-                    cron_job.async_cron.stop().await;
+                    cron_job.stop().await;
                 }
             }
 
@@ -110,7 +147,7 @@ pub mod cron_manager_service {
         /// Runs all cron jobs that are scheduled to run.
         pub async fn run_cron_jobs(&mut self) {
             for cron_job in self.cron_jobs.iter_mut() {
-                cron_job.async_cron.start().await;
+                cron_job.start().await;
             }
         }
 
@@ -147,7 +184,7 @@ mod test {
 
         let job_wrappers = background_service.cron_jobs;
         assert_eq!(job_wrappers.len(), 1);
-        assert_eq!(job_wrappers[0].id, job_id);
+        assert_eq!(job_wrappers[0].id(), job_id);
     }
 
     #[tokio::test]

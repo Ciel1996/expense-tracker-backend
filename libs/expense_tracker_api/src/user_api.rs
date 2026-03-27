@@ -75,7 +75,6 @@ pub mod user_api {
         let uuid = get_sub_claim(&parts)?;
         let user = service.get_user_by_id(uuid).await;
 
-        // TODO: what happens in case of a DB exception?
         if let Ok(user) = user {
             return Ok((StatusCode::OK, Json(UserDTO::from(user))));
         }

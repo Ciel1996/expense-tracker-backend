@@ -1,5 +1,6 @@
 pub mod pot_template_service {
-    use std::sync::{Arc, Mutex};
+    use std::sync::Arc;
+    use tokio::sync::Mutex;
     use diesel::{SelectableHelper, ExpressionMethods, QueryDsl, BoolExpressionMethods};
     use diesel::internal::derives::multiconnection::chrono;
     use diesel::internal::derives::multiconnection::chrono::Datelike;
@@ -16,7 +17,7 @@ pub mod pot_template_service {
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::template_pots::template_pots::{NewPotTemplate, NewPotTemplateUser, PotTemplate, PotTemplateUser};
     use expense_tracker_db::users::users::User;
-    use crate::{check_error, internal_error, not_found_error, ExpenseError, CRON_MANAGER_SERVICE};
+    use crate::{internal_error, not_found_error, ExpenseError, CRON_MANAGER_SERVICE};
     use crate::cron_manager_service::cron_manager_service::CronManagerService;
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
@@ -109,8 +110,7 @@ pub mod pot_template_service {
                         let currency = self
                             .currency_service
                             .get_currency_by_id(currency_id_clone)
-                            .await
-                            .map_err(check_error)?;
+                            .await?;
 
                         Ok((template_pot, currency, users))
                     }
@@ -118,6 +118,10 @@ pub mod pot_template_service {
                 })
                 .await
                 .map_err(not_found_error)?;
+
+            // add cron job for this template and start it
+            self.add_template_cron_job(result.0.clone()).await;
+            self.start_cron_jobs().await;
 
             Ok(result)
         }
@@ -183,6 +187,11 @@ pub mod pot_template_service {
                 )));
             }
 
+            let mut cron_manager_service = self.cron_manager_service.lock().await;
+            debug!("Got CronManagerService!");
+            cron_manager_service.remove_cron_job_with_id(to_delete).await;
+            debug!("Removed cron job with id {}", to_delete);
+
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
             let deleted = diesel::delete(
                 pot_templates.filter(id.eq(to_delete).and(owner_id.eq(requester_id))))
@@ -232,56 +241,72 @@ pub mod pot_template_service {
 
             // add cron jobs for each template
             if let Ok(templates) = templates {
-                let cron_manager_service_mutex = Arc::clone(&self.cron_manager_service);
-                debug!("CronManagerService referenced");
-
                 if templates.is_empty() {
                     debug!("No templates found in database, skipping cron job initialization");
                     return;
                 }
 
                 for template in templates {
-                    if let Ok(mut cron_manager_service) = cron_manager_service_mutex.lock() {
-                        let cron_expression = template.cron_expression();
-                        let template_id = template.id();
-                        let template = template.clone();
+                    // add cron job for this template
+                    self.add_template_cron_job(template).await;
+                }
 
-                        let db_pool_clone = self.db_pool.clone();
-                        let template_clone = template.clone();
-                        let pot_service_clone = self.pot_service.clone();
+                self.start_cron_jobs().await;
+            }
+        }
 
-                        let function = Box
-                        ::new(move || {
-                            let template_clone = template_clone.clone();
-                            let db_pool_clone = db_pool_clone.clone();
-                            let pot_service_clone = pot_service_clone.clone();
+        async fn start_cron_jobs(&self) {
+            let cron_manager_service_mutex = Arc::clone(&self.cron_manager_service);
+            let mut cron_manager_service = cron_manager_service_mutex.lock().await;
+            debug!("Acquired cron manager service lock. Running cron jobs...");
+            cron_manager_service.run_cron_jobs().await;
+            debug!("Cron jobs started!");
+        }
 
-                            tokio::spawn(async move {
-                                Self::cron_job_create_template(
-                                    &template_clone,
-                                    &db_pool_clone,
-                                    &pot_service_clone).await;
-                            });
-                        });
+        async fn add_template_cron_job(&self, template: PotTemplate) {
+            let cron_manager_service_mutex = Arc::clone(&self.cron_manager_service);
+            debug!("CronManagerService referenced");
 
-                        // add the cron job to the CronManagerService, using the cron expression and the function
-                        // defined above. If the cron job could not be added, log the error.
-                        let cron_result = cron_manager_service
-                            .add_cron_job_with_id(cron_expression, function, template_id)
-                            .await;
-                        debug!("Added cron job for template with id {}", template_id);
+            {
+                let mut cron_manager_service = cron_manager_service_mutex.lock().await;
+                let cron_expression = template.cron_expression();
+                let template_id = template.id();
+                let template = template.clone();
 
-                        if let Err(ref cron_error) = cron_result {
-                            error!("Could not add cron job for template {}: {}", template_id, cron_error);
-                        }
+                let db_pool_clone = self.db_pool.clone();
+                let template_clone = template.clone();
+                let pot_service_clone = self.pot_service.clone();
 
-                        if let Ok(cron_id) = cron_result {
-                            debug!(
+                let function = Box
+                ::new(move || {
+                    let template_clone = template_clone.clone();
+                    let db_pool_clone = db_pool_clone.clone();
+                    let pot_service_clone = pot_service_clone.clone();
+
+                    tokio::spawn(async move {
+                        Self::cron_job_create_template(
+                            &template_clone,
+                            &db_pool_clone,
+                            &pot_service_clone).await;
+                    });
+                });
+
+                // add the cron job to the CronManagerService, using the cron expression and the function
+                // defined above. If the cron job could not be added, log the error.
+                let cron_result = cron_manager_service
+                    .add_cron_job_with_id(cron_expression, function, template_id)
+                    .await;
+                debug!("Added cron job for template with id {}", template_id);
+
+                if let Err(ref cron_error) = cron_result {
+                    error!("Could not add cron job for template {}: {}", template_id, cron_error);
+                }
+
+                if let Ok(cron_id) = cron_result {
+                    debug!(
                                 "Added cron job for template with id {} and cron expression {}",
                                 cron_id,
                                 cron_expression);
-                        }
-                    }
                 }
             }
         }
@@ -293,11 +318,14 @@ pub mod pot_template_service {
             let mut conn = db_pool.get().await.unwrap();
             // 1. load the users from the database
             let template_id = template.id();
+            debug!("Creating new pot from template with id {}", template_id);
 
             let template_users = pot_template_users
                 .filter(pot_template_id.eq(template_id))
                 .load::<PotTemplateUser>(&mut conn)
                 .await;
+
+            debug!("Loaded users for template {}", template_id);
 
             if let Err(e) = template_users {
                 error!("Could not load users for template {}: {}", template_id, e);
@@ -321,7 +349,6 @@ pub mod pot_template_service {
                 return;
             }
 
-
             // pot creation must have been successful then!
             let pot = create_pot_result.unwrap().0;
             let pot_id = pot.id();
@@ -333,6 +360,8 @@ pub mod pot_template_service {
                 debug!("Adding user {} to pot {}", user.user_id(), pot_id);
                 pots_to_users.push(PotToUser::new(pot_id, user.user_id()));
             }
+
+            let users_to_add = pots_to_users.len();
 
             // add users
             let add_users_result = pot_service
@@ -347,10 +376,12 @@ pub mod pot_template_service {
             // no error, now check if any users have been added
             if let Ok(users_added) = add_users_result
             {
-                if !users_added {
+                if !users_added && users_to_add > 0 {
                     warn!(
-                        "No users added to pot {} on template creation, review database template {}!",
+                        "No users added to pot {} on template creation, should have been {}.\
+                        \nReview database template {}!",
                         pot_id,
+                        users_to_add,
                         template_id);
                     return;
                 }
@@ -373,6 +404,7 @@ pub mod pot_template_service {
             let mut new_template_name = template_name.to_string();
             new_template_name = new_template_name.replace("{month}", &format!("{:02}", chrono::Local::now().month()));
             new_template_name = new_template_name.replace("{year}", &format!("{}", chrono::Local::now().year()));
+            debug!("Replaced placeholders in template name: {} -> {}", template_name, new_template_name);
             new_template_name
         }
     }

@@ -40,6 +40,8 @@ pub mod template_api {
     #[derive(ToSchema, Serialize, Deserialize)]
     pub struct NewPotTemplateDTO {
         #[schema(max_length = 24)]
+        #[schema(example = "My Pot {month}.{year}")]
+        /// Name for the pot template. Supports placeholders for the current month {month} and year {year}.
         name: String,
         default_currency_id: i32,
         /// A list of user ids that should be automatically added as members of this pot.

@@ -19,7 +19,7 @@ pub mod pot_service {
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::users::users::User;
     use uuid::Uuid;
-    use log::error;
+    use log::warn;
 
     /// A service offering interfaces related to Pots.
     #[derive(Clone)]
@@ -62,11 +62,11 @@ pub mod pot_service {
             let pot_to_user = PotToUser::new(pot.id().clone(), pot.owner_id().clone());
             let result = self.add_user_to_joined_table(pot_to_user).await?;
 
-            if result > 0 {
-                error!("Could not add user '{}' to joined table", pot.owner_id().clone());
+            if result == 0 {
+                warn!("Could not add user '{}' to joined table", pot.owner_id().clone());
             }
 
-            Ok((pot, currency, pot_users))
+                Ok((pot, currency, pot_users))
         }
 
         /// Adds `new_user_id` to the pot with the given `the_pot_id` if the user with the `requester_id`
@@ -76,7 +76,6 @@ pub mod pot_service {
             pots_to_user: Vec<PotToUser>,
             requester_id: Uuid,
         ) -> Result<bool, ExpenseError> {
-            // TODO: use batch insert
             let mut result = 0;
 
             for pot_to_user in pots_to_user {

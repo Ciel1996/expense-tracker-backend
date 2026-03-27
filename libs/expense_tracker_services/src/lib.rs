@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter};
-use std::sync::{Arc, LazyLock, Mutex};
+use std::sync::{Arc, LazyLock};
+use tokio::sync::Mutex;
 use diesel::result::Error;
 use crate::cron_manager_service::cron_manager_service::CronManagerService;
 
