@@ -7,6 +7,7 @@ import {
   useGetCurrencies,
   useGetUsers,
 } from '@./expense-tracker-client';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const NewTemplateModal: FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
   const [name, setName] = useState('');
@@ -14,14 +15,21 @@ export const NewTemplateModal: FC<{ open: boolean; onClose: () => void }> = ({ o
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   // backend works with cron syntax
   const [cronExpression, setCronExpression] = useState<string>('');
+  const [dateTime, setDateTime] = useState<string>('');
+  const [recurrence, setRecurrence] = useState<string>('monthly');
+
   const { data: currencies } = useGetCurrencies();
   const { data: currentUser } = useCurrentUser();
   const { data: users } = useGetUsers();
   const filteredUsers = users?.filter((u) => u.uuid != currentUser?.uuid);
 
   const canSubmit = useMemo(
-    () => name.trim().length > 0 && typeof currencyId === 'number',
-    [name, currencyId]
+    () =>
+      name.trim().length > 0 &&
+      typeof currencyId === 'number' &&
+      cronExpression !== '' &&
+      recurrence !== '',
+    [name, currencyId, cronExpression, recurrence]
   );
 
   const createTemplate = useCreatePotTemplate();
@@ -30,6 +38,9 @@ export const NewTemplateModal: FC<{ open: boolean; onClose: () => void }> = ({ o
     setName('');
     setCurrencyId('');
     setSelectedUserIds([]);
+    setDateTime('');
+    setCronExpression('');
+    setRecurrence('once');
   };
 
   const handleClose = () => {
@@ -43,24 +54,68 @@ export const NewTemplateModal: FC<{ open: boolean; onClose: () => void }> = ({ o
     );
   };
 
+  const onDateTimeChange = (val: string, currentRecurrence: string = recurrence) => {
+    setDateTime(val);
+    if (!val) {
+      setCronExpression('');
+      return;
+    }
+
+    // val is "YYYY-MM-DDTHH:mm"
+    const date = new Date(val);
+    const minute = date.getMinutes();
+    const hour = date.getHours();
+    const dayOfMonth = date.getDate();
+    const month = date.getMonth() + 1; // getMonth is 0-indexed
+    const dayOfWeek = date.getDay(); // Sunday is 0, Monday is 1...
+
+    // Cron: "second minute hour dayOfMonth month dayOfWeek" (6 digits)
+    // The backend uses cron_tab which expects 6 fields.
+    let cron = '';
+    switch (currentRecurrence) {
+      case 'weekly':
+        // Weekly: sec min hour * * dayOfWeek
+        cron = `0 ${minute} ${hour} * * ${dayOfWeek}`;
+        break;
+      case 'monthly':
+        // Monthly: sec min hour day * *
+        cron = `0 ${minute} ${hour} ${dayOfMonth} * *`;
+        break;
+      case 'yearly':
+        // Yearly: sec min hour day month *
+        cron = `0 ${minute} ${hour} ${dayOfMonth} ${month} *`;
+        break;
+      default:
+        cron = `0 ${minute} ${hour} ${dayOfMonth} * *`;
+    }
+    setCronExpression(cron);
+  };
+
+  const onRecurrenceChange = (val: string) => {
+    setRecurrence(val);
+    if (dateTime) {
+      onDateTimeChange(dateTime, val);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // if (!canSubmit || typeof currencyId !== 'number') return;
-    //
-    // try {
-    //   const pot = await createPot.mutateAsync({
-    //     data: { name: name.trim(), default_currency_id: currencyId },
-    //   });
-    //   await addUsersToPot.mutateAsync({
-    //     potId: pot.id,
-    //     data: selectedUserIds.map((v) => ({ user_id: v })),
-    //   });
-    //   await queryClient.invalidateQueries({ queryKey: getGetPotsQueryKey() });
-    //   handleClose();
-    // } catch (err) {
-    //   // Could show a toast later
-    //   console.error('Failed to create pot:', err);
-    // }
+    if (!canSubmit || typeof currencyId !== 'number') return;
+
+    try {
+      const pot = await createTemplate.mutateAsync({
+        data: {
+          name: name.trim(),
+          default_currency_id: currencyId,
+          cron_expression: cronExpression,
+          user_ids: selectedUserIds,
+        },
+      });
+      handleClose();
+    } catch (err) {
+      // Could show a toast later
+      console.error('Failed to create template:', err);
+    }
   };
 
   if (!open) return null;
@@ -139,18 +194,42 @@ export const NewTemplateModal: FC<{ open: boolean; onClose: () => void }> = ({ o
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
-                <input
-                  type="text"
-                  maxLength={24}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Home {year}/{month}"
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Recurrence
+                  </label>
+                  <select
+                    value={recurrence}
+                    onChange={(e) => onRecurrenceChange(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Schedule (Day & Time)
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={dateTime}
+                    onChange={(e) => onDateTimeChange(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
               </div>
+
+              {cronExpression && (
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Resulting Cron: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">{cronExpression}</code>
+                </div>
+              )}
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
