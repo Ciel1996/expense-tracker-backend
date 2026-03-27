@@ -3,7 +3,7 @@
  * Do not edit manually.
  * expense_tracker
  * A REST Api that offers various endpoints for handling shared expenses.
- * OpenAPI spec version: 1.0.0
+ * OpenAPI spec version: 1.1.0
  */
 
 export * from './addUserToPotDTO';
@@ -12,10 +12,13 @@ export * from './expenseDTO';
 export * from './newCurrencyDTO';
 export * from './newExpenseDTO';
 export * from './newPotDTO';
+export * from './newPotTemplateDTO';
 export * from './newSplitDTO';
 export * from './payExpenseDTO';
 export * from './potDTO';
 export * from './potDTOArchivedAt';
+export * from './potTemplateDTO';
 export * from './removeUserFromPotDTO';
 export * from './splitDTO';
 export * from './userDTO';
+export * from './userListDTO';

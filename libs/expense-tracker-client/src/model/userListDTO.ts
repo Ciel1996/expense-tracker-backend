@@ -6,4 +6,6 @@
  * OpenAPI spec version: 1.1.0
  */
 
-export type PotDTOArchivedAt = string | null;
+export interface UserListDTO {
+  users: string[];
+}
