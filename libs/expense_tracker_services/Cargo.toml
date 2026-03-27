@@ -8,6 +8,6 @@ authors = ["Ciel1996"]
 [dependencies]
 expense_tracker_db = { path = "../expense_tracker_db" }
 diesel = "2.3.6"
-diesel-async = "0.7.4"
+diesel-async = "0.8.0"
 uuid = { version = ">=0.7.0,<2.0.0", features = ["serde", "v4"] }
 log = "0.4.29"
