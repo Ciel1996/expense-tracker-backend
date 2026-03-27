@@ -72,17 +72,26 @@ async fn fetch_jwks(jwks_url: &str) -> Result<JwkSet, reqwest::Error> {
 
     let client = client_builder.build()?;
 
+    debug!("Fetching JWKS from {}", jwks_url);
     let response = client.get(jwks_url).send().await?;
+    debug!("Received JWKS response with status {}", response.status());
     let jwks = response.json::<JwkSet>().await?;
     Ok(jwks)
 }
 
 async fn validate_token(token: &str, oidc_settings: &settings::Oidc) -> Result<Value, String> {
     debug!("Starting token validation");
+
+    // prefer optional jwks_uri, but fallback to issuer_url if not set
+    // the latter should be the default in most cases, e.g. in production where
+    // the jwks_uri is the same as the issuer_url
+    let jwks_uri = oidc_settings.jwks_uri().unwrap_or(oidc_settings.issuer_url());
+
     let jwks_url = format!(
         "{}/protocol/openid-connect/certs",
-        oidc_settings.issuer_url()
+        jwks_uri
     );
+
     let jwks = match fetch_jwks(jwks_url.as_str()).await {
         Ok(jwks) => jwks,
         Err(e) => {

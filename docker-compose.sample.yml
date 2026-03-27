@@ -1,0 +1,147 @@
+# =============================================================================
+# Expense Tracker - Sample Docker Compose
+# =============================================================================
+#
+# GETTING STARTED
+# ---------------
+# 1. Copy the sample config files:
+#      cp config/settings_compose.toml config/settings.local.toml
+#      cp apps/expense-tracker-frontend/.env.compose apps/expense-tracker-frontend/.env.local.compose
+#
+# 2. Edit the copied files and update secrets/passwords as needed.
+#
+# 3. Run with:
+#      docker compose -f docker-compose.sample.yml up --build
+#      I recommend making a copy of the docker-compose.sample.yml file and calling it docker-compose.yml,
+#      so you can adjust the config to your needs.
+#
+#  HINT: if you have to adjust your port settings, remember about changing the ports inside the keycloak-realm.json file, too!
+#
+# 4. Visit http://localhost:3000 to access the app.
+#
+#
+# =============================================================================
+# CHANGING PORTS
+# --------------
+# Each service exposes ports in the format "HOST_PORT:CONTAINER_PORT".
+# Only the HOST_PORT (left side) needs to change — the container port must
+# stay the same unless you also update the app config.
+#
+# Service default ports and what to update when changing them:
+#
+#  keycloak  → HOST: 8001  (CONTAINER: 8080)
+#    If you change the host port, update ALL of the following:
+#      - KC_HOSTNAME below (e.g. http://127.0.0.1:<new_port>)
+#      - config/settings.local.toml  → [oidc] issuer_url
+#      - apps/expense-tracker-frontend/.env.local.compose → EXPENSE_TRACKER_ISSUER
+#
+#  db        → HOST: 5432   (CONTAINER: 5432)
+#    If you change the host port, update:
+#      - config/settings.local.toml  → [expense_tracker] db_connection_string
+#        (only matters if connecting from outside Docker; inside Docker uses
+#         the service name "db" and the container port directly)
+#
+#  api       → HOST: 3001   (CONTAINER: 3001)
+#    If you change the host port, update:
+#      - apps/expense-tracker-frontend/.env.local.compose → NEXT_PUBLIC_API_URL
+#      - config/settings.local.toml  → [expense_tracker] cors_url (if needed)
+#
+#  web       → HOST: 3000   (CONTAINER: 3000)
+#    If you change the host port, update:
+#      - apps/expense-tracker-frontend/.env.local.compose → NEXTAUTH_URL
+#      - config/settings.local.toml  → [expense_tracker] cors_url
+#
+# =============================================================================
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5.6
+    restart: always
+    ports:
+      - "127.0.0.1:8001:8080"          # Change left value to use a different host port (see notes above)
+    environment:
+      KC_DB: postgres
+      KC_DB_USERNAME: kc
+      KC_DB_PASSWORD: CHANGE_ME_KC_DB_PASSWORD
+      KC_DB_URL: jdbc:postgresql://keycloak-db/keycloak
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: http://127.0.0.1:8001 # Change Port, if needed (see notes above)
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+    command:
+      - start-dev
+      - --import-realm
+    volumes:
+      - ./keycloak-realm.json:/opt/keycloak/data/import/realm.json:ro
+    networks:
+      - local_network
+    depends_on:
+      - keycloak-db
+
+  keycloak-db:
+    image: postgres:18.2-alpine3.23
+    restart: always
+    volumes:
+      - ./postgres-data-keycloak:/var/lib/postgresql
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_PASSWORD: CHANGE_ME_KC_DB_PASSWORD   # Must match KC_DB_PASSWORD above
+      POSTGRES_USER: kc
+    networks:
+      - local_network
+
+  db:
+    image: postgres:18.2-alpine3.23
+    restart: always
+    environment:
+      POSTGRES_DB: expense_tracker
+      POSTGRES_PASSWORD: localpassword
+      POSTGRES_USER: et
+    volumes:
+      - ./postgres-data:/var/lib/postgresql
+    ports:
+      - "5432:5432"           # Change left value to use a different host port (see notes above)
+    networks:
+      - local_network
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/expense_tracker/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3001:3001"           # Change left value to use a different host port (see notes above)
+    environment:
+      RUST_LOG: debug
+      EXPENSE_TRACKER_IGNORE_TLS: "1"
+    volumes:
+      # remember to update the settings.toml file if you change the host port above
+      - ./config/settings_compose.toml:/app/config/settings.toml:ro
+    depends_on:
+      - db
+      - keycloak
+    networks:
+      - local_network
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/expense-tracker-frontend/Dockerfile
+      args:
+        NODE_ENV: development
+    restart: unless-stopped
+    ports:
+      - "3000:3000"           # Change left value to use a different host port (see notes above)
+    env_file:
+      # remember to update the .env.compose file if you change the host port above
+      - apps/expense-tracker-frontend/.env.compose
+    depends_on:
+      - api
+      - keycloak
+    networks:
+      - local_network
+
+networks:
+  local_network:
+    driver: bridge
