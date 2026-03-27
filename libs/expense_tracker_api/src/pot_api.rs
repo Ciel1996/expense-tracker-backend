@@ -270,7 +270,7 @@ pub mod pot_api {
 
         let result = pot_api_state
             .pot_service
-            .add_user_to_pot(PotToUser::new(pot_id, new_user_id), subject_id)
+            .add_users_to_pot(vec![PotToUser::new(pot_id, new_user_id)], subject_id)
             .await
             .map_err(check_error)?;
 

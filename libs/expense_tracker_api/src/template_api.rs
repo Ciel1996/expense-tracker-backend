@@ -22,10 +22,12 @@ pub mod template_api {
     }
 
     /// Registers all functions of the Template API.
-    pub fn register(pool: DbPool) -> OpenApiRouter {
+    pub async fn register(pool: DbPool) -> OpenApiRouter {
         let shared_state = Arc::new(TemplateApiState {
             pot_template_service: PotTemplateService::new_service(pool)
         });
+
+        shared_state.pot_template_service.init_service().await;
 
         OpenApiRouter::new()
             .routes(routes!(create_pot_template))

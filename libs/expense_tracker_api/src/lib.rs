@@ -36,7 +36,7 @@ pub mod api {
             .nest(VERSION_ONE, pot_api::register(pool.clone()))
             .nest(VERSION_ONE, currency_api::register(pool.clone()))
             .nest(VERSION_ONE, expense_api::register(pool.clone()))
-            .nest(VERSION_ONE, template_api::register(pool.clone()))
+            .nest(VERSION_ONE, template_api::register(pool.clone()).await)
     }
 
     /// Registers the health API without token validation, so it is always possible to

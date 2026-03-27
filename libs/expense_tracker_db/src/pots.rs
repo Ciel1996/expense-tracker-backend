@@ -92,10 +92,10 @@ pub mod pots {
         }
 
         /// Used to create a NewPot from a PotTemplate
-        pub fn from_template(template: &PotTemplate) -> Self {
+        pub fn from_template(template: &PotTemplate, name: &String) -> Self {
             Self {
                 owner_id: template.owner_id(),
-                name: template.name().to_string(),
+                name: name.clone(),
                 default_currency_id: template.default_currency_id(),
                 created_at: Utc::now(),
             }

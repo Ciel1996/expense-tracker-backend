@@ -206,7 +206,8 @@ pub mod pot_template_service {
         /// Checks if the given requester_id is the owner of the pot template with the given pot_template_id.
         async fn is_owner(&self, target_pot_template_id: i32, requester_id: Uuid) -> Result<bool, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
-            let result = pot_templates.filter(id.eq(target_pot_template_id).and(owner_id.eq(requester_id)))
+            let result = pot_templates
+                .filter(id.eq(target_pot_template_id).and(owner_id.eq(requester_id)))
                 .count()
                 .get_result::<i64>(&mut conn)
                 .await
@@ -218,7 +219,7 @@ pub mod pot_template_service {
         /// Used to initialize the service, this is called when the service is first created.
         /// This is necessary here so that the CronManagerService can schedule cron jobs after a
         /// reboot.
-        async fn init_service(&self) {
+        pub async fn init_service(&self) {
             debug!("Initializing TemplateService");
 
             // load the template from the db
@@ -233,6 +234,11 @@ pub mod pot_template_service {
             if let Ok(templates) = templates {
                 let cron_manager_service_mutex = Arc::clone(&self.cron_manager_service);
                 debug!("CronManagerService referenced");
+
+                if templates.is_empty() {
+                    debug!("No templates found in database, skipping cron job initialization");
+                    return;
+                }
 
                 for template in templates {
                     if let Ok(mut cron_manager_service) = cron_manager_service_mutex.lock() {
@@ -263,6 +269,7 @@ pub mod pot_template_service {
                         let cron_result = cron_manager_service
                             .add_cron_job_with_id(cron_expression, function, template_id)
                             .await;
+                        debug!("Added cron job for template with id {}", template_id);
 
                         if let Err(ref cron_error) = cron_result {
                             error!("Could not add cron job for template {}: {}", template_id, cron_error);
@@ -300,11 +307,13 @@ pub mod pot_template_service {
             // unwrap should be safe here, since we checked if the query was successful in the previous step!
             let users = template_users.unwrap();
 
-            // 2. fill in template placeholders: {month} {year} - leave rest unchanged, e.g. Home {month}.{year} should be turned into: Home 05.2026
+            // 2. fill in template placeholders: {month} {year} - leave rest unchanged,
+            // e.g. Home {month}.{year} should be turned into: Home 05.2026
             let template_name = Self::replace_placeholders(template.name());
+            debug!("Template name: {}", template_name);
 
             // 3. create a new pot automatically using the information from the pot template
-            let new_pot = NewPot::from_template(template);
+            let new_pot = NewPot::from_template(template, &template_name);
 
             let create_pot_result = pot_service.create_pot(new_pot).await;
             if let Err(error) = create_pot_result {
@@ -312,13 +321,16 @@ pub mod pot_template_service {
                 return;
             }
 
+
             // pot creation must have been successful then!
             let pot = create_pot_result.unwrap().0;
             let pot_id = pot.id();
+            debug!("Created new pot from template {}: {}", template_name, pot_id);
             let pot_owner_id = pot.owner_id();
             let mut pots_to_users = vec![];
 
             for user in users {
+                debug!("Adding user {} to pot {}", user.user_id(), pot_id);
                 pots_to_users.push(PotToUser::new(pot_id, user.user_id()));
             }
 
