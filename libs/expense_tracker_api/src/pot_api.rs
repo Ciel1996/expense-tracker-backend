@@ -276,7 +276,7 @@ pub mod pot_api {
 
         let result = pot_api_state
             .pot_service
-            .add_users_to_pot(vec![], subject_id)
+            .add_users_to_pot(new_user_ids, subject_id)
             .await
             .map_err(check_error)?;
 

@@ -4,11 +4,13 @@ import { useMemo, useState } from "react";
 import { useGetPots } from "@./expense-tracker-client";
 import { Pot } from "./pot";
 import { NewPotModal } from "./new-pot-modal";
+import { NewTemplateModal } from './new-template-modal';
 
 export function PotsOverview() {
   const { data: pots } = useGetPots();
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active');
+  const [openTemplate, setOpenTemplate] = useState(false);
+  const [activeTab, setActiveTab] = useState<'active' | 'archived' | 'templates'>('active');
 
   const filteredAndSortedPots = useMemo(() => {
     if (!pots) return [];
@@ -51,6 +53,16 @@ export function PotsOverview() {
           >
             Archived
           </button>
+          <button
+            onClick={() => setActiveTab('templates')}
+            className={`px-1 py-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'templates'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Templates
+          </button>
         </div>
         {activeTab === 'active' && (
           <button
@@ -58,6 +70,14 @@ export function PotsOverview() {
             className="px-4 py-2 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700"
           >
             New Pot
+          </button>
+        )}
+        {activeTab === 'templates' && (
+          <button
+            onClick={() => setOpenTemplate(true)}
+            className="px-4 py-2 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700"
+          >
+            New Template
           </button>
         )}
       </div>
@@ -69,7 +89,9 @@ export function PotsOverview() {
               <Pot
                 name={e.name}
                 currency={e.default_currency.symbol}
-                owner={e.users.find((u) => u.uuid == e.owner_id)?.name ?? 'Unknown'}
+                owner={
+                  e.users.find((u) => u.uuid == e.owner_id)?.name ?? 'Unknown'
+                }
                 users={e.users.map((u) => u.name)}
                 balance={e.net_balance}
                 href={`/pots/${e.id}`}
@@ -85,6 +107,7 @@ export function PotsOverview() {
       )}
 
       <NewPotModal open={open} onClose={() => setOpen(false)} />
+      <NewTemplateModal open={openTemplate} onClose={() => setOpenTemplate(false)} />
     </div>
   );
 }
