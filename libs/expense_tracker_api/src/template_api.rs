@@ -10,8 +10,10 @@ pub mod template_api {
     use utoipa_axum::router::OpenApiRouter;
     use utoipa_axum::routes;
     use uuid::Uuid;
+    use expense_tracker_db::currencies::currencies::Currency;
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::template_pots::template_pots::{NewPotTemplate, PotTemplate};
+    use expense_tracker_db::users::users::User;
     use expense_tracker_services::template_service::pot_template_service::PotTemplateService;
     use crate::api::{check_error, get_sub_claim, ApiResponse};
     use crate::currency_api::currency_api::CurrencyDTO;
@@ -31,6 +33,7 @@ pub mod template_api {
 
         OpenApiRouter::new()
             .routes(routes!(get_pot_templates))
+            .routes(routes!(get_pot_template_by_id))
             .routes(routes!(create_pot_template))
             .routes(routes!(delete_pot_template))
             .routes(routes!(add_users_to_template))
@@ -87,7 +90,7 @@ pub mod template_api {
     }
 
     impl PotTemplateDTO {
-        pub fn from(
+        fn internal_from(
             pot_template: PotTemplate,
             default_currency: CurrencyDTO,
             users: Vec<UserDTO>) -> Self
@@ -103,7 +106,17 @@ pub mod template_api {
                 users
             }
         }
+
+        /// Takes in a tuple (PotTemplate, Currency, Vec<User>) and turns them into a PotTemplateDTO.
+        pub fn from(input: (PotTemplate, Currency, Vec<User>)) -> Self {
+            let (pot_template, default_currency, users) = input;
+            Self::internal_from(
+                pot_template,
+                CurrencyDTO::from(default_currency),
+                UserDTO::from_vec(users))
+        }
     }
+
 
     #[derive(ToSchema, Serialize, Deserialize)]
     pub struct UserListDTO {
@@ -151,11 +164,7 @@ pub mod template_api {
 
         Ok((
             StatusCode::CREATED,
-            Json(PotTemplateDTO::from(
-                result.0,
-                CurrencyDTO::from(result.1),
-                UserDTO::from_vec(result.2)
-            ))
+            Json(PotTemplateDTO::from(result))
         ))
     }
 
@@ -186,18 +195,48 @@ pub mod template_api {
         let result =
             Vec::from_iter(
                 result.into_iter()
-                    .map(|(template, currency, users)|
-                        PotTemplateDTO::from(
-                            template,
-                            CurrencyDTO::from(currency),
-                            UserDTO::from_vec(users)
-                        )
+                    .map(|result_tuple|
+                        PotTemplateDTO::from(result_tuple)
                     )
             );
 
         Ok((
-            StatusCode::CREATED,
+            StatusCode::OK,
             Json(result)
+        ))
+    }
+
+    /// Gets a pot template by id that the bearer is owning.
+    #[utoipa::path(
+        get,
+        path = "/template/{template_id}",
+        tag = "Templates",
+        responses(
+            (status = 200, description = "The pot template that the bearer owns and requested.", body = PotTemplateDTO),
+        ),
+        params(
+            ("template_id" = i32, Path, description = "Database id for the pot template.  ")
+        ),
+        security(
+            ("bearer" = [])
+        )
+    )]
+    pub async fn get_pot_template_by_id(
+        State(template_api_state): State<Arc<TemplateApiState>>,
+        Path(template_id): Path<i32>,
+        parts: Parts
+    ) -> Result<ApiResponse<PotTemplateDTO>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&parts)?;
+
+        let result = template_api_state
+            .pot_template_service
+            .get_own_template_by_id(subject_id, template_id)
+            .await
+            .map_err(check_error)?;
+
+        Ok((
+            StatusCode::OK,
+            Json(PotTemplateDTO::from(result))
         ))
     }
 

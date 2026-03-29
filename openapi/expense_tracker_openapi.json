@@ -678,6 +678,42 @@
       }
     },
     "/api/v1/template/{template_id}": {
+      "get": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Gets a pot template by id that the bearer is owning.",
+        "operationId": "get_pot_template_by_id",
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "description": "Database id for the pot template.  ",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pot template that the bearer owns and requested.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PotTemplateDTO"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
       "delete": {
         "tags": [
           "Templates"

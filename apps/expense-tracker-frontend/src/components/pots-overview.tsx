@@ -5,9 +5,12 @@ import { useGetPots } from "@./expense-tracker-client";
 import { Pot } from "./pot";
 import { NewPotModal } from "./new-pot-modal";
 import { NewTemplateModal } from './new-template-modal';
+import { useGetPotTemplates } from '../../../../libs/expense-tracker-client/src/endpoints/templates/templates';
+import { Template } from './template';
 
 export function PotsOverview() {
   const { data: pots } = useGetPots();
+  const { data: templates } = useGetPotTemplates();
   const [open, setOpen] = useState(false);
   const [openTemplate, setOpenTemplate] = useState(false);
   const [activeTab, setActiveTab] = useState<'active' | 'archived' | 'templates'>('active');
@@ -24,6 +27,9 @@ export function PotsOverview() {
         return dateB - dateA;
       });
   }, [pots, activeTab]);
+
+  // const that ensures that we have an array
+  const cleanedTemplates = templates ?? [];
 
   if (!pots) {
     return <div>Loading...</div>;
@@ -82,7 +88,7 @@ export function PotsOverview() {
         )}
       </div>
 
-      {activeTab != 'templates' && filteredAndSortedPots.length > 0 ? (
+      {filteredAndSortedPots.length > 0 && (
         <div className="columns-1 sm:columns-2 md:columns-[16rem] gap-1">
           {filteredAndSortedPots.map((e) => (
             <div key={`pot-${e.id}`} className="break-inside-avoid mb-2">
@@ -100,16 +106,41 @@ export function PotsOverview() {
             </div>
           ))}
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'templates' && cleanedTemplates.length > 0 && (
+        <div className="columns-1 sm:columns-2 md:columns-[16rem] gap-1">
+          {cleanedTemplates.map((e) => (
+            <div key={`template-${e.id}`} className="break-inside-avoid mb-2">
+              <Template
+                name={e.name}
+                currency={e.default_currency.symbol}
+                owner={e.owner.name}
+                users={e.users.map((u) => u.name)}
+                href={`/templates/${e.id}`}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab === 'templates' && cleanedTemplates.length === 0 && (
+        <div className="py-12 text-center text-gray-500">
+          No {activeTab} found.
+        </div>
+      )}
+
+      {activeTab != 'templates' && filteredAndSortedPots.length === 0 && (
         <div className="py-12 text-center text-gray-500">
           No {activeTab} pots found.
         </div>
       )}
 
-      // TODO: add template overview here!
-
       <NewPotModal open={open} onClose={() => setOpen(false)} />
-      <NewTemplateModal open={openTemplate} onClose={() => setOpenTemplate(false)} />
+      <NewTemplateModal
+        open={openTemplate}
+        onClose={() => setOpenTemplate(false)}
+      />
     </div>
   );
 }

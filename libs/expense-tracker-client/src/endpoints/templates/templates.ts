@@ -199,6 +199,97 @@ export const useCreatePotTemplate = <
   return useMutation(mutationOptions);
 };
 /**
+ * @summary Gets a pot template by id that the bearer is owning.
+ */
+export const useGetPotTemplateByIdHook = () => {
+  const getPotTemplateById = useCustomClient<PotTemplateDTO>();
+
+  return useCallback(
+    (templateId: number, signal?: AbortSignal) => {
+      return getPotTemplateById({
+        url: `/api/v1/template/${templateId}`,
+        method: 'GET',
+        signal,
+      });
+    },
+    [getPotTemplateById]
+  );
+};
+
+export const getGetPotTemplateByIdQueryKey = (templateId?: number) => {
+  return [`/api/v1/template/${templateId}`] as const;
+};
+
+export const useGetPotTemplateByIdQueryOptions = <
+  TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
+  TError = ErrorType<unknown>
+>(
+  templateId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
+      TError,
+      TData
+    >;
+  }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetPotTemplateByIdQueryKey(templateId);
+
+  const getPotTemplateById = useGetPotTemplateByIdHook();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>
+  > = ({ signal }) => getPotTemplateById(templateId, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!templateId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPotTemplateByIdQueryResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>
+>;
+export type GetPotTemplateByIdQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Gets a pot template by id that the bearer is owning.
+ */
+
+export function useGetPotTemplateById<
+  TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
+  TError = ErrorType<unknown>
+>(
+  templateId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
+      TError,
+      TData
+    >;
+  }
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetPotTemplateByIdQueryOptions(templateId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
  * @summary Deletes the given template if the user is the owner of the template.
  */
 export const useDeletePotTemplateHook = () => {

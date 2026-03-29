@@ -209,7 +209,7 @@ pub mod pot_template_service {
             -> Result<Vec<(PotTemplate, Currency, Vec<User>)>, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
 
-            // get template with their currency
+            // get templates with their currency
             let templates_with_currency = pot_templates
                 .inner_join(currencies)
                 .filter(owner_id.eq(requester_id))
@@ -226,11 +226,8 @@ pub mod pot_template_service {
 
                 // join pot_template_users with users
                 // filtered by template
-                let loaded_users = pot_template_users
-                    .inner_join(users)
-                    .filter(pot_template_id.eq(template_id))
-                    .select(User::as_select())
-                    .load::<User>(&mut conn)
+                let loaded_users = self
+                    .get_users_for_pot_template(&template)
                     .await
                     .map_err(internal_error)?;
 
@@ -238,6 +235,47 @@ pub mod pot_template_service {
             }
 
             Ok(result)
+        }
+
+        /// Gets the template with the given id owned by the requester.
+        pub async fn get_own_template_by_id(&self,
+                                            requester_id: Uuid,
+                                            requested_template_id : i32)
+                                       -> Result<(PotTemplate, Currency, Vec<User>), ExpenseError> {
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+
+
+            // // get template with their currency
+            let template_with_currency = pot_templates
+                .inner_join(currencies)
+                .filter(owner_id.eq(requester_id).and(id.eq(requested_template_id)))
+                .select((PotTemplate::as_select(), Currency::as_select()))
+                .first::<(PotTemplate, Currency)>(&mut conn)
+                .await
+                .map_err(internal_error)?;
+
+
+            // join pot_template_users with users
+            // filtered by template
+            let loaded_users = self
+                .get_users_for_pot_template(&template_with_currency.0)
+                .await
+                .map_err(internal_error)?;
+
+            Ok((template_with_currency.0, template_with_currency.1, loaded_users))
+        }
+
+        async fn get_users_for_pot_template(&self, template : &PotTemplate)
+            -> Result<Vec<User>, Error> {
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+            let template_id = template.id();
+
+            pot_template_users
+                .inner_join(users)
+                .filter(pot_template_id.eq(template_id))
+                .select(User::as_select())
+                .load::<User>(&mut conn)
+                .await
         }
 
         /// Used to get all templates from the database.
