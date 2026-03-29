@@ -5,7 +5,7 @@ import { useGetPots } from "@./expense-tracker-client";
 import { Pot } from "./pot";
 import { NewPotModal } from "./new-pot-modal";
 import { NewTemplateModal } from './new-template-modal';
-import { useGetPotTemplates } from '../../../../libs/expense-tracker-client/src/endpoints/templates/templates';
+import { useGetPotTemplates } from '@./expense-tracker-client';
 import { Template } from './template';
 
 export function PotsOverview() {
