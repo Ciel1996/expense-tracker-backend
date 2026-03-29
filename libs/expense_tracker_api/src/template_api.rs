@@ -30,6 +30,7 @@ pub mod template_api {
         shared_state.pot_template_service.init_service().await;
 
         OpenApiRouter::new()
+            .routes(routes!(get_pot_templates))
             .routes(routes!(create_pot_template))
             .routes(routes!(delete_pot_template))
             .routes(routes!(add_users_to_template))
@@ -155,6 +156,48 @@ pub mod template_api {
                 CurrencyDTO::from(result.1),
                 UserDTO::from_vec(result.2)
             ))
+        ))
+    }
+
+    /// Gets a list of all pot templates that the bearer is owning.
+    #[utoipa::path(
+        get,
+        path = "/template",
+        tag = "Templates",
+        responses(
+            (status = 200, description = "The pot templates that the bearer owns.", body = Vec<PotTemplateDTO>),
+        ),
+        security(
+            ("bearer" = [])
+        )
+    )]
+    pub async fn get_pot_templates(
+        State(template_api_state): State<Arc<TemplateApiState>>,
+        parts: Parts
+    ) -> Result<ApiResponse<Vec<PotTemplateDTO>>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&parts)?;
+
+        let result = template_api_state
+            .pot_template_service
+            .get_own_templates(subject_id)
+            .await
+            .map_err(check_error)?;
+
+        let result =
+            Vec::from_iter(
+                result.into_iter()
+                    .map(|(template, currency, users)|
+                        PotTemplateDTO::from(
+                            template,
+                            CurrencyDTO::from(currency),
+                            UserDTO::from_vec(users)
+                        )
+                    )
+            );
+
+        Ok((
+            StatusCode::CREATED,
+            Json(result)
         ))
     }
 

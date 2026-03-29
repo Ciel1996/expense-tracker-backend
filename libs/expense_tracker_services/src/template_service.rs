@@ -11,9 +11,11 @@ pub mod pot_template_service {
     use uuid::Uuid;
     use expense_tracker_db::currencies::currencies::Currency;
     use expense_tracker_db::pots::pots::{NewPot, PotToUser};
+    use expense_tracker_db::schema::currencies::dsl::currencies;
     use expense_tracker_db::schema::pot_template_users::dsl::pot_template_users;
     use expense_tracker_db::schema::pot_template_users::{pot_template_id, user_id};
     use expense_tracker_db::schema::pot_templates::dsl::{pot_templates, id, owner_id};
+    use expense_tracker_db::schema::users::dsl::users;
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::template_pots::template_pots::{NewPotTemplate, NewPotTemplateUser, PotTemplate, PotTemplateUser};
     use expense_tracker_db::users::users::User;
@@ -103,7 +105,7 @@ pub mod pot_template_service {
 
                         // get the users from the general users table,
                         // because a user can only be added to a template if he is already a user in general!
-                        let users = self.user_service
+                        let loaded_users = self.user_service
                             .get_users(template_user_uuids)
                             .await?;
 
@@ -112,7 +114,7 @@ pub mod pot_template_service {
                             .get_currency_by_id(currency_id_clone)
                             .await?;
 
-                        Ok((template_pot, currency, users))
+                        Ok((template_pot, currency, loaded_users))
                     }
                         .scope_boxed()
                 })
@@ -202,8 +204,44 @@ pub mod pot_template_service {
             Ok(deleted == 1)
         }
 
+        /// Gets the templates owned by the requester.
+        pub async fn get_own_templates(&self, requester_id: Uuid)
+            -> Result<Vec<(PotTemplate, Currency, Vec<User>)>, ExpenseError> {
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+
+            // get template with their currency
+            let templates_with_currency = pot_templates
+                .inner_join(currencies)
+                .filter(owner_id.eq(requester_id))
+                .select((PotTemplate::as_select(), Currency::as_select()))
+                .load::<(PotTemplate, Currency)>(&mut conn)
+                .await
+                .map_err(internal_error)?;
+
+            // Vector that will hold (PotTemplate, Currency, Vec<User>) that will be returned.
+            let mut result = vec![];
+
+            for (template, currency) in templates_with_currency{
+                let template_id = template.id();
+
+                // join pot_template_users with users
+                // filtered by template
+                let loaded_users = pot_template_users
+                    .inner_join(users)
+                    .filter(pot_template_id.eq(template_id))
+                    .select(User::as_select())
+                    .load::<User>(&mut conn)
+                    .await
+                    .map_err(internal_error)?;
+
+                result.push((template, currency, loaded_users));
+            }
+
+            Ok(result)
+        }
+
         /// Used to get all templates from the database.
-        pub async fn get_templates(&self) -> Result<Vec<PotTemplate>, ExpenseError> {
+        async fn get_templates(&self) -> Result<Vec<PotTemplate>, ExpenseError> {
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
             let result = pot_templates.load::<PotTemplate>(&mut conn)
                 .await
@@ -333,7 +371,7 @@ pub mod pot_template_service {
             }
 
             // unwrap should be safe here, since we checked if the query was successful in the previous step!
-            let users = template_users.unwrap();
+            let template_user_list = template_users.unwrap();
 
             // 2. fill in template placeholders: {month} {year} - leave rest unchanged,
             // e.g. Home {month}.{year} should be turned into: Home 05.2026
@@ -356,7 +394,7 @@ pub mod pot_template_service {
             let pot_owner_id = pot.owner_id();
             let mut pots_to_users = vec![];
 
-            for user in users {
+            for user in template_user_list {
                 debug!("Adding user {} to pot {}", user.user_id(), pot_id);
                 pots_to_users.push(PotToUser::new(pot_id, user.user_id()));
             }

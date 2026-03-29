@@ -615,6 +615,33 @@
       }
     },
     "/api/v1/template": {
+      "get": {
+        "tags": [
+          "Templates"
+        ],
+        "summary": "Gets a list of all pot templates that the bearer is owning.",
+        "operationId": "get_pot_templates",
+        "responses": {
+          "200": {
+            "description": "The pot templates that the bearer owns.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PotTemplateDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
       "post": {
         "tags": [
           "Templates"

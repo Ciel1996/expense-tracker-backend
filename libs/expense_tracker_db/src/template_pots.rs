@@ -1,16 +1,17 @@
 pub mod template_pots {
     use crate::schema::pot_templates;
     use crate::schema::pot_template_users;
-    use diesel::{Insertable, Queryable, Selectable};
+    use crate::users::users::User;
+    use diesel::{Associations, Identifiable, Insertable, Queryable, Selectable};
     use serde::{Deserialize, Serialize};
     use uuid::Uuid;
 
 
-    #[derive(Clone, Serialize, Selectable, Queryable)]
+    #[derive(Clone, Serialize, Selectable, Queryable, Identifiable)]
     #[diesel(table_name = pot_templates)]
     #[diesel(check_for_backend(diesel::pg::Pg))]
     pub struct PotTemplate {
-        id: i32,
+        pub id: i32,
         owner_id: Uuid,
         name: String,
         default_currency_id: i32,
@@ -96,7 +97,9 @@ pub mod template_pots {
 
     }
 
-    #[derive(Serialize, Selectable, Queryable)]
+    #[derive(Serialize, Selectable, Queryable, Associations)]
+    #[diesel(belongs_to(PotTemplate, foreign_key = pot_template_id))]
+    #[diesel(belongs_to(User, foreign_key = user_id))]
     #[diesel(table_name = pot_template_users)]
     pub struct PotTemplateUser {
         id: i32,

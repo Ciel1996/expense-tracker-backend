@@ -5,11 +5,15 @@
  * A REST Api that offers various endpoints for handling shared expenses.
  * OpenAPI spec version: 1.1.0
  */
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import type {
   MutationFunction,
+  QueryFunction,
+  QueryKey,
   UseMutationOptions,
   UseMutationResult,
+  UseQueryOptions,
+  UseQueryResult,
 } from '@tanstack/react-query';
 
 import { useCallback } from 'react';
@@ -26,6 +30,85 @@ import type { ErrorType, BodyType } from '../../custom-client';
 type AwaitedInput<T> = PromiseLike<T> | T;
 
 type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+
+/**
+ * @summary Gets a list of all pot templates that the bearer is owning.
+ */
+export const useGetPotTemplatesHook = () => {
+  const getPotTemplates = useCustomClient<PotTemplateDTO[]>();
+
+  return useCallback(
+    (signal?: AbortSignal) => {
+      return getPotTemplates({
+        url: `/api/v1/template`,
+        method: 'GET',
+        signal,
+      });
+    },
+    [getPotTemplates]
+  );
+};
+
+export const getGetPotTemplatesQueryKey = () => {
+  return [`/api/v1/template`] as const;
+};
+
+export const useGetPotTemplatesQueryOptions = <
+  TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
+  TError = ErrorType<unknown>
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
+    TError,
+    TData
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetPotTemplatesQueryKey();
+
+  const getPotTemplates = useGetPotTemplatesHook();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>
+  > = ({ signal }) => getPotTemplates(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetPotTemplatesQueryResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>
+>;
+export type GetPotTemplatesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Gets a list of all pot templates that the bearer is owning.
+ */
+
+export function useGetPotTemplates<
+  TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
+  TError = ErrorType<unknown>
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
+    TError,
+    TData
+  >;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = useGetPotTemplatesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
 
 /**
  * @summary Creates a pot template from the given DTO for the bearer.
