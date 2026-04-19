@@ -14,7 +14,7 @@ pub mod template_api {
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::template_pots::template_pots::{NewPotTemplate, PotTemplate};
     use expense_tracker_db::users::users::User;
-    use expense_tracker_services::template_service::pot_template_service::PotTemplateService;
+    use expense_tracker_services::template_service::pot_template_service::{PotTemplateService, TemplateUpdate};
     use crate::api::{check_error, get_sub_claim, ApiResponse};
     use crate::currency_api::currency_api::CurrencyDTO;
     use crate::user_api::user_api::UserDTO;
@@ -38,6 +38,7 @@ pub mod template_api {
             .routes(routes!(delete_pot_template))
             .routes(routes!(add_users_to_template))
             .routes(routes!(remove_users_from_template))
+            .routes(routes!(update_template))
             .with_state(shared_state)
     }
 
@@ -117,6 +118,24 @@ pub mod template_api {
         }
     }
 
+    #[derive(ToSchema, Serialize, Deserialize)]
+    pub struct PotTemplateUpdateDTO {
+        name: Option<String>,
+        default_currency_id: Option<i32>,
+        cron_expression: Option<String>
+    }
+
+    impl PotTemplateUpdateDTO {
+        /// Return false if all properties are set to None.
+        fn is_valid(&self) -> bool {
+            if self.name.is_none()
+                && self.default_currency_id.is_none()
+                && self.cron_expression.is_none() {
+                return false;
+            }
+            true
+        }
+    }
 
     #[derive(ToSchema, Serialize, Deserialize)]
     pub struct UserListDTO {
@@ -355,4 +374,66 @@ pub mod template_api {
             Json(format!("Template with id {} has been deleted.", template_id))
         ))
     }
+
+    /// Update both template name and template currency.
+    #[utoipa::path(
+        put,
+        path = "/template/{template_id}",
+        tag = "Templates",
+        responses(
+            (status = 202, description = "The template has been updated."),
+            (status = 403, description = "Indicates that the user is not authorized to update the given pot template."),
+            (status = 404, description = "Indicates that the desired pot template does not exists."),
+            (status = 409, description = "Indicates that the desired pot template can't be updated.")
+        ),
+        request_body = PotTemplateUpdateDTO,
+        params(
+            ("template_id" = i32, Path, description = "Database id for the pot template.  ")
+        ),
+
+        security(
+            ("bearer" = [])
+        )
+    )]
+    pub async fn update_template(
+        State(template_api_state): State<Arc<TemplateApiState>>,
+        Path(template_id): Path<i32>,
+        parts: Parts,
+        Json(update_template_dto): Json<PotTemplateUpdateDTO>
+    ) -> Result<ApiResponse<String>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&parts)?;
+
+        if !update_template_dto.is_valid() {
+            return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json("Invalid template update DTO.\
+                     Ensure that it contains at least one property".to_string())
+            ))
+        }
+
+        let success = template_api_state
+            .pot_template_service
+            .update(template_id,
+                    TemplateUpdate {
+                        name: update_template_dto.name,
+                        default_currency_id: update_template_dto.default_currency_id,
+                        cron_expression: update_template_dto.cron_expression,
+                    },
+                    subject_id)
+            .await
+            .map_err(check_error)?;
+
+        if !success {
+            return Err((
+                    StatusCode::CONFLICT,
+                    Json("The template could not be updated.".to_string())
+            ))
+        }
+
+        Ok((
+            StatusCode::ACCEPTED,
+            Json(format!("The users have been removed from the template with id {}.", template_id))
+        ))
+    }
+
 }

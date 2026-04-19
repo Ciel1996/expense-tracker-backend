@@ -21,6 +21,7 @@ import { useCallback } from 'react';
 import type {
   NewPotTemplateDTO,
   PotTemplateDTO,
+  PotTemplateUpdateDTO,
   UserListDTO,
 } from '../../model';
 
@@ -289,6 +290,96 @@ export function useGetPotTemplateById<
   return query;
 }
 
+/**
+ * @summary Update both template name and template currency.
+ */
+export const useUpdateTemplateHook = () => {
+  const updateTemplate = useCustomClient<void>();
+
+  return useCallback(
+    (
+      templateId: number,
+      potTemplateUpdateDTO: BodyType<PotTemplateUpdateDTO>
+    ) => {
+      return updateTemplate({
+        url: `/api/v1/template/${templateId}`,
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        data: potTemplateUpdateDTO,
+      });
+    },
+    [updateTemplate]
+  );
+};
+
+export const useUpdateTemplateMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>,
+    TError,
+    { templateId: number; data: BodyType<PotTemplateUpdateDTO> },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>,
+  TError,
+  { templateId: number; data: BodyType<PotTemplateUpdateDTO> },
+  TContext
+> => {
+  const mutationKey = ['updateTemplate'];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      'mutationKey' in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const updateTemplate = useUpdateTemplateHook();
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>,
+    { templateId: number; data: BodyType<PotTemplateUpdateDTO> }
+  > = (props) => {
+    const { templateId, data } = props ?? {};
+
+    return updateTemplate(templateId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateTemplateMutationResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>
+>;
+export type UpdateTemplateMutationBody = BodyType<PotTemplateUpdateDTO>;
+export type UpdateTemplateMutationError = ErrorType<void>;
+
+/**
+ * @summary Update both template name and template currency.
+ */
+export const useUpdateTemplate = <
+  TError = ErrorType<void>,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>,
+    TError,
+    { templateId: number; data: BodyType<PotTemplateUpdateDTO> },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>,
+  TError,
+  { templateId: number; data: BodyType<PotTemplateUpdateDTO> },
+  TContext
+> => {
+  const mutationOptions = useUpdateTemplateMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
 /**
  * @summary Deletes the given template if the user is the owner of the template.
  */

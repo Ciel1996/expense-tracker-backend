@@ -1,8 +1,8 @@
 [oidc]
-issuer_url = "https://nas.cielcat.ch/realms/dev"
-audience = "expense-tracker-local-dev"
+issuer_url = "http://127.0.0.1:8001/realms/local" # only adjust port
+audience = "expense-tracker"
 
 [expense_tracker]
 port = 3001
 db_connection_string = "postgres://et:localpassword@localhost/expense_tracker"
-cors_url="http://localhost:3000"
+cors_url="http://127.0.0.1:3000"

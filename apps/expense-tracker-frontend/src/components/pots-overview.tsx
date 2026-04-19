@@ -1,19 +1,33 @@
 'use client';
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, Suspense } from "react";
 import { useGetPots } from "@./expense-tracker-client";
 import { Pot } from "./pot";
 import { NewPotModal } from "./new-pot-modal";
 import { NewTemplateModal } from './new-template-modal';
 import { useGetPotTemplates } from '@./expense-tracker-client';
 import { Template } from './template';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export function PotsOverview() {
+function PotsOverviewContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: pots } = useGetPots();
   const { data: templates } = useGetPotTemplates();
   const [open, setOpen] = useState(false);
   const [openTemplate, setOpenTemplate] = useState(false);
-  const [activeTab, setActiveTab] = useState<'active' | 'archived' | 'templates'>('active');
+
+  const activeTab = (searchParams?.get('tab') as 'active' | 'archived' | 'templates') ?? 'active';
+
+  const setActiveTab = (tab: 'active' | 'archived' | 'templates') => {
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
+    if (tab === 'active') {
+      params.delete('tab');
+    } else {
+      params.set('tab', tab);
+    }
+    router.push(`?${params.toString()}`);
+  };
 
   const filteredAndSortedPots = useMemo(() => {
     if (!pots) return [];
@@ -142,5 +156,13 @@ export function PotsOverview() {
         onClose={() => setOpenTemplate(false)}
       />
     </div>
+  );
+}
+
+export function PotsOverview() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <PotsOverviewContent />
+    </Suspense>
   );
 }

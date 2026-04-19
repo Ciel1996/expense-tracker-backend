@@ -1,15 +1,22 @@
 import type { GetServerSideProps, NextPage } from 'next';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  useAddUsersToTemplate,
+  useCurrentUser,
+  useDeletePotTemplate,
   useGetCurrencies,
   useGetPotTemplateById,
   useGetUsers,
-  UserDTO, useRemoveUsersFromTemplate,
+  UserDTO,
+  useRemoveUsersFromTemplate,
+  useUpdateTemplate,
 } from '@./expense-tracker-client';
+import { router } from 'next/client';
 
 type Props = { id: number };
 
 const TemplateDetails: NextPage<Props> = ({ id }) => {
+  const { data: currentUser } = useCurrentUser();
   const { data: template, isLoading: isLoadingPot, isError } = useGetPotTemplateById(id);
   const { data: users, isLoading: isLoadingUsers, isError: isErrorUsers } = useGetUsers();
   const { data: currencies } = useGetCurrencies();
@@ -22,7 +29,53 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
     templateUsers.map((user) => user.uuid) ?? []
   );
 
-  const removeUsersFromTemplate = useRemoveUsersFromTemplate();
+  const {
+    mutate: removeUsers,
+    isPending: isRemovingUsers,
+    error: removeUsersError,
+  } = useRemoveUsersFromTemplate({
+    mutation: {
+      onSuccess: async () => {
+        await router.push(`/?tab=templates`);
+      },
+    },
+  });
+
+  const {
+    mutate: addUsers,
+    isPending: isAddingUsers,
+    error: addUsersError,
+  } = useAddUsersToTemplate({
+    mutation: {
+      onSuccess: async () => {
+        await router.push(`/?tab=templates`);
+      },
+    },
+  });
+
+  const {
+    mutate: deleteTemplate,
+    isPending: isDeletingTemplate,
+    error: deleteTemplateError
+  } = useDeletePotTemplate({
+    mutation: {
+      onSuccess: async () => {
+        await router.push(`/?tab=templates`);
+      },
+    },
+  });
+
+  const {
+    mutate: updateTemplate,
+    isPending: isUpdatingTemplate,
+    error: updateTemplateError
+  } = useUpdateTemplate({
+    mutation: {
+      onSuccess: async () => {
+        await router.push(`/?tab=templates`);
+      },
+    },
+  });
 
   useEffect(() => {
     if (template) {
@@ -37,33 +90,71 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
   const canSubmit = useMemo(
     () =>
       name.trim().length > 0 &&
-      typeof currencyId === 'number' &&
-      cronExpression !== '' &&
+      cronExpression.trim().length > 0 &&
       recurrence !== '',
-    [name, currencyId, cronExpression, recurrence]
+    [name, currencyId, cronExpression, recurrence, selectedUserIds]
   );
 
   const filteredUsers =
     users?.filter((user) => user.uuid != template?.owner.uuid) ?? [];
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    if (!canSubmit || typeof currencyId !== 'number') return;
+  const handleSubmit = (e: React.FormEvent) => {
+    // required so that the page is not immediately refreshed
+    e.preventDefault();
+    if (!canSubmit) return;
+
+    submitRemoveUsers();
+    submitAddUsers();
+    submitUpdate();
+  }
+
+  const submitUpdate = () => {
+    // TODO: check if update has to be called!
+    // TODO: update cron expression
+    updateTemplate({
+      templateId: id,
+      data: {
+        name: name.trim(),
+        default_currency_id: currencyId,
+      },
+    });
+  }
+
+  const submitRemoveUsers = () => {
+    // TODO: check if remove users has to be called!
 
     // users that have been deselected
     let usersToRemove = templateUsers.filter(
       (user) => !selectedUserIds.includes(user.uuid)
     );
 
-    await removeUsersFromTemplate.mutateAsync({
+    removeUsers({
       templateId: id,
       data: {
         users: usersToRemove.map((user) => user.uuid),
       },
     });
+  };
+
+  const submitAddUsers = () => {
+    // TODO: check if add users has to be called!
+    // users that have been selected
+    let usersToAdd = filteredUsers.filter((user) =>
+      // TODO: this duplicates users
+      selectedUserIds.includes(user.uuid)
+    );
+
+    addUsers({templateId: id, data: { users: usersToAdd.map((user) => user.uuid) }});
   }
 
-  const handleClose = () => {
+  const handleDelete = () => {
+    if (window.confirm('Are you sure you want to delete this template?')) {
+      deleteTemplate({templateId: id});
+    }
+  };
 
+  const handleClose = async () => {
+    await router.push(`/?tab=templates`);
   }
 
   const onToggleUser = (uuid : string) => {
@@ -204,6 +295,16 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
       {/*)}*/}
 
       <div className="flex justify-end gap-2 pt-2">
+        {(currentUser?.uuid === template?.owner.uuid) && (
+          <button
+          type="button"
+          onClick={handleDelete}
+          className="px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700"
+          >
+            Delete
+          </button>
+        )}
+
         <button
           type="button"
           onClick={handleClose}
@@ -213,10 +314,10 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
         </button>
         <button
           type="submit"
-          disabled={!canSubmit || removeUsersFromTemplate.isPending}
+          disabled={!canSubmit || isRemovingUsers}
           className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
         >
-          {removeUsersFromTemplate.isPending ? 'Removing user...' : 'Update'}
+          {isRemovingUsers ? 'Updating...' : 'Update'}
         </button>
       </div>
     </form>

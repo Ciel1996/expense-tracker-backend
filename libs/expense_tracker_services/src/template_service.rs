@@ -29,6 +29,14 @@ pub mod pot_template_service {
     use crate::user_service::user_service;
     use crate::user_service::user_service::UserService;
 
+    #[derive(diesel::AsChangeset)]
+    #[diesel(table_name = expense_tracker_db::schema::pot_templates)]
+    pub struct TemplateUpdate {
+        pub name: Option<String>,
+        pub cron_expression: Option<String>,
+        pub default_currency_id: Option<i32>,
+    }
+
     /// A service offering interfaces related to Templates.
     #[derive(Clone)]
     pub struct PotTemplateService {
@@ -204,6 +212,31 @@ pub mod pot_template_service {
             Ok(deleted == 1)
         }
 
+        /// Uses the given update fields to update the template with the given id if the requester is also the owner.
+        pub async fn update(&self,
+                            to_update: i32,
+                            template_update: TemplateUpdate,
+                            requester_id: Uuid) -> Result<bool, ExpenseError> {
+            // if not requested by the owner, stop at once - the frontend should not allow this
+            if !self.is_owner(to_update, requester_id).await? {
+                return Err(Forbidden(format!(
+                    "The user does not own the pot template with id {}",
+                    to_update
+                )));
+            }
+
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+
+            let result = diesel
+                ::update(pot_templates.filter(id.eq(to_update)))
+                .set(template_update)
+                .execute(&mut conn)
+                .await
+                .map_err(internal_error)?;
+
+            Ok(result > 0)
+        }
+
         /// Gets the templates owned by the requester.
         pub async fn get_own_templates(&self, requester_id: Uuid)
             -> Result<Vec<(PotTemplate, Currency, Vec<User>)>, ExpenseError> {
@@ -221,10 +254,7 @@ pub mod pot_template_service {
             // Vector that will hold (PotTemplate, Currency, Vec<User>) that will be returned.
             let mut result = vec![];
 
-            for (template, currency) in templates_with_currency{
-                let template_id = template.id();
-
-                // join pot_template_users with users
+            for (template, currency) in templates_with_currency{                // join pot_template_users with users
                 // filtered by template
                 let loaded_users = self
                     .get_users_for_pot_template(&template)
@@ -345,7 +375,7 @@ pub mod pot_template_service {
 
             {
                 let mut cron_manager_service = cron_manager_service_mutex.lock().await;
-                let cron_expression = template.cron_expression();
+                let template_cron_expression = template.cron_expression();
                 let template_id = template.id();
                 let template = template.clone();
 
@@ -370,7 +400,7 @@ pub mod pot_template_service {
                 // add the cron job to the CronManagerService, using the cron expression and the function
                 // defined above. If the cron job could not be added, log the error.
                 let cron_result = cron_manager_service
-                    .add_cron_job_with_id(cron_expression, function, template_id)
+                    .add_cron_job_with_id(template_cron_expression, function, template_id)
                     .await;
                 debug!("Added cron job for template with id {}", template_id);
 
@@ -379,10 +409,9 @@ pub mod pot_template_service {
                 }
 
                 if let Ok(cron_id) = cron_result {
-                    debug!(
-                                "Added cron job for template with id {} and cron expression {}",
-                                cron_id,
-                                cron_expression);
+                    debug!("Added cron job for template with id {} and cron expression {}",
+                        cron_id,
+                        template_cron_expression);
                 }
             }
         }

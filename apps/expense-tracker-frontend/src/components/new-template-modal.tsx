@@ -1,8 +1,12 @@
 'use client';
 
 import { FC, useMemo, useState } from 'react';
-import { useCreatePotTemplate } from '../../../../libs/expense-tracker-client/src/endpoints/templates/templates';
 import {
+  getGetPotTemplatesQueryKey,
+  useCreatePotTemplate,
+} from '../../../../libs/expense-tracker-client/src/endpoints/templates/templates';
+import {
+  getGetPotsQueryKey,
   useCurrentUser,
   useGetCurrencies,
   useGetUsers,
@@ -17,6 +21,8 @@ export const NewTemplateModal: FC<{ open: boolean; onClose: () => void }> = ({ o
   const [cronExpression, setCronExpression] = useState<string>('');
   const [dateTime, setDateTime] = useState<string>('');
   const [recurrence, setRecurrence] = useState<string>('monthly');
+
+  const queryClient = useQueryClient();
 
   const { data: currencies } = useGetCurrencies();
   const { data: currentUser } = useCurrentUser();
@@ -111,6 +117,7 @@ export const NewTemplateModal: FC<{ open: boolean; onClose: () => void }> = ({ o
           user_ids: selectedUserIds,
         },
       });
+      await queryClient.invalidateQueries({ queryKey: getGetPotTemplatesQueryKey() });
       handleClose();
     } catch (err) {
       // Could show a toast later
