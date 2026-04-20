@@ -4,6 +4,8 @@
 [oidc]
 # URL of your Keycloak realm (or any OIDC provider)
 issuer_url = "http://localhost:8080/realms/master"
+# Optional: mostly used for local development, where internal and external URLs for keycloak's docker container must be used.
+# jwks_uri = "http://keycloak:8080/realms/local"
 # Expected audience for your API
 audience = "expense-tracker-api"
 

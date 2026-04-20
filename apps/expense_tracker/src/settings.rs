@@ -5,6 +5,7 @@ use serde::Deserialize;
 #[allow(unused)]
 pub struct Oidc {
     issuer_url: String,
+    jwks_uri: Option<String>,
     audience: String,
 }
 
@@ -36,6 +37,10 @@ impl ExpenseTracker {
 impl Oidc {
     pub fn issuer_url(&self) -> &str {
         &self.issuer_url
+    }
+
+    pub fn jwks_uri(&self) -> Option<&str> {
+        self.jwks_uri.as_deref()
     }
 
     pub fn audience(&self) -> &str {

@@ -4,5 +4,5 @@ audience = "expense-tracker-local-dev"
 
 [expense_tracker]
 port = 3001
-db_connection_string = "postgres://admin:localpassword@localhost/postgres"
+db_connection_string = "postgres://et:localpassword@localhost/expense_tracker"
 cors_url="http://localhost:3000"
