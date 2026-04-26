@@ -4,23 +4,28 @@ import { FC, useMemo, useState } from 'react';
 import {
   getGetPotTemplatesQueryKey,
   useCreatePotTemplate,
-} from '../../../../libs/expense-tracker-client/src/endpoints/templates/templates';
+} from '@./expense-tracker-client';
 import {
-  getGetPotsQueryKey,
   useCurrentUser,
   useGetCurrencies,
   useGetUsers,
 } from '@./expense-tracker-client';
 import { useQueryClient } from '@tanstack/react-query';
+import { useCronExpression } from '../libs/useCronExpression';
 
 export const NewTemplateModal: FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
   const [name, setName] = useState('');
   const [currencyId, setCurrencyId] = useState<number | string>('');
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   // backend works with cron syntax
-  const [cronExpression, setCronExpression] = useState<string>('');
-  const [dateTime, setDateTime] = useState<string>('');
-  const [recurrence, setRecurrence] = useState<string>('monthly');
+  const {
+    recurrence,
+    dateTime,
+    cronExpression,
+    setCronExpression,
+    onRecurrenceChange,
+    onDateTimeChange
+  } = useCronExpression()
 
   const queryClient = useQueryClient();
 
@@ -44,9 +49,7 @@ export const NewTemplateModal: FC<{ open: boolean; onClose: () => void }> = ({ o
     setName('');
     setCurrencyId('');
     setSelectedUserIds([]);
-    setDateTime('');
     setCronExpression('');
-    setRecurrence('once');
   };
 
   const handleClose = () => {
@@ -58,50 +61,6 @@ export const NewTemplateModal: FC<{ open: boolean; onClose: () => void }> = ({ o
     setSelectedUserIds((prev) =>
       prev.includes(uuid) ? prev.filter((id) => id !== uuid) : [...prev, uuid]
     );
-  };
-
-  const onDateTimeChange = (val: string, currentRecurrence: string = recurrence) => {
-    setDateTime(val);
-    if (!val) {
-      setCronExpression('');
-      return;
-    }
-
-    // val is "YYYY-MM-DDTHH:mm"
-    const date = new Date(val);
-    const minute = date.getMinutes();
-    const hour = date.getHours();
-    const dayOfMonth = date.getDate();
-    const month = date.getMonth() + 1; // getMonth is 0-indexed
-    const dayOfWeek = date.getDay(); // Sunday is 0, Monday is 1...
-
-    // Cron: "second minute hour dayOfMonth month dayOfWeek" (6 digits)
-    // The backend uses cron_tab which expects 6 fields.
-    let cron = '';
-    switch (currentRecurrence) {
-      case 'weekly':
-        // Weekly: sec min hour * * dayOfWeek
-        cron = `0 ${minute} ${hour} * * ${dayOfWeek}`;
-        break;
-      case 'monthly':
-        // Monthly: sec min hour day * *
-        cron = `0 ${minute} ${hour} ${dayOfMonth} * *`;
-        break;
-      case 'yearly':
-        // Yearly: sec min hour day month *
-        cron = `0 ${minute} ${hour} ${dayOfMonth} ${month} *`;
-        break;
-      default:
-        cron = `0 ${minute} ${hour} ${dayOfMonth} * *`;
-    }
-    setCronExpression(cron);
-  };
-
-  const onRecurrenceChange = (val: string) => {
-    setRecurrence(val);
-    if (dateTime) {
-      onDateTimeChange(dateTime, val);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -208,7 +167,7 @@ export const NewTemplateModal: FC<{ open: boolean; onClose: () => void }> = ({ o
                   </label>
                   <select
                     value={recurrence}
-                    onChange={(e) => onRecurrenceChange(e.target.value)}
+                    onChange={(e)=> onRecurrenceChange(e.target.value) }
                     className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   >

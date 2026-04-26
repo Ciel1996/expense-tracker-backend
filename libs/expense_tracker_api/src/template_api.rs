@@ -375,7 +375,7 @@ pub mod template_api {
         ))
     }
 
-    /// Update both template name and template currency.
+    /// Updates template name, template currency and cron expression if the user is the owner of the template.
     #[utoipa::path(
         put,
         path = "/template/{template_id}",

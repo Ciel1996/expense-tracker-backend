@@ -150,7 +150,16 @@ pub mod pot_template_service {
             let mut new_pot_template_users = vec![];
 
             for user_uuid in users_to_add {
-                new_pot_template_users.push(NewPotTemplateUser::new(user_uuid, target_pot_template_id))
+                let exists = self.is_user_in_template(target_pot_template_id, user_uuid).await;
+                debug!("User {} exists in template {}: {}", user_uuid, target_pot_template_id, exists);
+
+                if !exists {
+                    debug!("Adding user {} to template {}", user_uuid, target_pot_template_id);
+                    new_pot_template_users.push(NewPotTemplateUser::new(user_uuid, target_pot_template_id))
+                }
+                else {
+                    debug!("User {} is already in template {}", user_uuid, target_pot_template_id);
+                }
             }
 
             let mut conn = self.db_pool.get().await.map_err(internal_error)?;
@@ -329,6 +338,24 @@ pub mod pot_template_service {
                 .map_err(internal_error)? == 1;
 
             Ok(result)
+        }
+
+        async fn is_user_in_template(&self, temp_id: i32, user_uuid: Uuid) -> bool {
+            let mut conn = self.db_pool.get().await.unwrap();
+            pot_template_users
+                .filter(pot_template_id.eq(temp_id).and(user_id.eq(user_uuid)))
+                .count()
+                .get_result::<i64>(&mut conn)
+                .await
+                .map_err(|e| {
+                    error!("Error checking if user is in template: {}", e);
+                    false
+                })
+                .map(|count| {
+                    debug!("User is in template: {}", count >= 1);
+                    count >= 1
+                })
+                .unwrap_or(false)
         }
 
         /// Used to initialize the service, this is called when the service is first created.

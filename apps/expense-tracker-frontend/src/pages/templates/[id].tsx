@@ -12,22 +12,45 @@ import {
   useUpdateTemplate,
 } from '@./expense-tracker-client';
 import { router } from 'next/client';
+import { useCronExpression } from '../../libs/useCronExpression';
 
 type Props = { id: number };
 
 const TemplateDetails: NextPage<Props> = ({ id }) => {
   const { data: currentUser } = useCurrentUser();
-  const { data: template, isLoading: isLoadingPot, isError } = useGetPotTemplateById(id);
-  const { data: users, isLoading: isLoadingUsers, isError: isErrorUsers } = useGetUsers();
+  const {
+    data: template,
+    isLoading: isLoadingPot,
+    isError,
+  } = useGetPotTemplateById(id);
+  const {
+    data: users,
+    isLoading: isLoadingUsers,
+    isError: isErrorUsers,
+  } = useGetUsers();
   const { data: currencies } = useGetCurrencies();
   const [name, setName] = useState(template?.name ?? `Template ${id}`);
-  const [currencyId, setCurrencyId] = useState<number>(template?.default_currency.id ?? 1);
-  const [cronExpression, setCronExpression] = useState<string>(template?.cron_expression ?? 'N/A');
-  const [templateUsers, setTemplateUsers] = useState<UserDTO[]>(template?.users ?? []);
-  const [recurrence, setRecurrence] = useState<string>('monthly');
+  const [currencyId, setCurrencyId] = useState<number>(
+    template?.default_currency.id ?? 1
+  );
+  const [templateUsers, setTemplateUsers] = useState<UserDTO[]>(
+    template?.users ?? []
+  );
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>(
     templateUsers.map((user) => user.uuid) ?? []
   );
+
+  // backend works with cron syntax
+  const {
+    recurrence,
+    dateTime,
+    cronExpression,
+    onRecurrenceChange,
+    onDateTimeChange,
+  } = useCronExpression(
+    undefined,
+    undefined,
+    template?.cron_expression);
 
   const {
     mutate: removeUsers,
@@ -56,7 +79,7 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
   const {
     mutate: deleteTemplate,
     isPending: isDeletingTemplate,
-    error: deleteTemplateError
+    error: deleteTemplateError,
   } = useDeletePotTemplate({
     mutation: {
       onSuccess: async () => {
@@ -68,7 +91,7 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
   const {
     mutate: updateTemplate,
     isPending: isUpdatingTemplate,
-    error: updateTemplateError
+    error: updateTemplateError,
   } = useUpdateTemplate({
     mutation: {
       onSuccess: async () => {
@@ -81,9 +104,9 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
     if (template) {
       setName(template.name);
       setCurrencyId(template.default_currency.id);
-      setCronExpression(template.cron_expression ?? 'N/A');
       setTemplateUsers(template.users);
       setSelectedUserIds(template.users.map((user) => user.uuid));
+
     }
   }, [template]);
 
@@ -106,7 +129,7 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
     submitRemoveUsers();
     submitAddUsers();
     submitUpdate();
-  }
+  };
 
   const submitUpdate = () => {
     // TODO: check if update has to be called!
@@ -116,17 +139,18 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
       data: {
         name: name.trim(),
         default_currency_id: currencyId,
+        cron_expression: cronExpression,
       },
     });
-  }
+  };
 
   const submitRemoveUsers = () => {
-    // TODO: check if remove users has to be called!
-
     // users that have been deselected
     let usersToRemove = templateUsers.filter(
       (user) => !selectedUserIds.includes(user.uuid)
     );
+
+    if (usersToRemove.length === 0) return;
 
     removeUsers({
       templateId: id,
@@ -137,31 +161,35 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
   };
 
   const submitAddUsers = () => {
-    // TODO: check if add users has to be called!
     // users that have been selected
-    let usersToAdd = filteredUsers.filter((user) =>
-      // TODO: this duplicates users
-      selectedUserIds.includes(user.uuid)
-    );
+    let usersToAdd = filteredUsers.filter((user) => {
+      if (templateUsers.includes(user)) return false;
+      return selectedUserIds.includes(user.uuid);
+    });
 
-    addUsers({templateId: id, data: { users: usersToAdd.map((user) => user.uuid) }});
-  }
+    if (usersToAdd.length === 0) return;
+
+    addUsers({
+      templateId: id,
+      data: { users: usersToAdd.map((user) => user.uuid) },
+    });
+  };
 
   const handleDelete = () => {
     if (window.confirm('Are you sure you want to delete this template?')) {
-      deleteTemplate({templateId: id});
+      deleteTemplate({ templateId: id });
     }
   };
 
   const handleClose = async () => {
     await router.push(`/?tab=templates`);
-  }
+  };
 
-  const onToggleUser = (uuid : string) => {
+  const onToggleUser = (uuid: string) => {
     setSelectedUserIds((prev) =>
       prev.includes(uuid) ? prev.filter((id) => id !== uuid) : [...prev, uuid]
     );
-  }
+  };
 
   if (isLoadingPot || isLoadingUsers) {
     return (
@@ -174,9 +202,7 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
   if (isError || isErrorUsers) {
     if (!template) {
       return (
-        <div className="p-4 text-sm text-gray-500">
-          Template not found
-        </div>
+        <div className="p-4 text-sm text-gray-500">Template not found</div>
       );
     }
 
@@ -256,50 +282,50 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
         </div>
       </div>
 
-      {/*<div className="grid grid-cols-2 gap-4">*/}
-      {/*  <div>*/}
-      {/*    <label className="block text-sm font-medium mb-1">Recurrence</label>*/}
-      {/*    <select*/}
-      {/*      value={recurrence}*/}
-      {/*      onChange={(e) => onRecurrenceChange(e.target.value)}*/}
-      {/*      className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"*/}
-      {/*      required*/}
-      {/*    >*/}
-      {/*      <option value="weekly">Weekly</option>*/}
-      {/*      <option value="monthly">Monthly</option>*/}
-      {/*      <option value="yearly">Yearly</option>*/}
-      {/*    </select>*/}
-      {/*  </div>*/}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Recurrence</label>
+          <select
+            value={recurrence}
+            onChange={(e) => onRecurrenceChange(e.target.value)}
+            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          >
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
 
-      {/*  <div>*/}
-      {/*    <label className="block text-sm font-medium mb-1">*/}
-      {/*      Schedule (Day & Time)*/}
-      {/*    </label>*/}
-      {/*    <input*/}
-      {/*      type="datetime-local"*/}
-      {/*      value={dateTime}*/}
-      {/*      onChange={(e) => onDateTimeChange(e.target.value)}*/}
-      {/*      className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"*/}
-      {/*      required*/}
-      {/*    />*/}
-      {/*  </div>*/}
-      {/*</div>*/}
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Schedule (Day & Time)
+          </label>
+          <input
+            type="datetime-local"
+            value={dateTime}
+            onChange={(e) => onDateTimeChange(e.target.value)}
+            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
+      </div>
 
-      {/*{cronExpression && (*/}
-      {/*  <div className="text-xs text-gray-500 dark:text-gray-400">*/}
-      {/*    Resulting Cron:{' '}*/}
-      {/*    <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">*/}
-      {/*      {cronExpression}*/}
-      {/*    </code>*/}
-      {/*  </div>*/}
-      {/*)}*/}
+      {cronExpression && (
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          Resulting Cron:{' '}
+          <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
+            {cronExpression}
+          </code>
+        </div>
+      )}
 
       <div className="flex justify-end gap-2 pt-2">
-        {(currentUser?.uuid === template?.owner.uuid) && (
+        {currentUser?.uuid === template?.owner.uuid && (
           <button
-          type="button"
-          onClick={handleDelete}
-          className="px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700"
+            type="button"
+            onClick={handleDelete}
+            className="px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700"
           >
             Delete
           </button>
