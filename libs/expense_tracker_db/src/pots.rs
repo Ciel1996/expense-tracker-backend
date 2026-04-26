@@ -5,6 +5,7 @@ pub mod pots {
     use diesel::{Insertable, Queryable, Selectable};
     use serde::{Deserialize, Serialize};
     use uuid::Uuid;
+    use crate::template_pots::template_pots::PotTemplate;
 
     /// Represents a pot. A pot is an accumulation of expenses and is owned by a single
     /// user. A pot can be shared with multiple users. The users can leave a pot
@@ -79,7 +80,6 @@ pub mod pots {
         default_currency_id: i32,
         created_at: DateTime<Utc>,
     }
-
     impl NewPot {
         /// Constructor
         pub fn new(owner_id: Uuid, name: String, default_currency_id: i32) -> Self {
@@ -87,6 +87,16 @@ pub mod pots {
                 owner_id,
                 name,
                 default_currency_id,
+                created_at: Utc::now(),
+            }
+        }
+
+        /// Used to create a NewPot from a PotTemplate
+        pub fn from_template(template: &PotTemplate, name: &String) -> Self {
+            Self {
+                owner_id: template.owner_id(),
+                name: name.clone(),
+                default_currency_id: template.default_currency_id(),
                 created_at: Utc::now(),
             }
         }

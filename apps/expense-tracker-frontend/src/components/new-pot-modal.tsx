@@ -2,7 +2,7 @@
 
 import {FC, useMemo, useState} from "react";
 import {
-  useAddUserToPot,
+  useAddUsersToPot,
   useCreatePot,
   useGetCurrencies,
   useGetUsers,
@@ -24,7 +24,7 @@ export const NewPotModal: FC<{ open: boolean; onClose: () => void }> = ({ open, 
   const filteredUsers = users?.filter(u => u.uuid != currentUser?.uuid);
 
   const createPot = useCreatePot();
-  const addUserToPot = useAddUserToPot();
+  const addUsersToPot = useAddUsersToPot();
 
   const canSubmit = useMemo(
     () => name.trim().length > 0 && typeof currencyId === "number", [name, currencyId]);
@@ -50,11 +50,10 @@ export const NewPotModal: FC<{ open: boolean; onClose: () => void }> = ({ open, 
 
     try {
       const pot = await createPot.mutateAsync({ data: { name: name.trim(), default_currency_id: currencyId } });
-      // Add selected users to pot sequentially
-      for (const uuid of selectedUserIds) {
-        await addUserToPot.mutateAsync({ potId: pot.id, data: { user_id: uuid } });
-      }
-      // invalidate pots list
+      await addUsersToPot.mutateAsync({
+        potId: pot.id,
+        data: selectedUserIds.map((v) => ({ user_id: v })),
+      });
       await queryClient.invalidateQueries({ queryKey: getGetPotsQueryKey() });
       handleClose();
     } catch (err) {
@@ -134,7 +133,7 @@ export const NewPotModal: FC<{ open: boolean; onClose: () => void }> = ({ open, 
                 </button>
                 <button
                   type="submit"
-                  disabled={!canSubmit || createPot.isPending || addUserToPot.isPending}
+                  disabled={!canSubmit || createPot.isPending || addUsersToPot.isPending}
                   className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
                 >
                   {createPot.isPending ? "Creating..." : "Create"}

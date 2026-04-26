@@ -19,7 +19,7 @@ pub mod user_api {
         OpenApiRouter::new()
             .routes(routes!(current_user))
             .routes(routes!(get_users))
-            .with_state(user_service::create_service(pool))
+            .with_state(user_service::new_service(pool))
     }
 
     /// The DTO representing a user from DB.
@@ -30,11 +30,12 @@ pub mod user_api {
     }
 
     impl UserDTO {
+        pub fn new(uuid: Uuid, name: String) -> Self {
+            Self { uuid, name }
+        }
+
         pub fn from(user: User) -> UserDTO {
-            UserDTO {
-                uuid: user.id(),
-                name: user.name().to_string(),
-            }
+            Self::new(user.id(),user.name().to_string())
         }
 
         pub fn from_vec(users: Vec<User>) -> Vec<UserDTO> {
@@ -45,6 +46,10 @@ pub mod user_api {
             }
 
             dtos
+        }
+
+        pub fn uuid(&self) -> Uuid {
+            self.uuid
         }
     }
 
@@ -70,7 +75,6 @@ pub mod user_api {
         let uuid = get_sub_claim(&parts)?;
         let user = service.get_user_by_id(uuid).await;
 
-        // TODO: what happens in case of a DB exception?
         if let Ok(user) = user {
             return Ok((StatusCode::OK, Json(UserDTO::from(user))));
         }
@@ -99,7 +103,7 @@ pub mod user_api {
     pub async fn get_users(
         State(service): State<UserService>,
     ) -> Result<ApiResponse<Vec<UserDTO>>, ApiResponse<String>> {
-        let res = service.get_users().await.map_err(check_error)?;
+        let res = service.get_users(None).await.map_err(check_error)?;
         Ok((StatusCode::OK, Json(UserDTO::from_vec(res))))
     }
 }
