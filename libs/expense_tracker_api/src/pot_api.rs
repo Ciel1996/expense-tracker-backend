@@ -45,7 +45,7 @@ pub mod pot_api {
             .routes(routes!(get_pots))
             .routes(routes!(add_expense))
             .routes(routes!(get_pot_expenses))
-            .routes(routes!(add_user_to_pot))
+            .routes(routes!(add_users_to_pot))
             .routes(routes!(remove_user_from_pot))
             .routes(routes!(delete_pot))
             .routes(routes!(archive))
@@ -239,19 +239,19 @@ pub mod pot_api {
         ))
     }
 
-    /// Adds the given user to the pot, if Bearer is the owner of that pot.
+    /// Adds the given users to the pot if Bearer is the owner of that pot.
     #[utoipa::path(
             put,
             path = "/pots/{pot_id}",
             tag = "Pots",
             responses(
-                (status = 200, description = "The user has successfully been added to the pot"),
-                (status = 403, description = "The user could not be added due to the caller not being the owner of the given pot."),
-                (status = 409, description = "The user was already added to the pot."),
-                (status = 423, description = "The user can't be added, as the pot is archived."),
+                (status = 200, description = "The users have successfully been added to the pot"),
+                (status = 403, description = "The users could not be added due to the caller not being the owner of the given pot."),
+                (status = 409, description = "The users were already added to the pot."),
+                (status = 423, description = "The users can't be added, as the pot is archived."),
                 (status = 500, description = "An internal server error occurred")
             ),
-            request_body = AddUserToPotDTO,
+            request_body = Vec<AddUserToPotDTO>,
             params(
                 ("pot_id" = i32, Path, description = "Pot database id for the pot.  ")
             ),
@@ -259,37 +259,37 @@ pub mod pot_api {
                     ("bearer" = [])
             )
         )]
-    pub async fn add_user_to_pot(
+    pub async fn add_users_to_pot(
         State(pot_api_state): State<Arc<PotApiState>>,
         Path(pot_id): Path<i32>,
         part: Parts,
-        Json(add_user_to_pot_dto): Json<AddUserToPotDTO>,
+        Json(add_user_to_pot_dto): Json<Vec<AddUserToPotDTO>>,
     ) -> Result<ApiResponse<String>, ApiResponse<String>> {
         let subject_id = get_sub_claim(&part)?;
-        let new_user_id = add_user_to_pot_dto.user_id();
+
+        // create a vector of PotToUser so that they can be added to the database
+        let mut new_user_ids = vec![];
+        for user in add_user_to_pot_dto {
+            let new_user_id = user.user_id();
+            new_user_ids.push(PotToUser::new(pot_id, new_user_id));
+        }
 
         let result = pot_api_state
             .pot_service
-            .add_user_to_pot(PotToUser::new(pot_id, new_user_id), subject_id)
+            .add_users_to_pot(new_user_ids, subject_id)
             .await
             .map_err(check_error)?;
 
         if !result {
             return Ok((
                 StatusCode::FORBIDDEN,
-                Json(format!(
-                    "User {} could not be added to pot {}",
-                    new_user_id, pot_id
-                )),
+                Json(format!("Users could not be added to pot {}", pot_id)),
             ));
         }
 
         Ok((
             StatusCode::OK,
-            Json(format!(
-                "User {} successfully added to pot {}",
-                new_user_id, pot_id
-            )),
+            Json(format!("Users successfully added to pot {}", pot_id)),
         ))
     }
 

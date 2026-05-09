@@ -42,6 +42,11 @@ brew install libpq
 9. If you want to run the frontend use `npx nx dev expense-tracker-frontend` from the repo root. 
 10. If you made changes to the backend's API, e.g. adding a new endpoint, modifying or removing an existing one, you can use `npx nx swagger expense_tracker`, this will automatically update the OpenApi Spec and generate a new expense-tracker-client which can then be used by the frontend.
 
+## Getting an Access Token for the API (using docker compose)
+You can run the shell script `localAccessToken.sh` to get an access token for the API.
+It will automatically copy the token to your clipboard.
+You may need to allow the script to run by running `chmod +x localAccessToken.sh`
+
 #
 
 <a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>

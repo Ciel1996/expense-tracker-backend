@@ -4,7 +4,7 @@ CREATE TABLE pot_templates
     owner_id            UUID REFERENCES users (id)         ON DELETE CASCADE NOT NULL,
     name                TEXT                               NOT NULL,
     default_currency_id INTEGER REFERENCES currencies (id) NOT NULL,
-    create_at           TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    create_at           TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
 CREATE TABLE pot_template_users

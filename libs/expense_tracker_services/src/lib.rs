@@ -1,10 +1,21 @@
+use std::fmt::{Display, Formatter};
+use std::sync::{Arc, LazyLock};
+use tokio::sync::Mutex;
 use diesel::result::Error;
+use crate::cron_manager_service::cron_manager_service::CronManagerService;
 
 pub mod currency_service;
 pub mod expense_service;
 pub mod health_service;
 pub mod pot_service;
 pub mod user_service;
+pub mod template_service;
+pub mod cron_manager_service;
+
+/// We only need one instance of the cron manager service, so we use a static variable.
+/// Making it pseudo singleton. Usinc Arc to ensure that only one instance exists at any time.
+static CRON_MANAGER_SERVICE: LazyLock<Arc<Mutex<CronManagerService>>>
+    = LazyLock::new(|| Arc::new(Mutex::new(CronManagerService::new())));
 
 #[derive(Debug)]
 /// An enumeration defining all errors of the application.
@@ -15,10 +26,12 @@ pub enum ExpenseError {
     Forbidden(String),
     /// Indicates an unspecific error.
     Internal(String),
-    /// Indicates a conflict, thus resulting in cancelation of the task.
+    /// Indicates a conflict, thus resulting in cancellation of the task.
     Conflict(String),
     /// Indicates that the resource is locked, most likely due to it being archived.
     Locked(String),
+    /// Indicates that there was an error with the configuration of a cron job.
+    CronConfigError(String),
 }
 
 /// Produces a `NotFound` from the given `err`.
@@ -48,5 +61,11 @@ impl From<ExpenseError> for Error {
             ExpenseError::NotFound(_) => Error::NotFound,
             _ => panic!("Could not handle ExpenseError {:?}", value),
         }
+    }
+}
+
+impl Display for ExpenseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
     }
 }

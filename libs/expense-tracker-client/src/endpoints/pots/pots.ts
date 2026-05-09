@@ -3,7 +3,7 @@
  * Do not edit manually.
  * expense_tracker
  * A REST Api that offers various endpoints for handling shared expenses.
- * OpenAPI spec version: 1.0.0
+ * OpenAPI spec version: 1.1.0
  */
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type {
@@ -288,41 +288,41 @@ export function useGetPotExpenses<
 }
 
 /**
- * @summary Adds the given user to the pot, if Bearer is the owner of that pot.
+ * @summary Adds the given users to the pot if Bearer is the owner of that pot.
  */
-export const useAddUserToPotHook = () => {
-  const addUserToPot = useCustomClient<void>();
+export const useAddUsersToPotHook = () => {
+  const addUsersToPot = useCustomClient<void>();
 
   return useCallback(
-    (potId: number, addUserToPotDTO: BodyType<AddUserToPotDTO>) => {
-      return addUserToPot({
+    (potId: number, addUserToPotDTO: BodyType<AddUserToPotDTO[]>) => {
+      return addUsersToPot({
         url: `/api/v1/pots/${potId}`,
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         data: addUserToPotDTO,
       });
     },
-    [addUserToPot]
+    [addUsersToPot]
   );
 };
 
-export const useAddUserToPotMutationOptions = <
+export const useAddUsersToPotMutationOptions = <
   TError = ErrorType<void>,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useAddUserToPotHook>>>,
+    Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>,
     TError,
-    { potId: number; data: BodyType<AddUserToPotDTO> },
+    { potId: number; data: BodyType<AddUserToPotDTO[]> },
     TContext
   >;
 }): UseMutationOptions<
-  Awaited<ReturnType<ReturnType<typeof useAddUserToPotHook>>>,
+  Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>,
   TError,
-  { potId: number; data: BodyType<AddUserToPotDTO> },
+  { potId: number; data: BodyType<AddUserToPotDTO[]> },
   TContext
 > => {
-  const mutationKey = ['addUserToPot'];
+  const mutationKey = ['addUsersToPot'];
   const { mutation: mutationOptions } = options
     ? options.mutation &&
       'mutationKey' in options.mutation &&
@@ -331,46 +331,46 @@ export const useAddUserToPotMutationOptions = <
       : { ...options, mutation: { ...options.mutation, mutationKey } }
     : { mutation: { mutationKey } };
 
-  const addUserToPot = useAddUserToPotHook();
+  const addUsersToPot = useAddUsersToPotHook();
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<ReturnType<typeof useAddUserToPotHook>>>,
-    { potId: number; data: BodyType<AddUserToPotDTO> }
+    Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>,
+    { potId: number; data: BodyType<AddUserToPotDTO[]> }
   > = (props) => {
     const { potId, data } = props ?? {};
 
-    return addUserToPot(potId, data);
+    return addUsersToPot(potId, data);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type AddUserToPotMutationResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useAddUserToPotHook>>>
+export type AddUsersToPotMutationResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>
 >;
-export type AddUserToPotMutationBody = BodyType<AddUserToPotDTO>;
-export type AddUserToPotMutationError = ErrorType<void>;
+export type AddUsersToPotMutationBody = BodyType<AddUserToPotDTO[]>;
+export type AddUsersToPotMutationError = ErrorType<void>;
 
 /**
- * @summary Adds the given user to the pot, if Bearer is the owner of that pot.
+ * @summary Adds the given users to the pot if Bearer is the owner of that pot.
  */
-export const useAddUserToPot = <
+export const useAddUsersToPot = <
   TError = ErrorType<void>,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useAddUserToPotHook>>>,
+    Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>,
     TError,
-    { potId: number; data: BodyType<AddUserToPotDTO> },
+    { potId: number; data: BodyType<AddUserToPotDTO[]> },
     TContext
   >;
 }): UseMutationResult<
-  Awaited<ReturnType<ReturnType<typeof useAddUserToPotHook>>>,
+  Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>,
   TError,
-  { potId: number; data: BodyType<AddUserToPotDTO> },
+  { potId: number; data: BodyType<AddUserToPotDTO[]> },
   TContext
 > => {
-  const mutationOptions = useAddUserToPotMutationOptions(options);
+  const mutationOptions = useAddUsersToPotMutationOptions(options);
 
   return useMutation(mutationOptions);
 };
