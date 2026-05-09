@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from 'react';
 
 const getRecurrenceFromCron = (cron: string): string => {
-  console.log('cron', cron);
   const parts = cron.split(' ');
   if (parts.length !== 6) {
     return 'monthly';
@@ -28,6 +27,7 @@ const getDateTimeFromCron = (cron: string): string => {
   const parts = cron.split(' ');
   const [, minute, hour, day, month, dayOfWeek] = parts;
   const date = new Date();
+  date.setSeconds(0);
 
   if (recurrence == "yearly") {
     date.setMonth(parseInt(month) - 1);
@@ -40,6 +40,7 @@ const getDateTimeFromCron = (cron: string): string => {
     date.setDate(parseInt(day));
     date.setHours(parseInt(hour));
     date.setMinutes(parseInt(minute));
+    date.setMonth(date.getMonth() + 1);
   }
 
   if (recurrence == "weekly") {
@@ -48,7 +49,11 @@ const getDateTimeFromCron = (cron: string): string => {
     date.setMinutes(parseInt(minute));
   }
 
-  return date.toISOString().slice(0, 16);
+  const localDateTime = new Date(
+    date.getTime() - date.getTimezoneOffset() * 60 * 1000
+  );
+
+  return localDateTime.toISOString().slice(0, 16);
 };
 
 export const useCronExpression = (

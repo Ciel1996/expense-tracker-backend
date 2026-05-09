@@ -132,14 +132,12 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
   };
 
   const submitUpdate = () => {
-    // TODO: check if update has to be called!
-    // TODO: update cron expression
     updateTemplate({
       templateId: id,
       data: {
-        name: name.trim(),
+        name:name.trim(),
         default_currency_id: currencyId,
-        cron_expression: cronExpression,
+        cron_expression: cronExpression
       },
     });
   };
