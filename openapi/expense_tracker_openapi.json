@@ -10,7 +10,7 @@
       "name": "GPL-3.0-or-later",
       "identifier": "GPL-3.0-or-later"
     },
-    "version": "1.1.0"
+    "version": "1.2.0"
   },
   "paths": {
     "/api/v1/currencies": {
@@ -522,6 +522,43 @@
         ]
       }
     },
+    "/api/v1/pots/{pot_id}/pay": {
+      "put": {
+        "tags": [
+          "Pots"
+        ],
+        "summary": "Marks the given pot as paid. Only the pot owner can do this.\nThis is a function used to mark the pot as paid with a single button click.\nNo restore is possible as of now. So the pot is considered final.",
+        "operationId": "pay_pot",
+        "parameters": [
+          {
+            "name": "pot_id",
+            "in": "path",
+            "description": "Pot database id for the pot",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The pot has been successfully payed."
+          },
+          "403": {
+            "description": "The pot could not be payed."
+          },
+          "500": {
+            "description": "An internal server error occurred"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/v1/pots/{pot_id}/remove_user": {
       "put": {
         "tags": [
@@ -718,7 +755,7 @@
         "tags": [
           "Templates"
         ],
-        "summary": "Update both template name and template currency.",
+        "summary": "Updates template name, template currency and cron expression if the user is the owner of the template.",
         "operationId": "update_template",
         "parameters": [
           {

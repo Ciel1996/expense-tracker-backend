@@ -3,7 +3,7 @@
  * Do not edit manually.
  * expense_tracker
  * A REST Api that offers various endpoints for handling shared expenses.
- * OpenAPI spec version: 1.1.0
+ * OpenAPI spec version: 1.2.0
  */
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type {
@@ -625,6 +625,92 @@ export const useArchive = <
   TContext
 > => {
   const mutationOptions = useArchiveMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Marks the given pot as paid. Only the pot owner can do this.
+This is a function used to mark the pot as paid with a single button click.
+No restore is possible as of now. So the pot is considered final.
+ */
+export const usePayPotHook = () => {
+  const payPot = useCustomClient<void>();
+
+  return useCallback(
+    (potId: number) => {
+      return payPot({ url: `/api/v1/pots/${potId}/pay`, method: 'PUT' });
+    },
+    [payPot]
+  );
+};
+
+export const usePayPotMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>,
+    TError,
+    { potId: number },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>,
+  TError,
+  { potId: number },
+  TContext
+> => {
+  const mutationKey = ['payPot'];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      'mutationKey' in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const payPot = usePayPotHook();
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>,
+    { potId: number }
+  > = (props) => {
+    const { potId } = props ?? {};
+
+    return payPot(potId);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PayPotMutationResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>
+>;
+
+export type PayPotMutationError = ErrorType<void>;
+
+/**
+ * @summary Marks the given pot as paid. Only the pot owner can do this.
+This is a function used to mark the pot as paid with a single button click.
+No restore is possible as of now. So the pot is considered final.
+ */
+export const usePayPot = <
+  TError = ErrorType<void>,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>,
+    TError,
+    { potId: number },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>,
+  TError,
+  { potId: number },
+  TContext
+> => {
+  const mutationOptions = usePayPotMutationOptions(options);
 
   return useMutation(mutationOptions);
 };

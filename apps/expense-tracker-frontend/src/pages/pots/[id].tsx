@@ -3,7 +3,7 @@ import {
   useGetPotExpenses,
   useGetUsers,
   useDeletePot,
-  useGetPots, useArchive, useUnarchive, getGetPotsQueryKey, useCurrentUser
+  useGetPots, useArchive, useUnarchive, getGetPotsQueryKey, useCurrentUser, usePayPot, getGetPotExpensesQueryKey
 } from "@./expense-tracker-client";
 import React, { useState } from "react";
 import { useRouter } from "next/router";
@@ -51,6 +51,15 @@ const PotDetails: NextPage<Props> = ({ id }) => {
     },
   });
 
+  const { mutate: payPot, isPending: isPaying, error: payError } = usePayPot({
+    mutation: {
+      onSuccess: async () => {
+        await queryClient.invalidateQueries({ queryKey: getGetPotsQueryKey() });
+        await queryClient.invalidateQueries({ queryKey: getGetPotExpensesQueryKey(id) });
+      },
+    },
+  });
+
   if (isLoading || isLoadingUsers || isLoadingPots) {
     return <div className="p-4 text-sm text-gray-500">Loading expenses…</div>;
   }
@@ -67,6 +76,14 @@ const PotDetails: NextPage<Props> = ({ id }) => {
   const isOwner = pot?.owner_id === user?.uuid;
   const canArchive = totalBalance === 0;
   const canDelete = (!hasExpenses || totalBalance === 0) && !isArchived;
+  const canPay = hasExpenses && totalBalance > 0;
+
+  const handlePayment = () => {
+    if (!canPay || isPaying) return;
+    const ok = window.confirm("Are you sure you want to pay this pot? This action cannot be undone.");
+    if (!ok) return;
+    payPot({ potId: id });
+  };
 
   const handleDelete = () => {
     if (!canDelete || isDeleting) return;
@@ -87,6 +104,17 @@ const PotDetails: NextPage<Props> = ({ id }) => {
 
   const actionSection = (
     <div className="mt-4 flex gap-2">
+      {(isOwner && !isArchived && (canPay || isPaying)) && (
+        <button
+          onClick={handlePayment}
+          disabled={isPaying}
+          className="px-4 py-2 rounded-md text-white bg-green-500 hover:bg-green-700"
+          title="Mark as Paid"
+        >
+          {isPaying ? "Paying…" : "Mark as Paid"}
+        </button>
+      )}
+
       {(isOwner && !isArchived && (canDelete || isDeleting)) && (
         <button
           onClick={handleDelete}
@@ -109,7 +137,7 @@ const PotDetails: NextPage<Props> = ({ id }) => {
         </button>
       )}
 
-      {isArchived && (
+      {isOwner && isArchived && (
         <button
           onClick={handleUnarchive}
           disabled={isUnarchiving}
