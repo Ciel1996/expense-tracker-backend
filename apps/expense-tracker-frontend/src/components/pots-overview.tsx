@@ -102,7 +102,7 @@ function PotsOverviewContent() {
         )}
       </div>
 
-      {filteredAndSortedPots.length > 0 && (
+      {activeTab == "archived" && filteredAndSortedPots.length > 0 && (
         <div className="columns-1 sm:columns-2 md:columns-[16rem] gap-1">
           {filteredAndSortedPots.map((e) => (
             <div key={`pot-${e.id}`} className="break-inside-avoid mb-2">
