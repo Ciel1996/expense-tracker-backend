@@ -382,6 +382,27 @@ pub mod pot_service {
 
             Ok(true)
         }
+
+        /// Used to mark all expenses of the given pot as paid.
+        pub async fn pay_pot(&self, pot_id_to_pay: i32, requester_id: Uuid)
+            -> Result<bool, ExpenseError> {
+            let expenses = self
+                .expense_service
+                .get_expenses_by_pot_id(pot_id_to_pay, requester_id)
+                .await?;
+
+            for joined_expense in expenses {
+                let expense_id = joined_expense.0.id();
+
+                for split in joined_expense.1 {
+                    let split_user_id = split.user_id();
+                    let amount = split.amount();
+                    self.expense_service.pay_expense(expense_id, split_user_id, amount).await?;
+                }
+            }
+
+            Ok(true)
+        }
     }
 
     /// Creates a new PotService with the given DbConnectionPool.

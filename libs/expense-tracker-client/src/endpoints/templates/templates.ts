@@ -3,7 +3,7 @@
  * Do not edit manually.
  * expense_tracker
  * A REST Api that offers various endpoints for handling shared expenses.
- * OpenAPI spec version: 1.1.0
+ * OpenAPI spec version: 1.2.0
  */
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type {
@@ -291,7 +291,7 @@ export function useGetPotTemplateById<
 }
 
 /**
- * @summary Update both template name and template currency.
+ * @summary Updates template name, template currency and cron expression if the user is the owner of the template.
  */
 export const useUpdateTemplateHook = () => {
   const updateTemplate = useCustomClient<void>();
@@ -358,7 +358,7 @@ export type UpdateTemplateMutationBody = BodyType<PotTemplateUpdateDTO>;
 export type UpdateTemplateMutationError = ErrorType<void>;
 
 /**
- * @summary Update both template name and template currency.
+ * @summary Updates template name, template currency and cron expression if the user is the owner of the template.
  */
 export const useUpdateTemplate = <
   TError = ErrorType<void>,

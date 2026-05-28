@@ -50,6 +50,7 @@ pub mod pot_api {
             .routes(routes!(delete_pot))
             .routes(routes!(archive))
             .routes(routes!(unarchive))
+            .routes(routes!(pay_pot))
             .with_state(shared_state)
     }
 
@@ -389,6 +390,41 @@ pub mod pot_api {
                 pot_id
             )),
         ))
+    }
+
+    /// Marks the given pot as paid. Only the pot owner can do this.
+    /// This is a function used to mark the pot as paid with a single button click.
+    /// No restore is possible as of now. So the pot is considered final.
+    #[utoipa::path(
+        put,
+        path = "/pots/{pot_id}/pay",
+        tag = "Pots",
+        responses(
+                (status = 200, description = "The pot has been successfully payed."),
+                (status = 403, description = "The pot could not be payed."),
+                (status = 500, description = "An internal server error occurred")
+        ),
+        params(
+                ("pot_id" = i32, Path, description = "Pot database id for the pot")
+        ),
+        security(
+                    ("bearer" = [])
+        )
+    )]
+    pub async fn pay_pot(
+        State(pot_api_state): State<Arc<PotApiState>>,
+        Path(pot_id): Path<i32>,
+        part: Parts
+    ) -> Result<ApiResponse<String>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&part)?;
+
+        let result = pot_api_state.pot_service.pay_pot(pot_id, subject_id).await;
+
+        if result.is_ok() {
+            return Ok((StatusCode::OK, Json("Pot paid successfully".to_string())));
+        }
+
+        Err((StatusCode::FORBIDDEN, Json("Pot could not be paid".to_string())))
     }
 
     /// Removes the given user from the pot, if Bearer is the owner of that pot.
