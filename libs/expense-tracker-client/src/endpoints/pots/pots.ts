@@ -3,7 +3,7 @@
  * Do not edit manually.
  * expense_tracker
  * A REST Api that offers various endpoints for handling shared expenses.
- * OpenAPI spec version: 0.3.0
+ * OpenAPI spec version: 1.2.0
  */
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type {
@@ -288,41 +288,41 @@ export function useGetPotExpenses<
 }
 
 /**
- * @summary Adds the given user to the pot, if Bearer is the owner of that pot.
+ * @summary Adds the given users to the pot if Bearer is the owner of that pot.
  */
-export const useAddUserToPotHook = () => {
-  const addUserToPot = useCustomClient<void>();
+export const useAddUsersToPotHook = () => {
+  const addUsersToPot = useCustomClient<void>();
 
   return useCallback(
-    (potId: number, addUserToPotDTO: BodyType<AddUserToPotDTO>) => {
-      return addUserToPot({
+    (potId: number, addUserToPotDTO: BodyType<AddUserToPotDTO[]>) => {
+      return addUsersToPot({
         url: `/api/v1/pots/${potId}`,
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         data: addUserToPotDTO,
       });
     },
-    [addUserToPot]
+    [addUsersToPot]
   );
 };
 
-export const useAddUserToPotMutationOptions = <
+export const useAddUsersToPotMutationOptions = <
   TError = ErrorType<void>,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useAddUserToPotHook>>>,
+    Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>,
     TError,
-    { potId: number; data: BodyType<AddUserToPotDTO> },
+    { potId: number; data: BodyType<AddUserToPotDTO[]> },
     TContext
   >;
 }): UseMutationOptions<
-  Awaited<ReturnType<ReturnType<typeof useAddUserToPotHook>>>,
+  Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>,
   TError,
-  { potId: number; data: BodyType<AddUserToPotDTO> },
+  { potId: number; data: BodyType<AddUserToPotDTO[]> },
   TContext
 > => {
-  const mutationKey = ['addUserToPot'];
+  const mutationKey = ['addUsersToPot'];
   const { mutation: mutationOptions } = options
     ? options.mutation &&
       'mutationKey' in options.mutation &&
@@ -331,46 +331,46 @@ export const useAddUserToPotMutationOptions = <
       : { ...options, mutation: { ...options.mutation, mutationKey } }
     : { mutation: { mutationKey } };
 
-  const addUserToPot = useAddUserToPotHook();
+  const addUsersToPot = useAddUsersToPotHook();
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<ReturnType<typeof useAddUserToPotHook>>>,
-    { potId: number; data: BodyType<AddUserToPotDTO> }
+    Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>,
+    { potId: number; data: BodyType<AddUserToPotDTO[]> }
   > = (props) => {
     const { potId, data } = props ?? {};
 
-    return addUserToPot(potId, data);
+    return addUsersToPot(potId, data);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type AddUserToPotMutationResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useAddUserToPotHook>>>
+export type AddUsersToPotMutationResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>
 >;
-export type AddUserToPotMutationBody = BodyType<AddUserToPotDTO>;
-export type AddUserToPotMutationError = ErrorType<void>;
+export type AddUsersToPotMutationBody = BodyType<AddUserToPotDTO[]>;
+export type AddUsersToPotMutationError = ErrorType<void>;
 
 /**
- * @summary Adds the given user to the pot, if Bearer is the owner of that pot.
+ * @summary Adds the given users to the pot if Bearer is the owner of that pot.
  */
-export const useAddUserToPot = <
+export const useAddUsersToPot = <
   TError = ErrorType<void>,
   TContext = unknown
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useAddUserToPotHook>>>,
+    Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>,
     TError,
-    { potId: number; data: BodyType<AddUserToPotDTO> },
+    { potId: number; data: BodyType<AddUserToPotDTO[]> },
     TContext
   >;
 }): UseMutationResult<
-  Awaited<ReturnType<ReturnType<typeof useAddUserToPotHook>>>,
+  Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>,
   TError,
-  { potId: number; data: BodyType<AddUserToPotDTO> },
+  { potId: number; data: BodyType<AddUserToPotDTO[]> },
   TContext
 > => {
-  const mutationOptions = useAddUserToPotMutationOptions(options);
+  const mutationOptions = useAddUsersToPotMutationOptions(options);
 
   return useMutation(mutationOptions);
 };
@@ -552,6 +552,168 @@ export const useDeletePot = <
 
   return useMutation(mutationOptions);
 };
+export const useArchiveHook = () => {
+  const archive = useCustomClient<void>();
+
+  return useCallback(
+    (potId: number) => {
+      return archive({ url: `/api/v1/pots/${potId}/archive`, method: 'PUT' });
+    },
+    [archive]
+  );
+};
+
+export const useArchiveMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>,
+    TError,
+    { potId: number },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>,
+  TError,
+  { potId: number },
+  TContext
+> => {
+  const mutationKey = ['archive'];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      'mutationKey' in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const archive = useArchiveHook();
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>,
+    { potId: number }
+  > = (props) => {
+    const { potId } = props ?? {};
+
+    return archive(potId);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ArchiveMutationResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>
+>;
+
+export type ArchiveMutationError = ErrorType<void>;
+
+export const useArchive = <
+  TError = ErrorType<void>,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>,
+    TError,
+    { potId: number },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>,
+  TError,
+  { potId: number },
+  TContext
+> => {
+  const mutationOptions = useArchiveMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+/**
+ * @summary Marks the given pot as paid. Only the pot owner can do this.
+This is a function used to mark the pot as paid with a single button click.
+No restore is possible as of now. So the pot is considered final.
+ */
+export const usePayPotHook = () => {
+  const payPot = useCustomClient<void>();
+
+  return useCallback(
+    (potId: number) => {
+      return payPot({ url: `/api/v1/pots/${potId}/pay`, method: 'PUT' });
+    },
+    [payPot]
+  );
+};
+
+export const usePayPotMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>,
+    TError,
+    { potId: number },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>,
+  TError,
+  { potId: number },
+  TContext
+> => {
+  const mutationKey = ['payPot'];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      'mutationKey' in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const payPot = usePayPotHook();
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>,
+    { potId: number }
+  > = (props) => {
+    const { potId } = props ?? {};
+
+    return payPot(potId);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PayPotMutationResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>
+>;
+
+export type PayPotMutationError = ErrorType<void>;
+
+/**
+ * @summary Marks the given pot as paid. Only the pot owner can do this.
+This is a function used to mark the pot as paid with a single button click.
+No restore is possible as of now. So the pot is considered final.
+ */
+export const usePayPot = <
+  TError = ErrorType<void>,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>,
+    TError,
+    { potId: number },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>,
+  TError,
+  { potId: number },
+  TContext
+> => {
+  const mutationOptions = usePayPotMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
 /**
  * @summary Removes the given user from the pot, if Bearer is the owner of that pot.
  */
@@ -636,6 +798,85 @@ export const useRemoveUserFromPot = <
   TContext
 > => {
   const mutationOptions = useRemoveUserFromPotMutationOptions(options);
+
+  return useMutation(mutationOptions);
+};
+export const useUnarchiveHook = () => {
+  const unarchive = useCustomClient<void>();
+
+  return useCallback(
+    (potId: number) => {
+      return unarchive({
+        url: `/api/v1/pots/${potId}/unarchive`,
+        method: 'PUT',
+      });
+    },
+    [unarchive]
+  );
+};
+
+export const useUnarchiveMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>,
+    TError,
+    { potId: number },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>,
+  TError,
+  { potId: number },
+  TContext
+> => {
+  const mutationKey = ['unarchive'];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      'mutationKey' in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const unarchive = useUnarchiveHook();
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>,
+    { potId: number }
+  > = (props) => {
+    const { potId } = props ?? {};
+
+    return unarchive(potId);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UnarchiveMutationResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>
+>;
+
+export type UnarchiveMutationError = ErrorType<void>;
+
+export const useUnarchive = <
+  TError = ErrorType<void>,
+  TContext = unknown
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>,
+    TError,
+    { potId: number },
+    TContext
+  >;
+}): UseMutationResult<
+  Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>,
+  TError,
+  { potId: number },
+  TContext
+> => {
+  const mutationOptions = useUnarchiveMutationOptions(options);
 
   return useMutation(mutationOptions);
 };

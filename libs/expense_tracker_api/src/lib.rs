@@ -4,6 +4,7 @@ mod health_api;
 mod pot_api;
 mod user_api;
 mod generate_openapi;
+mod template_api;
 
 pub mod api {
     use crate::currency_api::currency_api;
@@ -15,10 +16,11 @@ pub mod api {
     use axum::http::StatusCode;
     use axum::Json;
     use expense_tracker_db::setup::DbPool;
-    use expense_tracker_services::ExpenseError;
-    use utoipa::gen::serde_json::Value;
+    use expense_tracker_services::{ExpenseError};
+    use utoipa::r#gen::serde_json::Value;
     use utoipa_axum::router::OpenApiRouter;
     use uuid::Uuid;
+    use crate::template_api::template_api;
 
     /// The generic response that is returned by APIs.
     pub type ApiResponse<T> = (StatusCode, Json<T>);
@@ -34,9 +36,10 @@ pub mod api {
             .nest(VERSION_ONE, pot_api::register(pool.clone()))
             .nest(VERSION_ONE, currency_api::register(pool.clone()))
             .nest(VERSION_ONE, expense_api::register(pool.clone()))
+            .nest(VERSION_ONE, template_api::register(pool.clone()).await)
     }
 
-    /// Registers the health API without token validation so it is always possible to
+    /// Registers the health API without token validation, so it is always possible to
     /// check if the service is running or not.
     pub async fn add_health_api() -> OpenApiRouter {
         OpenApiRouter::new().nest(VERSION_ONE, health_api::register())
@@ -54,6 +57,8 @@ pub mod api {
             ExpenseError::NotFound(message) => (StatusCode::NOT_FOUND, Json(message)),
             ExpenseError::Internal(message) => (StatusCode::INTERNAL_SERVER_ERROR, Json(message)),
             ExpenseError::Conflict(message) => (StatusCode::CONFLICT, Json(message)),
+            ExpenseError::Locked(message) => (StatusCode::LOCKED, Json(message)),
+            ExpenseError::CronConfigError(message) => (StatusCode::INTERNAL_SERVER_ERROR, Json(message)),
         }
     }
 
@@ -84,13 +89,5 @@ pub mod api {
 
         Ok(user_name?.to_string())
     }
-
-    // pub fn generate_my_openapi() -> String {
-    //     #[derive(OpenApi)]
-    //     #[openapi(schemas(components(CurrencyDTO)))]
-    //     struct ApiDoc;
-    //
-    //     ApiDoc::openapi().to_pretty_json().unwrap()
-    // }
 
 }

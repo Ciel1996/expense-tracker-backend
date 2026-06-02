@@ -4,6 +4,7 @@
 # ---------- Build stage ----------
 FROM node:20-bookworm-slim AS builder
 
+# always use production to build
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     NPM_CONFIG_PRODUCTION=false
@@ -27,7 +28,6 @@ COPY . .
 # This prevents Nx from trying to build/check the rust project during the frontend build.
 RUN sed -i 's/"implicitDependencies": \["expense_tracker_api"\]/"implicitDependencies": []/' libs/expense-tracker-client/project.json
 
-# Build the Next.js app using Nx in production mode
 # This produces a standalone output under dist/apps/expense-tracker-frontend/.next/standalone
 RUN npx nx build expense-tracker-frontend --configuration=production --skip-nx-cache
 
@@ -39,7 +39,8 @@ LABEL org.opencontainers.image.source=https://github.com/Ciel1996/expense-tracke
 LABEL org.opencontainers.image.description="The frontend of Expense Tracker."
 LABEL org.opencontainers.image.licenses=GPL-3.0-or-later
 
-ENV NODE_ENV=production \
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV} \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
     NEXT_TELEMETRY_DISABLED=1

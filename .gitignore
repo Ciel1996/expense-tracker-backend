@@ -53,3 +53,6 @@ out
 # postgresql
 postgres-data/
 postgres-data-keycloak/
+
+# ignore local docker-compose.yml (so that each developer can have local settings without ruining the fun for everyone)
+docker-compose.yml

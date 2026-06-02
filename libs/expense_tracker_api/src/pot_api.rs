@@ -9,6 +9,7 @@ pub mod pot_api {
     use axum::http::request::Parts;
     use axum::http::StatusCode;
     use axum::Json;
+    use chrono::{DateTime, Utc};
     use expense_tracker_db::pots::pots::{NewPot, Pot, PotToUser};
     use expense_tracker_db::setup::DbPool;
     use expense_tracker_db::users::users::User;
@@ -44,9 +45,12 @@ pub mod pot_api {
             .routes(routes!(get_pots))
             .routes(routes!(add_expense))
             .routes(routes!(get_pot_expenses))
-            .routes(routes!(add_user_to_pot))
+            .routes(routes!(add_users_to_pot))
             .routes(routes!(remove_user_from_pot))
             .routes(routes!(delete_pot))
+            .routes(routes!(archive))
+            .routes(routes!(unarchive))
+            .routes(routes!(pay_pot))
             .with_state(shared_state)
     }
 
@@ -60,7 +64,10 @@ pub mod pot_api {
         users: Vec<UserDTO>,
         /// Indicates the amount of money, the user is owed or owes others. If positive, other users
         /// need to pay that amount to the user. If negative, the user has to pay the given amount.
-        net_balance: f64
+        net_balance: f64,
+        archived: bool,
+        created_at: DateTime<Utc>,
+        archived_at: Option<DateTime<Utc>>
     }
 
     impl PotDTO {
@@ -70,13 +77,16 @@ pub mod pot_api {
             default_currency: CurrencyDTO,
             users: Vec<UserDTO>,
             net_balance: f64) -> Self {
-            PotDTO {
+            Self {
                 id: pot.id(),
                 owner_id: pot.owner_id(),
                 name: pot.name().to_string(),
                 default_currency,
                 users,
-                net_balance
+                net_balance,
+                archived: pot.is_archived(),
+                created_at: pot.created_at(),
+                archived_at: pot.archived_at()
             }
         }
 
@@ -230,18 +240,19 @@ pub mod pot_api {
         ))
     }
 
-    /// Adds the given user to the pot, if Bearer is the owner of that pot.
+    /// Adds the given users to the pot if Bearer is the owner of that pot.
     #[utoipa::path(
             put,
             path = "/pots/{pot_id}",
             tag = "Pots",
             responses(
-                (status = 200, description = "The user has successfully been added to the pot"),
-                (status = 403, description = "The user could not be added due to the caller not being the owner of the given pot."),
-                (status = 409, description = "The user was already added to the pot."),
+                (status = 200, description = "The users have successfully been added to the pot"),
+                (status = 403, description = "The users could not be added due to the caller not being the owner of the given pot."),
+                (status = 409, description = "The users were already added to the pot."),
+                (status = 423, description = "The users can't be added, as the pot is archived."),
                 (status = 500, description = "An internal server error occurred")
             ),
-            request_body = AddUserToPotDTO,
+            request_body = Vec<AddUserToPotDTO>,
             params(
                 ("pot_id" = i32, Path, description = "Pot database id for the pot.  ")
             ),
@@ -249,18 +260,67 @@ pub mod pot_api {
                     ("bearer" = [])
             )
         )]
-    pub async fn add_user_to_pot(
+    pub async fn add_users_to_pot(
         State(pot_api_state): State<Arc<PotApiState>>,
         Path(pot_id): Path<i32>,
         part: Parts,
-        Json(add_user_to_pot_dto): Json<AddUserToPotDTO>,
+        Json(add_user_to_pot_dto): Json<Vec<AddUserToPotDTO>>,
     ) -> Result<ApiResponse<String>, ApiResponse<String>> {
         let subject_id = get_sub_claim(&part)?;
-        let new_user_id = add_user_to_pot_dto.user_id();
+
+        // create a vector of PotToUser so that they can be added to the database
+        let mut new_user_ids = vec![];
+        for user in add_user_to_pot_dto {
+            let new_user_id = user.user_id();
+            new_user_ids.push(PotToUser::new(pot_id, new_user_id));
+        }
 
         let result = pot_api_state
             .pot_service
-            .add_user_to_pot(PotToUser::new(pot_id, new_user_id), subject_id)
+            .add_users_to_pot(new_user_ids, subject_id)
+            .await
+            .map_err(check_error)?;
+
+        if !result {
+            return Ok((
+                StatusCode::FORBIDDEN,
+                Json(format!("Users could not be added to pot {}", pot_id)),
+            ));
+        }
+
+        Ok((
+            StatusCode::OK,
+            Json(format!("Users successfully added to pot {}", pot_id)),
+        ))
+    }
+
+    #[utoipa::path(
+            put,
+            path = "/pots/{pot_id}/archive",
+            tag = "Pots",
+            responses(
+                (status = 200, description = "The pot has been successfully archived."),
+                (status = 403, description = "The pot could not be archived due to the caller not being the owner of the given pot."),
+                (status = 409, description = "The pot was already archived."),
+                (status = 500, description = "An internal server error occurred")
+            ),
+            params(
+                ("pot_id" = i32, Path, description = "Pot database id for the pot")
+            ),
+            security(
+                    ("bearer" = [])
+            )
+    )]
+    pub async fn archive(
+        State(pot_api_state): State<Arc<PotApiState>>,
+        Path(pot_id): Path<i32>,
+        part: Parts,
+    ) -> Result<ApiResponse<String>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&part)?;
+
+        let result = pot_api_state
+            .pot_service
+            .archive(pot_id, subject_id)
             .await
             .map_err(check_error)?;
 
@@ -268,8 +328,8 @@ pub mod pot_api {
             return Ok((
                 StatusCode::FORBIDDEN,
                 Json(format!(
-                    "User {} could not be added to pot {}",
-                    new_user_id, pot_id
+                    "Pot {} could not be archived by user.",
+                    pot_id
                 )),
             ));
         }
@@ -277,10 +337,94 @@ pub mod pot_api {
         Ok((
             StatusCode::OK,
             Json(format!(
-                "User {} successfully added to pot {}",
-                new_user_id, pot_id
+                "Pot {} was successfully archived by user.",
+                pot_id
             )),
         ))
+    }
+
+    #[utoipa::path(
+        put,
+        path = "/pots/{pot_id}/unarchive",
+        tag = "Pots",
+        responses(
+                (status = 200, description = "The pot has been successfully unarchived."),
+                (status = 403, description = "The pot could not be unarchived due to the caller not being the owner of the given pot."),
+                (status = 409, description = "The pot is not archived."),
+                (status = 500, description = "An internal server error occurred")
+        ),
+        params(
+                ("pot_id" = i32, Path, description = "Pot database id for the pot")
+        ),
+        security(
+                    ("bearer" = [])
+        )
+    )]
+    pub async fn unarchive(
+        State(pot_api_state): State<Arc<PotApiState>>,
+        Path(pot_id): Path<i32>,
+        part: Parts,
+    ) -> Result<ApiResponse<String>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&part)?;
+
+        let result = pot_api_state
+            .pot_service
+            .unarchive(pot_id, subject_id)
+            .await
+            .map_err(check_error)?;
+
+        if !result {
+            return Ok((
+                StatusCode::FORBIDDEN,
+                Json(format!(
+                    "Pot {} could not be unarchived by user.",
+                    pot_id
+                )),
+            ));
+        }
+
+        Ok((
+            StatusCode::OK,
+            Json(format!(
+                "Pot {} was successfully unarchived by user.",
+                pot_id
+            )),
+        ))
+    }
+
+    /// Marks the given pot as paid. Only the pot owner can do this.
+    /// This is a function used to mark the pot as paid with a single button click.
+    /// No restore is possible as of now. So the pot is considered final.
+    #[utoipa::path(
+        put,
+        path = "/pots/{pot_id}/pay",
+        tag = "Pots",
+        responses(
+                (status = 200, description = "The pot has been successfully payed."),
+                (status = 403, description = "The pot could not be payed."),
+                (status = 500, description = "An internal server error occurred")
+        ),
+        params(
+                ("pot_id" = i32, Path, description = "Pot database id for the pot")
+        ),
+        security(
+                    ("bearer" = [])
+        )
+    )]
+    pub async fn pay_pot(
+        State(pot_api_state): State<Arc<PotApiState>>,
+        Path(pot_id): Path<i32>,
+        part: Parts
+    ) -> Result<ApiResponse<String>, ApiResponse<String>> {
+        let subject_id = get_sub_claim(&part)?;
+
+        let result = pot_api_state.pot_service.pay_pot(pot_id, subject_id).await;
+
+        if result.is_ok() {
+            return Ok((StatusCode::OK, Json("Pot paid successfully".to_string())));
+        }
+
+        Err((StatusCode::FORBIDDEN, Json("Pot could not be paid".to_string())))
     }
 
     /// Removes the given user from the pot, if Bearer is the owner of that pot.
@@ -292,6 +436,7 @@ pub mod pot_api {
                 (status = 204, description = "The user has successfully been removed from the pot"),
                 (status = 403, description = "The user could not be removed due to the caller not being the owner of the given pot."),
                 (status = 404, description = "The user is not part of the pot."),
+                (status = 423, description = "The user can't be removed, as the pot is archived."),
                 (status = 500, description = "An internal server error occurred")
             ),
             request_body = RemoveUserFromPotDTO,
@@ -343,15 +488,9 @@ pub mod pot_api {
         path = "/pots/{pot_id}",
         tag = "Pots",
         responses(
-            (
-                status = 201,
-                description = "Indicates that the expense has been created for the given pot.",
-                body = ExpenseDTO
-            ),
-            (
-                status = 404,
-                description = "Indicates that the pot for this expense does not exist."
-            )
+            (status = 201, description = "Indicates that the expense has been created for the given pot.",body = ExpenseDTO),
+            (status = 404, description = "Indicates that the pot for this expense does not exist."),
+            (status = 423, description = "The user can't be added, as the pot is archived."),
         ),
         request_body = NewExpenseDTO,
         params(
@@ -374,6 +513,10 @@ pub mod pot_api {
             .get_pot_by_id(pot_id, subject_id)
             .await
             .map_err(check_error)?;
+
+        if loaded_pot.is_archived() {
+            return Err((StatusCode::LOCKED, Json("Pot is archived".to_string())));
+        }
 
         let expense_splits_result = pot_api_state
             .expense_service
@@ -443,22 +586,10 @@ pub mod pot_api {
         path = "/pots/{pot_id}",
         tag = "Pots",
         responses(
-            (
-                status = 204,
-                description = "The pot has been deleted."
-            ),
-            (
-                status = 403,
-                description = "Indicates that the user is not authorized to delete the given pot."
-            ),
-            (
-                status = 404,
-                description = "Indicates that the desired pot does not exists."
-            ),
-            (
-                status = 409,
-                description = "Indicates that the desired pot can't be deleted."
-            )
+            (status = 204, description = "The pot has been deleted."),
+            (status = 403, description = "Indicates that the user is not authorized to delete the given pot."),
+            (status = 404, description = "Indicates that the desired pot does not exists."),
+            (status = 409, description = "Indicates that the desired pot can't be deleted.")
         ),
         params(
             ("pot_id" = i32, Path, description = "Pot database id for the pot.  ")

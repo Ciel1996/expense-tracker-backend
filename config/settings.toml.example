@@ -4,6 +4,8 @@
 [oidc]
 # URL of your Keycloak realm (or any OIDC provider)
 issuer_url = "http://localhost:8080/realms/master"
+# Optional: mostly used for local development, where internal and external URLs for keycloak's docker container must be used.
+# jwks_uri = "http://keycloak:8080/realms/local"
 # Expected audience for your API
 audience = "expense-tracker-api"
 
@@ -18,3 +20,5 @@ port = 3001
 db_connection_string = "postgres://admin:localpassword@db:5432/postgres"
 # CORS URL for frontend, required if frontend is running on a different host or port than the backend.
 cors_url = "http://localhost:3000"
+# CORS lifespan in seconds. (Defaults to 3600)
+# cors_lifespan=500

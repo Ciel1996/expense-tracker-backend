@@ -269,8 +269,6 @@ pub mod expense_api {
         parts: Parts,
         Json(payment): Json<PayExpenseDTO>,
     ) -> Result<ApiResponse<ExpenseDTO>, ApiResponse<String>> {
-        // TODO: Evaluate this with a second user!
-
         let subject_id = get_sub_claim(&parts)?;
 
         service

@@ -5,6 +5,7 @@ use serde::Deserialize;
 #[allow(unused)]
 pub struct Oidc {
     issuer_url: String,
+    jwks_uri: Option<String>,
     audience: String,
 }
 
@@ -14,6 +15,7 @@ pub struct ExpenseTracker {
     port: u16,
     db_connection_string: String,
     cors_url: String,
+    cors_lifespan: Option<u64>,
 }
 
 impl ExpenseTracker {
@@ -28,11 +30,17 @@ impl ExpenseTracker {
     }
 
     pub fn cors_url(&self) -> &str { &self.cors_url }
+
+    pub fn cors_lifespan(&self) -> u64 { self.cors_lifespan.unwrap_or(3600) }
 }
 
 impl Oidc {
     pub fn issuer_url(&self) -> &str {
         &self.issuer_url
+    }
+
+    pub fn jwks_uri(&self) -> Option<&str> {
+        self.jwks_uri.as_deref()
     }
 
     pub fn audience(&self) -> &str {

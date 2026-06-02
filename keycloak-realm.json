@@ -1,6 +1,7 @@
 {
   "realm": "local",
   "enabled": true,
+  "sslRequired": "none",
   "clients": [
     {
       "clientId": "expense-tracker",
@@ -12,7 +13,6 @@
         "http://127.0.0.1:3000/api/auth/callback/keycloak"
       ],
       "webOrigins": [
-        "http://localhost:3000",
         "http://127.0.0.1:3000"
       ],
       "standardFlowEnabled": true,
