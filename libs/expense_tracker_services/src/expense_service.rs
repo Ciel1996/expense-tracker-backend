@@ -226,6 +226,19 @@ pub mod expense_service {
 
             Ok(true)
         }
+
+        /// This function is used to pay an expense without checking the owner or if the expense is already paid.
+        pub async fn pay_expense_no_check(&self, target_id: i32) -> Result<bool, ExpenseError> {
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+            diesel::update(expense_splits)
+                .filter(split_expense_id.eq(target_id))
+                .set(expense_tracker_db::schema::expense_splits::is_paid.eq(true))
+                .execute(&mut conn)
+                .await
+                .map_err(internal_error)?;
+
+            Ok(true)
+        }
     }
 
     /// Creates a new ExpenseService with the given DbConnectionPool.

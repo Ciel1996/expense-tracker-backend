@@ -393,11 +393,9 @@ pub mod pot_service {
 
             for joined_expense in expenses {
                 let expense_id = joined_expense.0.id();
-
-                for split in joined_expense.1 {
-                    let split_user_id = split.user_id();
-                    self.expense_service.pay_expense(expense_id, split_user_id).await?;
-                }
+                // calling pay_expense_no_check to avoid checking, because the pot
+                // owner is always allowed to mark all expenses as paid
+                self.expense_service.pay_expense_no_check(expense_id).await?;
             }
 
             Ok(true)
