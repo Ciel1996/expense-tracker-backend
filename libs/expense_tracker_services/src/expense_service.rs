@@ -192,13 +192,12 @@ pub mod expense_service {
             Ok(net_balance)
         }
 
-        /// The user with the given `requester_id` tries to pay the given `payment_amount` for the
+        /// The user with the given `requester_id` sets the expense to paid.
         /// expense with the given `target_id`.
         pub async fn pay_expense(
             &self,
             target_id: i32,
-            requester_id: Uuid,
-            payment_amount: f64,
+            requester_id: Uuid
         ) -> Result<bool, ExpenseError> {
             let expense = self
                 .get_expense_by_id(target_id, requester_id)
@@ -214,12 +213,6 @@ pub mod expense_service {
 
             for split in splits {
                 if !split.is_paid() {
-                    if split.amount() > payment_amount {
-                        return Err(Conflict("Can't overpay!".to_string()));
-                    } else if split.amount() < payment_amount {
-                        return Err(Conflict("Can't underpay!".to_string()));
-                    }
-
                     diesel::update(expense_splits)
                         .filter(split_expense_id.eq(target_id))
                         .set(expense_tracker_db::schema::expense_splits::is_paid.eq(true))
@@ -230,6 +223,19 @@ pub mod expense_service {
                     return Ok(true);
                 }
             }
+
+            Ok(true)
+        }
+
+        /// This function is used to pay an expense without checking the owner or if the expense is already paid.
+        pub async fn pay_expense_no_check(&self, target_id: i32) -> Result<bool, ExpenseError> {
+            let mut conn = self.db_pool.get().await.map_err(internal_error)?;
+            diesel::update(expense_splits)
+                .filter(split_expense_id.eq(target_id))
+                .set(expense_tracker_db::schema::expense_splits::is_paid.eq(true))
+                .execute(&mut conn)
+                .await
+                .map_err(internal_error)?;
 
             Ok(true)
         }

@@ -3,7 +3,7 @@
  * Do not edit manually.
  * expense_tracker
  * A REST Api that offers various endpoints for handling shared expenses.
- * OpenAPI spec version: 1.2.0
+ * OpenAPI spec version: 1.3.0
  */
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type {
@@ -18,10 +18,10 @@ import type {
 
 import { useCallback } from 'react';
 
-import type { ExpenseDTO, PayExpenseDTO } from '../../model';
+import type { ExpenseDTO } from '../../model';
 
 import { useCustomClient } from '../../custom-client';
-import type { ErrorType, BodyType } from '../../custom-client';
+import type { ErrorType } from '../../custom-client';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -127,12 +127,10 @@ export const usePayExpenseHook = () => {
   const payExpense = useCustomClient<ExpenseDTO>();
 
   return useCallback(
-    (expenseId: number, payExpenseDTO: BodyType<PayExpenseDTO>) => {
+    (expenseId: number) => {
       return payExpense({
         url: `/api/v1/expenses/${expenseId}`,
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        data: payExpenseDTO,
       });
     },
     [payExpense]
@@ -146,13 +144,13 @@ export const usePayExpenseMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>,
     TError,
-    { expenseId: number; data: BodyType<PayExpenseDTO> },
+    { expenseId: number },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>,
   TError,
-  { expenseId: number; data: BodyType<PayExpenseDTO> },
+  { expenseId: number },
   TContext
 > => {
   const mutationKey = ['payExpense'];
@@ -168,11 +166,11 @@ export const usePayExpenseMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>,
-    { expenseId: number; data: BodyType<PayExpenseDTO> }
+    { expenseId: number }
   > = (props) => {
-    const { expenseId, data } = props ?? {};
+    const { expenseId } = props ?? {};
 
-    return payExpense(expenseId, data);
+    return payExpense(expenseId);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -181,7 +179,7 @@ export const usePayExpenseMutationOptions = <
 export type PayExpenseMutationResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>
 >;
-export type PayExpenseMutationBody = BodyType<PayExpenseDTO>;
+
 export type PayExpenseMutationError = ErrorType<void>;
 
 /**
@@ -194,13 +192,13 @@ export const usePayExpense = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>,
     TError,
-    { expenseId: number; data: BodyType<PayExpenseDTO> },
+    { expenseId: number },
     TContext
   >;
 }): UseMutationResult<
   Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>,
   TError,
-  { expenseId: number; data: BodyType<PayExpenseDTO> },
+  { expenseId: number },
   TContext
 > => {
   const mutationOptions = usePayExpenseMutationOptions(options);

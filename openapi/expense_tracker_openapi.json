@@ -10,7 +10,7 @@
       "name": "GPL-3.0-or-later",
       "identifier": "GPL-3.0-or-later"
     },
-    "version": "1.2.0"
+    "version": "1.3.0"
   },
   "paths": {
     "/api/v1/currencies": {
@@ -176,16 +176,6 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PayExpenseDTO"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "200": {
             "description": "The Expense with the given id has been paid.",
@@ -1013,7 +1003,8 @@
           "description",
           "currency",
           "splits",
-          "sum"
+          "sum",
+          "total_amount"
         ],
         "properties": {
           "currency": {
@@ -1044,6 +1035,10 @@
             "type": "number",
             "format": "double",
             "description": "If negative: you have to pay `owner_id` this amount of money, otherwise\nyou can expect others to pay you the given amount."
+          },
+          "total_amount": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
@@ -1155,19 +1150,6 @@
           "user_id": {
             "type": "string",
             "format": "uuid"
-          }
-        }
-      },
-      "PayExpenseDTO": {
-        "type": "object",
-        "description": "DTO used to update an expense",
-        "required": [
-          "sum_paid"
-        ],
-        "properties": {
-          "sum_paid": {
-            "type": "number",
-            "format": "double"
           }
         }
       },

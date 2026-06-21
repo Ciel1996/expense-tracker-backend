@@ -31,6 +31,7 @@ pub mod expense_api {
         /// If negative: you have to pay `owner_id` this amount of money, otherwise
         /// you can expect others to pay you the given amount.
         sum: f64,
+        total_amount: f64
     }
 
     impl ExpenseDTO {
@@ -47,7 +48,8 @@ pub mod expense_api {
                 currency: CurrencyDTO::from(currency),
                 owner_id: expense.owner_id(),
                 splits: SplitDTO::from_vec_split(splits.clone()),
-                sum: get_sum(expense.owner_id(), requester_id, splits),
+                sum: get_sum(expense.owner_id(), requester_id, &splits),
+                total_amount: get_total_amount(&splits),
             }
         }
 
@@ -66,21 +68,9 @@ pub mod expense_api {
         }
     }
 
-    /// DTO used to update an expense
-    #[derive(ToSchema, Serialize, Deserialize)]
-    pub struct PayExpenseDTO {
-        sum_paid: f64,
-    }
-
-    impl PayExpenseDTO {
-        pub fn sum_paid(&self) -> f64 {
-            self.sum_paid
-        }
-    }
-
     /// Gets the sum the `viewer_id`'s user owes the `expense_owner_id`'s user for the given
     /// `Vec<Split>`.
-    pub fn get_sum(expense_owner_id: Uuid, viewer_id: Uuid, splits: Vec<Split>) -> f64 {
+    pub fn get_sum(expense_owner_id: Uuid, viewer_id: Uuid, splits: &Vec<Split>) -> f64 {
         let mut sum = 0.0;
 
         for split in splits {
@@ -95,6 +85,17 @@ pub mod expense_api {
         }
 
         sum
+    }
+
+    /// Gets the total amount of money that has been paid for the given `Vec<Split>`.
+    fn get_total_amount(splits: &Vec<Split>) -> f64 {
+        let mut total_amount = 0.0;
+
+        for split in splits {
+            total_amount += split.amount();
+        }
+
+        total_amount
     }
 
     /// DTO used when working with splits.
@@ -255,7 +256,6 @@ pub mod expense_api {
                 description = "Indicates that the desired Expense does not exists"
             )
         ),
-        request_body = PayExpenseDTO,
         params(
             ("expense_id" = i32, Path, description = "Expense database id for the Expense.")
         ),
@@ -267,12 +267,11 @@ pub mod expense_api {
         State(service): State<ExpenseService>,
         Path(expense_id): Path<i32>,
         parts: Parts,
-        Json(payment): Json<PayExpenseDTO>,
     ) -> Result<ApiResponse<ExpenseDTO>, ApiResponse<String>> {
         let subject_id = get_sub_claim(&parts)?;
 
         service
-            .pay_expense(expense_id, subject_id, payment.sum_paid())
+            .pay_expense(expense_id, subject_id)
             .await
             .map_err(check_error)?;
 
@@ -309,7 +308,7 @@ mod tests {
     fn get_sum_test_expense_owner_is_viewer_one_split() {
         let splits = vec![Split::new(1, USER_ONE, 42.0, true)];
 
-        let sum = get_sum(USER_ONE, USER_ONE, splits);
+        let sum = get_sum(USER_ONE, USER_ONE, &splits);
 
         assert_eq!(sum, 0.0);
     }
@@ -324,7 +323,7 @@ mod tests {
             Split::new(1, USER_THREE, 42.0, false),
         ];
 
-        let sum = get_sum(USER_ONE, USER_ONE, splits);
+        let sum = get_sum(USER_ONE, USER_ONE, &splits);
 
         assert_eq!(sum, 84.0);
     }
@@ -341,7 +340,7 @@ mod tests {
             Split::new(1, USER_FIVE, 42.0, true),
         ];
 
-        let sum = get_sum(USER_ONE, USER_ONE, splits);
+        let sum = get_sum(USER_ONE, USER_ONE, &splits);
 
         assert_eq!(sum, 84.0);
     }
@@ -356,7 +355,7 @@ mod tests {
             Split::new(1, USER_THREE, 42.0, false),
         ];
 
-        let sum = get_sum(USER_ONE, USER_TWO, splits);
+        let sum = get_sum(USER_ONE, USER_TWO, &splits);
 
         assert_eq!(sum, -42.0);
     }
@@ -371,7 +370,7 @@ mod tests {
             Split::new(1, USER_THREE, 42.0, false),
         ];
 
-        let sum = get_sum(USER_ONE, USER_TWO, splits);
+        let sum = get_sum(USER_ONE, USER_TWO, &splits);
 
         assert_eq!(sum, 0.0);
     }
@@ -388,7 +387,7 @@ mod tests {
             Split::new(1, USER_THREE, 42.0, false),
         ];
 
-        let sum = get_sum(USER_ONE, USER_TWO, splits);
+        let sum = get_sum(USER_ONE, USER_TWO, &splits);
 
         assert_eq!(sum, -84.0);
     }
@@ -406,7 +405,7 @@ mod tests {
             Split::new(1, USER_THREE, 42.0, false),
         ];
 
-        let sum = get_sum(USER_ONE, OTHER_USER, splits);
+        let sum = get_sum(USER_ONE, OTHER_USER, &splits);
 
         assert_eq!(sum, 0.0);
     }

@@ -38,6 +38,7 @@ export function ExpensesTable({ expenses, users, potId, isArchived }: ExpensesTa
             const total = e.splits?.length ?? 0;
             const currencySymbol = e.currency?.symbol ?? "";
             const amount = `${currencySymbol}${e.sum.toFixed(2)}`;
+            const totalAmount = `${currencySymbol}${e.total_amount.toFixed(2)}`;
             const ownerName = users.find(u => u.uuid == e.owner_id)?.name ?? e.owner_id;
 
             const isOpen = expandedId === e.id;
@@ -52,9 +53,9 @@ export function ExpensesTable({ expenses, users, potId, isArchived }: ExpensesTa
                   <td className="px-4 py-2">{e.description}</td>
 
                   {e.sum >= 0 ? (
-                    <td className="px-4 py-2 whitespace-nowrap">{amount}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">{amount} ({totalAmount})</td>
                     ) : (
-                      <td className="px-4 py-2 whitespace-nowrap text-red-600">{amount}</td>
+                      <td className="px-4 py-2 whitespace-nowrap text-red-600">{amount} ({totalAmount})</td>
                     )
                   }
                   <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300">{ownerName}</td>
@@ -99,7 +100,7 @@ function ExpenseSplitDetails({ splits, users, currencySymbol, expenseId, expense
   const onMarkPaid = async (e: React.MouseEvent, amount: number) => {
     e.stopPropagation();
     try {
-      await payExpense.mutateAsync({ expenseId, data: { sum_paid: amount } });
+      await payExpense.mutateAsync({ expenseId });
       await queryClient.invalidateQueries({ queryKey: getGetPotExpensesQueryKey(potId) });
     } catch (err) {
       console.error('Failed to mark split as paid', err);
