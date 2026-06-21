@@ -396,8 +396,7 @@ pub mod pot_service {
 
                 for split in joined_expense.1 {
                     let split_user_id = split.user_id();
-                    let amount = split.amount();
-                    self.expense_service.pay_expense(expense_id, split_user_id, amount).await?;
+                    self.expense_service.pay_expense(expense_id, split_user_id).await?;
                 }
             }
 

@@ -3,7 +3,7 @@
  * Do not edit manually.
  * expense_tracker
  * A REST Api that offers various endpoints for handling shared expenses.
- * OpenAPI spec version: 1.2.0
+ * OpenAPI spec version: 1.3.0
  */
 import type { CurrencyDTO } from './currencyDTO';
 import type { SplitDTO } from './splitDTO';
@@ -21,4 +21,5 @@ export interface ExpenseDTO {
   /** If negative: you have to pay `owner_id` this amount of money, otherwise
 you can expect others to pay you the given amount. */
   sum: number;
+  total_amount: number;
 }
