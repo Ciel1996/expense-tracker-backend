@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - cloud-runners
 
 permissions:
   actions: read
@@ -93,8 +92,8 @@ jobs:
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create \
-            -t ${{ env.BACKEND_IMAGE }}:latest-test \
-            -t ${{ env.BACKEND_IMAGE }}:${{ steps.get_version.outputs.app_version }}-test \
+            -t ${{ env.BACKEND_IMAGE }}:latest \
+            -t ${{ env.BACKEND_IMAGE }}:${{ steps.get_version.outputs.app_version }} \
             $(printf '${{ env.BACKEND_IMAGE }}@sha256:%s ' *)
 
   frontend:
@@ -173,6 +172,6 @@ jobs:
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create \
-            -t ${{ env.FRONTEND_IMAGE }}:latest-test \
-            -t ${{ env.FRONTEND_IMAGE }}:${{ steps.get_version.outputs.app_version }}-test \
+            -t ${{ env.FRONTEND_IMAGE }}:latest \
+            -t ${{ env.FRONTEND_IMAGE }}:${{ steps.get_version.outputs.app_version }} \
             $(printf '${{ env.FRONTEND_IMAGE }}@sha256:%s ' *)
