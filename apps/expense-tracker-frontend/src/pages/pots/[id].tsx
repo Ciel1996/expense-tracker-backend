@@ -76,7 +76,7 @@ const PotDetails: NextPage<Props> = ({ id }) => {
   const isOwner = pot?.owner_id === user?.uuid;
   const canArchive = totalBalance === 0;
   const canDelete = (!hasExpenses || totalBalance === 0) && !isArchived;
-  const canPay = hasExpenses && totalBalance > 0;
+  const canPay = hasExpenses && totalBalance !== 0;
 
   const handlePayment = () => {
     if (!canPay || isPaying) return;
