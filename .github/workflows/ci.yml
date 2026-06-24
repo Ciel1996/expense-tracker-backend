@@ -22,12 +22,16 @@ jobs:
 
   backend:
     name: Build backend image
-    runs-on: self-hosted
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux/amd64
+          - os: ubuntu-24.04-arm
+            platform: linux/arm64
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -37,17 +41,21 @@ jobs:
         with:
           context: .
           file: apps/expense_tracker/Dockerfile
-          platforms: linux/arm64,linux/amd64
+          platforms: ${{ matrix.platform }}
           push: false
 
   frontend:
     name: Build frontend image
-    runs-on: self-hosted
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux/amd64
+          - os: ubuntu-24.04-arm
+            platform: linux/arm64
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -57,6 +65,6 @@ jobs:
         with:
           context: .
           file: apps/expense-tracker-frontend/Dockerfile
-          platforms: linux/arm64,linux/amd64
+          platforms: ${{ matrix.platform }}
           push: false
 
