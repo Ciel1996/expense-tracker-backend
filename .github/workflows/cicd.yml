@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   backend:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Get Rust App Version
@@ -46,7 +46,7 @@ jobs:
             ghcr.io/ciel1996/expense-tracker/api:${{ steps.get_version.outputs.app_version }}
 
   frontend:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Get Rust App Version
