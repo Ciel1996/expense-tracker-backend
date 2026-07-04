@@ -160,7 +160,7 @@ const PotDetails: NextPage<Props> = ({ id }) => {
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-semibold">{pot_name}</h1>
           {isArchived && (
-            <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">
+            <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-gray-300">
               Archived
             </span>
           )}

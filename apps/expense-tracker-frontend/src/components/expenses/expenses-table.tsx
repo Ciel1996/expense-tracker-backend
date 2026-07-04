@@ -22,8 +22,8 @@ export function ExpensesTable({ expenses, users, potId, isArchived }: ExpensesTa
   };
 
   return (
-    <div className="overflow-x-auto rounded border border-gray-200 dark:border-gray-800">
-      <table className="min-w-full table-auto text-left">
+    <div className="overflow-x-auto rounded-sm border border-gray-200 dark:border-gray-800">
+      <table className="min-w-full table-auto text-left border-collapse">
         <thead className="bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
           <tr>
             <th className="px-4 py-2">Description</th>
@@ -117,7 +117,7 @@ function ExpenseSplitDetails({ splits, users, currencySymbol, expenseId, expense
   return (
     <div className="px-4 py-3">
       <div className="overflow-x-auto rounded-md border border-gray-100 dark:border-gray-800 overflow-hidden">
-        <table className="min-w-full table-auto text-left">
+        <table className="min-w-full table-auto text-left border-collapse">
           <thead className="bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
             <tr>
               <th className="px-3 py-2 text-sm first:rounded-tl-md">Participant</th>

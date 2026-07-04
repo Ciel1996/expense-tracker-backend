@@ -240,7 +240,7 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
           maxLength={24}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
           placeholder="Home {year}/{month}"
           required
         />
@@ -253,7 +253,7 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
           onChange={(e) =>
             setCurrencyId(e.target.value ? Number(e.target.value) : 1)
           }
-          className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
           required
         >
           <option value="" disabled>
@@ -298,7 +298,7 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
           <select
             value={recurrence}
             onChange={(e) => onRecurrenceChange(e.target.value)}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
             required
           >
             <option value="weekly">Weekly</option>
@@ -315,7 +315,7 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
             type="datetime-local"
             value={dateTime}
             onChange={(e) => onDateTimeChange(e.target.value)}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
@@ -324,7 +324,7 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
       {cronExpression && (
         <div className="text-xs text-gray-500 dark:text-gray-400">
           Resulting Cron:{' '}
-          <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
+          <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded-sm">
             {cronExpression}
           </code>
         </div>

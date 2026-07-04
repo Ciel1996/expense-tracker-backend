@@ -14,7 +14,7 @@ type TemplateProps = {
 
 export const Template: FC<TemplateProps> = ({name, currency, owner, users, href}) => {
   return (
-    <Link href={href} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg">
+    <Link href={href} className="block focus:outline-hidden focus-visible:ring-2 focus-visible:ring-blue-500 rounded-lg">
       <Card hover={true} padding="md" className={`w-full min-w-[16rem] min-h-[120px] cursor-pointer`}>
         <div className="space-y-3">
           <div className="flex justify-between items-start">
