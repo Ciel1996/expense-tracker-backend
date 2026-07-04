@@ -104,7 +104,7 @@ export const NewTemplateModal: FC<{ open: boolean; onClose: () => void }> = ({ o
                   maxLength={24}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
                   placeholder="Home {year}/{month}"
                   required
                 />
@@ -119,7 +119,7 @@ export const NewTemplateModal: FC<{ open: boolean; onClose: () => void }> = ({ o
                   onChange={(e) =>
                     setCurrencyId(e.target.value ? Number(e.target.value) : '')
                   }
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="" disabled>
@@ -168,7 +168,7 @@ export const NewTemplateModal: FC<{ open: boolean; onClose: () => void }> = ({ o
                   <select
                     value={recurrence}
                     onChange={(e)=> onRecurrenceChange(e.target.value) }
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
                     required
                   >
                     <option value="weekly">Weekly</option>
@@ -185,7 +185,7 @@ export const NewTemplateModal: FC<{ open: boolean; onClose: () => void }> = ({ o
                     type="datetime-local"
                     value={dateTime}
                     onChange={(e) => onDateTimeChange(e.target.value)}
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -193,7 +193,7 @@ export const NewTemplateModal: FC<{ open: boolean; onClose: () => void }> = ({ o
 
               {cronExpression && (
                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                  Resulting Cron: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">{cronExpression}</code>
+                  Resulting Cron: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded-sm">{cronExpression}</code>
                 </div>
               )}
 

@@ -82,7 +82,7 @@ export const NewPotModal: FC<{ open: boolean; onClose: () => void }> = ({ open, 
                   maxLength={24}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
                   placeholder="Ebeneezer's Birthday"
                   required
                 />
@@ -93,7 +93,7 @@ export const NewPotModal: FC<{ open: boolean; onClose: () => void }> = ({ open, 
                 <select
                   value={currencyId}
                   onChange={(e) => setCurrencyId(e.target.value ? Number(e.target.value) : "")}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="" disabled>Select a currency</option>

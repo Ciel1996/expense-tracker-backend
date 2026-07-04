@@ -103,7 +103,7 @@ function PotsOverviewContent() {
       </div>
 
       {activeTab !== "templates" && filteredAndSortedPots.length > 0 && (
-        <div className="columns-1 sm:columns-2 md:columns-[16rem] gap-1">
+        <div className="columns-1 sm:columns-2 md:columns-3xs gap-1">
           {filteredAndSortedPots.map((e) => (
             <div key={`pot-${e.id}`} className="break-inside-avoid mb-2">
               <Pot
@@ -123,7 +123,7 @@ function PotsOverviewContent() {
       )}
 
       {activeTab === 'templates' && cleanedTemplates.length > 0 && (
-        <div className="columns-1 sm:columns-2 md:columns-[16rem] gap-1">
+        <div className="columns-1 sm:columns-2 md:columns-3xs gap-1">
           {cleanedTemplates.map((e) => (
             <div key={`template-${e.id}`} className="break-inside-avoid mb-2">
               <Template

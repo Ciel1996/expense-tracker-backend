@@ -25,7 +25,7 @@ export function Card({
 
   const shadowClasses = {
     none: '',
-    sm: 'shadow-sm',
+    sm: 'shadow-xs',
     md: 'shadow-md',
     lg: 'shadow-lg',
     xl: 'shadow-xl'

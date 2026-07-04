@@ -32,8 +32,9 @@ export function AppLayout({ children }: PropsWithChildren) {
       {token && (
         <div className="w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-2">
           <div className="flex justify-between items-center">
-            <Link href="/">
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Expense Tracker</h1>
+            <Link href="/" className="inline-flex items-center gap-2 whitespace-nowrap">
+              <img src="/icon.svg" alt="" className="h-8 w-8 shrink-0" />
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Expense.li</h1>
             </Link>
             <UserDisplay />
           </div>

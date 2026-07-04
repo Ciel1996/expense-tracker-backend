@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Globaler Schatten für das gesamte Icon -->
+    <filter id="soft-3d-shadow" x="-45%" y="-35%" width="170%" height="175%">
+      <feDropShadow dx="-4" dy="14" stdDeviation="10" flood-color="#070D14" flood-opacity="0.3"/>
+    </filter>
+
+    <!-- Interner Schatten für die überlappenden Schnittkanten -->
+    <filter id="layer-gap-shadow" x="-10%" y="-10%" width="120%" height="140%">
+      <feDropShadow dx="2" dy="6" stdDeviation="4" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+
+    <!-- 3D-Verlauf Oben: Nach hinten geknickt (Zulaufend im Schatten) -->
+    <linearGradient id="paper-top" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#C5CBCB"/>
+    </linearGradient>
+
+    <!-- 3D-Verlauf Mitte: Geknickt nach hinten (Deutlich dunkler für Schattierung) -->
+    <linearGradient id="paper-mid" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#C5CBCB"/>
+      <stop offset="100%" stop-color="#A9B2B3"/>
+    </linearGradient>
+
+    <!-- 3D-Verlauf Unten: Tritt wieder leicht ins Licht vor -->
+    <linearGradient id="paper-bottom" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ECEFF1"/>
+      <stop offset="100%" stop-color="#CFD8DC"/>
+    </linearGradient>
+
+    <!-- Plastischer Glanz-Verlauf für die blauen Fokus-Balken -->
+    <linearGradient id="3d-blue-bar" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#60A5FA"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+
+  <!-- HAUPTGRUPPE: KOMPAKT GEHALTEN, MIT HORIZONTALEN KANTEN UND PERSPEKTIVE IN DEN DETAILS -->
+  <g filter="url(#soft-3d-shadow)" transform="translate(0 -3) translate(256 255) scale(2) translate(-256 -255)">
+
+    <!-- ================= OBERER TEIL (Jetzt deutlich kürzer / Y: 135 bis 215) ================= -->
+    <g id="top-block">
+      <!-- Der Beleg startet nun erst bei Y=135 statt Y=110, was ihn vertikal stark einkürzt -->
+      <path d="M175 135 L337 135 L350 215 L162 215 Z" fill="url(#paper-top)"/>
+
+      <!-- Platzhalter: Kompakt angeordnet und für die geringere Höhe optimiert -->
+      <path d="M193 150 L243 150 L240 162 L190 162 Z" fill="#64748B"/>
+      <path d="M288 150 L316 150 L313 162 L285 162 Z" fill="#EF4444"/>
+
+      <path d="M192 175 L257 175 L254 185 L189 185 Z" fill="#10B981"/>
+      <path d="M274 175 L318 175 L315 185 L271 185 Z" fill="#10B981"/>
+
+      <path d="M191 197 L276 197 L273 205 L188 205 Z" fill="#CBD5E1"/>
+    </g>
+
+    <!-- ================= MITTLERER TEIL (Kompaktes Split-Mittelstück) ================= -->
+    <g id="middle-block" filter="url(#layer-gap-shadow)">
+      <path d="M165 227 L347 227 L340 287 L172 287 Z" fill="url(#paper-mid)"/>
+
+      <!-- Die blauen Split-Balken sitzen zentriert im kurzen Mittelstück -->
+      <path d="M195 243 L270 243 L267 257 L192 257 Z" fill="url(#3d-blue-bar)"/>
+      <path d="M282 243 L320 243 L317 257 L279 257 Z" fill="url(#3d-blue-bar)"/>
+      <path d="M195 268 L250 268 L247 278 L192 278 Z" fill="#475569"/>
+    </g>
+
+    <!-- ================= UNTERER TEIL (Mittellanger Bon-Header) ================= -->
+    <g id="bottom-block">
+      <path d="M174 299 L338 299 L338 375 L174 375 Z" fill="url(#paper-bottom)"/>
+
+      <!-- Platzhalter unten -->
+      <path d="M195 315 L265 315 L265 325 L195 325 Z" fill="#94A3B8"/>
+      <path d="M195 335 L235 335 L235 343 L195 343 Z" fill="#CBD5E1"/>
+
+      <path d="M195 353 L245 353 L245 363 L195 363 Z" fill="#10B981"/>
+    </g>
+
+  </g>
+</svg>

@@ -71,12 +71,12 @@ const PotDetails: NextPage<Props> = ({ id }) => {
   }
 
   // Compute derived state
-  const hasExpenses = !!expenses && expenses.length > 0;
-  const totalBalance = hasExpenses ? expenses.reduce((acc, e) => acc + (e.sum ?? 0), 0) : 0;
+  const hasExpenses = expenses && expenses.length > 0;
+  const allExpensesPaid = !hasExpenses || (expenses && expenses.every(e => (e.splits ?? []).every(s => s.is_paid)));
   const isOwner = pot?.owner_id === user?.uuid;
-  const canArchive = totalBalance === 0;
-  const canDelete = (!hasExpenses || totalBalance === 0) && !isArchived;
-  const canPay = hasExpenses && totalBalance !== 0;
+  const canArchive = allExpensesPaid;
+  const canDelete = allExpensesPaid && !isArchived;
+  const canPay = hasExpenses && !allExpensesPaid;
 
   const handlePayment = () => {
     if (!canPay || isPaying) return;
@@ -103,15 +103,15 @@ const PotDetails: NextPage<Props> = ({ id }) => {
   };
 
   const actionSection = (
-    <div className="mt-4 flex gap-2">
+    <div className="fixed bottom-6 left-6 flex gap-4 z-10">
       {(isOwner && !isArchived && (canPay || isPaying)) && (
         <button
           onClick={handlePayment}
           disabled={isPaying}
-          className="px-4 py-2 rounded-md text-white bg-green-500 hover:bg-green-700"
-          title="Mark as Paid"
+          className="w-14 h-14 rounded-full bg-green-600 text-white shadow-xl flex items-center justify-center text-2xl z-10 transition-transform active:scale-95 disabled:opacity-50"
+          title={isPaying ? "Paying…" : "Mark as Paid"}
         >
-          {isPaying ? "Paying…" : "Mark as Paid"}
+          {isPaying ? "..." : "✅"}
         </button>
       )}
 
@@ -119,10 +119,10 @@ const PotDetails: NextPage<Props> = ({ id }) => {
         <button
           onClick={handleDelete}
           disabled={isDeleting}
-          className="px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700"
-          title="Delete Pot"
+          className="w-14 h-14 rounded-full bg-red-600 text-white shadow-xl flex items-center justify-center text-2xl z-10 transition-transform active:scale-95 disabled:opacity-50"
+          title={isDeleting ? "Deleting…" : "Delete Pot"}
         >
-          {isDeleting ? "Deleting…" : "Delete Pot"}
+          {isDeleting ? "..." : "🗑️"}
         </button>
       )}
 
@@ -130,10 +130,10 @@ const PotDetails: NextPage<Props> = ({ id }) => {
         <button
           onClick={handleArchive}
           disabled={isArchiving}
-          className="px-4 py-2 rounded-md text-white bg-amber-600 hover:bg-amber-700"
-          title="Archive Pot"
+          className="w-14 h-14 rounded-full bg-amber-600 text-white shadow-xl flex items-center justify-center text-2xl z-10 transition-transform active:scale-95 disabled:opacity-50"
+          title={isArchiving ? "Archiving..." : "Archive Pot"}
         >
-          {isArchiving ? "Archiving..." : "Archive Pot"}
+          {isArchiving ? "..." : "📦"}
         </button>
       )}
 
@@ -141,10 +141,10 @@ const PotDetails: NextPage<Props> = ({ id }) => {
         <button
           onClick={handleUnarchive}
           disabled={isUnarchiving}
-          className="px-4 py-2 rounded-md text-white bg-amber-600 hover:bg-amber-700"
-          title="Unarchive Pot"
+          className="w-14 h-14 rounded-full bg-amber-600 text-white shadow-xl flex items-center justify-center text-2xl z-10 transition-transform active:scale-95 disabled:opacity-50"
+          title={isUnarchiving ? "Unarchiving..." : "Unarchive Pot"}
         >
-          {isUnarchiving ? "Unarchiving..." : "Unarchive Pot"}
+          {isUnarchiving ? "..." : "📤"}
         </button>
       )}
     </div>
@@ -160,21 +160,11 @@ const PotDetails: NextPage<Props> = ({ id }) => {
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-semibold">{pot_name}</h1>
           {isArchived && (
-            <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">
+            <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-gray-300">
               Archived
             </span>
           )}
         </div>
-        {!isArchived && (
-          <button
-            onClick={() => setNewExpenseOpen(true)}
-            disabled={!pot}
-            className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-            title={!pot ? "Loading pot…" : "Add a new expense"}
-          >
-            Add Expense
-          </button>
-        )}
       </div>
 
       {/* Content */}
@@ -188,6 +178,17 @@ const PotDetails: NextPage<Props> = ({ id }) => {
 
       {/* Show actions if allowed */}
       {actionSection}
+
+      {!isArchived && (
+        <button
+          onClick={() => setNewExpenseOpen(true)}
+          disabled={!pot}
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 shadow-xl flex items-center justify-center text-3xl z-10 transition-transform active:scale-95"
+          title={!pot ? "Loading pot…" : "Add a new expense"}
+        >
+          +
+        </button>
+      )}
 
       {/* Modal */}
       <NewExpenseModal open={isNewExpenseOpen} onClose={() => setNewExpenseOpen(false)} pot={pot} potId={id} />

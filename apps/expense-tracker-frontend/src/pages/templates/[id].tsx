@@ -100,6 +100,8 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
     },
   });
 
+  const isPending = isUpdatingTemplate || isAddingUsers || isRemovingUsers;
+
   useEffect(() => {
     if (template) {
       setName(template.name);
@@ -220,7 +222,17 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
   }
 
   return (
-    <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
+    <form className="mt-4 space-y-4 pb-24" onSubmit={handleSubmit}>
+      <div className="flex items-center mb-6">
+        <button
+          type="button"
+          onClick={handleClose}
+          className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center gap-1"
+        >
+          ← Cancel
+        </button>
+      </div>
+
       <div>
         <label className="block text-sm font-medium mb-1">Name</label>
         <input
@@ -228,7 +240,7 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
           maxLength={24}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
           placeholder="Home {year}/{month}"
           required
         />
@@ -241,7 +253,7 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
           onChange={(e) =>
             setCurrencyId(e.target.value ? Number(e.target.value) : 1)
           }
-          className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
           required
         >
           <option value="" disabled>
@@ -286,7 +298,7 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
           <select
             value={recurrence}
             onChange={(e) => onRecurrenceChange(e.target.value)}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
             required
           >
             <option value="weekly">Weekly</option>
@@ -303,7 +315,7 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
             type="datetime-local"
             value={dateTime}
             onChange={(e) => onDateTimeChange(e.target.value)}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
             required
           />
         </div>
@@ -312,38 +324,34 @@ const TemplateDetails: NextPage<Props> = ({ id }) => {
       {cronExpression && (
         <div className="text-xs text-gray-500 dark:text-gray-400">
           Resulting Cron:{' '}
-          <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">
+          <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded-sm">
             {cronExpression}
           </code>
         </div>
       )}
 
-      <div className="flex justify-end gap-2 pt-2">
+      <div className="fixed bottom-6 left-6 flex gap-4 z-10">
         {currentUser?.uuid === template?.owner.uuid && (
           <button
             type="button"
             onClick={handleDelete}
-            className="px-4 py-2 rounded-md text-white bg-red-600 hover:bg-red-700"
+            disabled={isDeletingTemplate}
+            className="w-14 h-14 rounded-full bg-red-600 text-white shadow-xl flex items-center justify-center text-2xl transition-transform active:scale-95 disabled:opacity-50"
+            title="Delete Template"
           >
-            Delete
+            {isDeletingTemplate ? '...' : '🗑️'}
           </button>
         )}
-
-        <button
-          type="button"
-          onClick={handleClose}
-          className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={!canSubmit || isRemovingUsers}
-          className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-        >
-          {isRemovingUsers ? 'Updating...' : 'Update'}
-        </button>
       </div>
+
+      <button
+        type="submit"
+        disabled={!canSubmit || isPending}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-blue-600 text-white shadow-xl flex items-center justify-center text-2xl z-10 transition-transform active:scale-95 disabled:opacity-50"
+        title="Update Template"
+      >
+        {isPending ? '...' : '💾'}
+      </button>
     </form>
   );
 }

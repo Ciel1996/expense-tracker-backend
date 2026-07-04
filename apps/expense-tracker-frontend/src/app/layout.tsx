@@ -2,8 +2,8 @@ import {Providers} from "./providers";
 import { AppLayout } from "../components/app-layout";
 
 export const metadata = {
-  title: 'Expense Tracker',
-  description: 'Created by Ciel1996',
+  title: 'Expense.li',
+  description: 'A simple Expense Tracker. Created by Ciel1996'
 };
 
 export default function RootLayout({children,}: {

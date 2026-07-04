@@ -191,7 +191,7 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
                   value={description}
                   maxLength={24}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
                   placeholder="Dinner, tickets, etc."
                   required
                 />
@@ -206,7 +206,7 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
                   step="0.01"
                   value={amountInput}
                   onChange={(e) => setAmountInput(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                   required
                 />
@@ -267,7 +267,7 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
                                 const val = parseFloat(e.target.value);
                                 handleWeightChange(u.uuid, isNaN(val) ? 0 : val);
                               }}
-                              className="w-20 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 pl-2 pr-6 py-0.5 text-right text-sm outline-none focus:ring-1 focus:ring-blue-500 appearance-none"
+                              className="w-20 rounded-sm border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 pl-2 pr-6 py-0.5 text-right text-sm outline-hidden focus:ring-1 focus:ring-blue-500 appearance-none"
                             />
                             <span
                               className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none">%</span>
