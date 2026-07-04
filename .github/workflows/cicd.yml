@@ -12,8 +12,8 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  BACKEND_IMAGE: ghcr.io/ciel1996/expense-tracker/api
-  FRONTEND_IMAGE: ghcr.io/ciel1996/expense-tracker/web
+  BACKEND_IMAGE: ghcr.io/ciel1996/expense-li/api
+  FRONTEND_IMAGE: ghcr.io/ciel1996/expense-li/web
 
 jobs:
   backend:

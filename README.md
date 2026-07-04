@@ -1,5 +1,5 @@
-# What is Expense-Tracker?
-Expense-Tracker is a simple application that allows the users to track their household expenses.
+# What is Expense.li?
+Expense.li is a simple application that allows the users to track their household expenses.
 A user can create pots, invite other users, and add expenses to be split among them.
 
 ## Wait, why is the repository called expense-tracker-backend, there is a frontend in here too?
@@ -193,3 +193,6 @@ Notes:
 - If Keycloak TLS causes JWKS fetch issues in dev, set EXPENSE_TRACKER_IGNORE_TLS=1 for the api service in compose (not recommended in prod).
 - Ensure config/settings.toml exists before starting the api container.
 - If ports collide, change host mappings in docker-compose.yaml.
+
+## FavIcon
+The FavIcon (icon.svg) has been generated using Google Gemini AI, as I'm really untalented when it comes to designing icons. 😆
