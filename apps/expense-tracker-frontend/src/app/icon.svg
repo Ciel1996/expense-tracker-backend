@@ -36,7 +36,7 @@
   </defs>
 
   <!-- HAUPTGRUPPE: KOMPAKT GEHALTEN, MIT HORIZONTALEN KANTEN UND PERSPEKTIVE IN DEN DETAILS -->
-  <g filter="url(#soft-3d-shadow)" transform="translate(0 -44) translate(256 255) scale(1.9) translate(-256 -255)">
+  <g filter="url(#soft-3d-shadow)" transform="translate(0 -3) translate(256 255) scale(2) translate(-256 -255)">
 
     <!-- ================= OBERER TEIL (Jetzt deutlich kürzer / Y: 135 bis 215) ================= -->
     <g id="top-block">
