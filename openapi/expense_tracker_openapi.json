@@ -10,7 +10,7 @@
       "name": "GPL-3.0-or-later",
       "identifier": "GPL-3.0-or-later"
     },
-    "version": "1.3.0"
+    "version": "1.3.2"
   },
   "paths": {
     "/api/v1/currencies": {
