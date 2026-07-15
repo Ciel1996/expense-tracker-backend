@@ -43,7 +43,7 @@
     "@testing-library/dom": "10.4.1",
     "@testing-library/react": "16.1.0",
     "@types/jest": "^30.0.0",
-    "@types/node": "18.16.9",
+    "@types/node": "26.1.1",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "ajv": "^8.18.0",
