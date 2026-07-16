@@ -30,7 +30,7 @@
     "@nx/eslint-plugin": "23.0.1",
     "@nx/jest": "23.0.1",
     "@nx/js": "23.0.1",
-    "@nx/next": "23.0.1",
+    "@nx/next": "23.1.0",
     "@nx/playwright": "23.0.1",
     "@nx/workspace": "23.0.1",
     "@tailwindcss/postcss": "^4.3.2",
