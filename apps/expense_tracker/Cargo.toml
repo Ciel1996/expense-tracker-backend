@@ -16,7 +16,7 @@ utoipa = "5.5.0"
 utoipa-axum = "0.2"
 tower = "0.5.3"
 tower-http = {version = "0.7.0", features = ["trace", "cors"] }
-jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
+jsonwebtoken = { version = "11.0.0", features = ["rust_crypto"] }
 reqwest = { version = "0.13.4", features = ["json"] }
 log = "0.4.33"
 tracing-subscriber = { version = "0.3.23", features=["env-filter"] }
