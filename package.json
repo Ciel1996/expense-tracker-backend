@@ -65,7 +65,7 @@
     "minimatch": "^10.2.1",
     "nx": "23.0.1",
     "orval": "^8.22.0",
-    "postcss": "8.5.19",
+    "postcss": "8.5.20",
     "prettier": "^3.9.4",
     "tailwindcss": "^4.3.3",
     "ts-jest": "29.4.6",
