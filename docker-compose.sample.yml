@@ -55,7 +55,7 @@
 
 services:
   keycloak:
-    image: quay.io/keycloak/keycloak:26.7.0
+    image: quay.io/keycloak/keycloak:26.7.2-1
     restart: always
     ports:
       - "127.0.0.1:8001:8080"          # Change left value to use a different host port (see notes above)
