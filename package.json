@@ -18,7 +18,7 @@
     "next": "15.5.22",
     "next-auth": "4.24.15",
     "react": "19.3.0",
-    "react-dom": "19.2.7"
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@eslint/compat": "^2.1.0",
