@@ -34,7 +34,7 @@
     "@nx/playwright": "23.1.1",
     "@nx/workspace": "23.0.1",
     "@tailwindcss/postcss": "^4.3.2",
-    "@playwright/test": "^1.62.0",
+    "@playwright/test": "^1.62.1",
     "@swc-node/core": "^1.14.1",
     "@swc-node/register": "^1.11.1",
     "@swc/cli": "^0.8.0",
