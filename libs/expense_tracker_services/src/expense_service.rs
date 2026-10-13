@@ -5,7 +5,6 @@ pub mod expense_service {
     use crate::{check_error, internal_error, not_found_error, ExpenseError};
     use diesel::result::Error;
     use diesel::{BoolExpressionMethods, ExpressionMethods, JoinOnDsl, QueryDsl, SelectableHelper};
-    use diesel_async::scoped_futures::ScopedFutureExt;
     use diesel_async::{AsyncConnection, RunQueryDsl};
     use expense_tracker_db::currencies::currencies::Currency;
     use expense_tracker_db::expenses::expenses::{Expense, NewExpense};
@@ -47,8 +46,8 @@ pub mod expense_service {
             let new_expense_clone = new_expense.clone();
 
             let result = conn
-                .transaction::<_, Error, _>(|conn| {
-                    async move {
+                .transaction::<_, Error, _>(async |conn| 
+                    {
                         let expense = diesel::insert_into(expenses)
                             .values(new_expense_clone)
                             .returning(Expense::as_returning())
@@ -70,9 +69,7 @@ pub mod expense_service {
                             .await?;
 
                         Ok((expense, splits, currency))
-                    }
-                    .scope_boxed()
-                })
+                    })
                 .await
                 .map_err(not_found_error)?;
 
