@@ -1,7 +1,7 @@
 pub mod expense_service {
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
-    use crate::ExpenseError::Conflict;
+    
     use crate::{check_error, internal_error, not_found_error, ExpenseError};
     use diesel::result::Error;
     use diesel::{BoolExpressionMethods, ExpressionMethods, JoinOnDsl, QueryDsl, SelectableHelper};
