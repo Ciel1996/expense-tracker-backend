@@ -4,7 +4,9 @@
     "allowJs": true,
     "outDir": "../../dist/out-tsc",
     "sourceMap": false,
-    "module": "commonjs"
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": ["node"]
   },
   "include": [
     "**/*.ts",
