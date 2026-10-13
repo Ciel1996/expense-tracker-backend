@@ -12,7 +12,7 @@ expense_tracker_db = { path = "../../libs/expense_tracker_db" }
 axum = "0.8"
 tokio = { version = "1.52.3", features = ["full"] }
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
-utoipa = "5.5.0"
+utoipa = "6.0.0"
 utoipa-axum = "0.2"
 tower = "0.5.3"
 tower-http = {version = "0.7.0", features = ["trace", "cors"] }
