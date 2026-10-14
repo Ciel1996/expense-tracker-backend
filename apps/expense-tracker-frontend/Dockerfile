@@ -17,7 +17,7 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 WORKDIR /workspace
 
 # Install dependencies first (better layer caching)
-COPY package.json package-lock.json ./
+COPY package*.json ./
 # Prefer locked, but fall back if lockfile is out of sync in CI/build envs
 RUN npm ci --prefer-offline --no-audit --no-fund || npm install --no-audit --no-fund
 
@@ -61,7 +61,7 @@ COPY --chown=node:node --from=builder /workspace/dist/apps/expense-tracker-front
 COPY --chown=node:node --from=builder /workspace/apps/expense-tracker-frontend/public /app/apps/expense-tracker-frontend/public
 
 # Add entrypoint script
-COPY --chown=node:node apps/expense-tracker-frontend/entrypoint.sh /app/entrypoint.sh
+COPY --chown=node:node --from=builder /workspace/apps/expense-tracker-frontend/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Ensure Node uses CommonJS in the standalone output by removing "type": "module" from /app/package.json
