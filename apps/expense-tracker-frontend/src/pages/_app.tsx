@@ -7,7 +7,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
   return (
     <Providers>
       <Head>
-        <link rel="apple-touch-icon" href="/icon.svg" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </Head>
       <AppLayout>
         <Component {...pageProps} />
