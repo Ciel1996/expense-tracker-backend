@@ -6,7 +6,7 @@ export const metadata = {
   description: 'Keep track of your household expenses with Expense.li, a simple and intuitive expense tracker app.',
   icons: {
     icon: "/icon.svg",
-    apple: "/icon.svg",
+    apple: "/apple-touch-icon.png",
   },
 };
 
