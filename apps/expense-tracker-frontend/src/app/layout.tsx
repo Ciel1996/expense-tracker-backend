@@ -3,7 +3,11 @@ import { AppLayout } from "../components/app-layout";
 
 export const metadata = {
   title: 'Expense.li',
-  description: 'A simple Expense Tracker. Created by Ciel1996'
+  description: 'Keep track of your household expenses with Expense.li, a simple and intuitive expense tracker app.',
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({children,}: {
