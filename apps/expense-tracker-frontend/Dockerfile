@@ -2,7 +2,7 @@
 # Builds a standalone server and runs on a minimal Node runtime.
 
 # ---------- Build stage ----------
-FROM node:20-bookworm-slim AS builder
+FROM node:22-bookworm-slim AS builder
 
 # always use production to build
 ENV NODE_ENV=production \
@@ -33,7 +33,7 @@ RUN npx nx build expense-tracker-frontend --configuration=production --skip-nx-c
 
 
 # ---------- Runtime stage ----------
-FROM node:20-bookworm-slim AS runner
+FROM node:22-bookworm-slim AS runner
 
 LABEL org.opencontainers.image.source=https://github.com/Ciel1996/expense-tracker-backend
 LABEL org.opencontainers.image.description="The frontend of Expense Tracker."
