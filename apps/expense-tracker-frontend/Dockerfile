@@ -28,6 +28,9 @@ COPY . .
 # This prevents Nx from trying to build/check the rust project during the frontend build.
 RUN sed -i 's/"implicitDependencies": \["expense_tracker_api"\]/"implicitDependencies": []/' libs/expense-tracker-client/project.json
 
+# Ensure public directory exists for static asset scanning
+RUN mkdir -p apps/expense-tracker-frontend/public
+
 # This produces a standalone output under dist/apps/expense-tracker-frontend/.next/standalone
 RUN npx nx build expense-tracker-frontend --configuration=production --skip-nx-cache
 
