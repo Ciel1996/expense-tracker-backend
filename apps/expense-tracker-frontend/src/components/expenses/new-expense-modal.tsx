@@ -7,6 +7,8 @@ import {
   getGetPotExpensesQueryKey,
 } from "@./expense-tracker-client";
 import {useQueryClient} from "@tanstack/react-query";
+import { AbsoluteSplitInput } from "./absolute-split-input";
+import { PercentageSplitInput } from "./percentage-split-input";
 
 interface NewExpenseModalProps {
   open: boolean,
@@ -19,13 +21,83 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
   const [description, setDescription] = useState("");
   const [amountInput, setAmountInput] = useState("");
   const [weights, setWeights] = useState<Record<string, number>>({});
+  const [manualAmounts, setManualAmounts] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
+  const [isInputingAbsoluteAmount, setIsInputingAbsoluteAmount] = useState(false);
 
   const addExpense = useAddExpense();
   const queryClient = useQueryClient();
 
   const participants = pot?.users ?? [];
   const currency = pot?.default_currency;
+
+  const calculateWeightsWithManualAmounts = (
+    manualMap: Record<string, number>,
+    total: number,
+    prevWeights: Record<string, number>,
+    allParticipants: { uuid: string }[]
+  ): { nextWeights: Record<string, number>; updatedManualMap: Record<string, number> } => {
+    if (total <= 0 || allParticipants.length === 0) {
+      return { nextWeights: prevWeights, updatedManualMap: manualMap };
+    }
+
+    const manualUserIds = Object.keys(manualMap).filter((id) =>
+      allParticipants.some((p) => p.uuid === id)
+    );
+
+    if (manualUserIds.length === 0) {
+      return { nextWeights: prevWeights, updatedManualMap: manualMap };
+    }
+
+    const sumManual = manualUserIds.reduce((sum, id) => sum + manualMap[id], 0);
+    const unassignedParticipants = allParticipants.filter(
+      (p) => !manualUserIds.includes(p.uuid)
+    );
+
+    const nextWeights: Record<string, number> = {};
+    const updatedManualMap = { ...manualMap };
+
+    if (sumManual > total) {
+      // Overflow: scale manual entries proportionally so their sum equals total
+      manualUserIds.forEach((id) => {
+        const scaledAmount = (manualMap[id] / sumManual) * total;
+        updatedManualMap[id] = scaledAmount;
+        nextWeights[id] = (manualMap[id] / sumManual) * 100;
+      });
+      unassignedParticipants.forEach((p) => {
+        nextWeights[p.uuid] = 0;
+      });
+    } else {
+      // No overflow: manual users retain exact entered amounts
+      manualUserIds.forEach((id) => {
+        nextWeights[id] = (manualMap[id] / total) * 100;
+      });
+
+      const remainderAmount = total - sumManual;
+      const remainderWeight = (remainderAmount / total) * 100;
+
+      if (unassignedParticipants.length > 0) {
+        const currentUnassignedWeight = unassignedParticipants.reduce(
+          (sum, p) => sum + (prevWeights[p.uuid] ?? 0),
+          0
+        );
+
+        if (currentUnassignedWeight > 0) {
+          unassignedParticipants.forEach((p) => {
+            const ratio = (prevWeights[p.uuid] ?? 0) / currentUnassignedWeight;
+            nextWeights[p.uuid] = ratio * remainderWeight;
+          });
+        } else {
+          const equalWeight = remainderWeight / unassignedParticipants.length;
+          unassignedParticipants.forEach((p) => {
+            nextWeights[p.uuid] = equalWeight;
+          });
+        }
+      }
+    }
+
+    return { nextWeights, updatedManualMap };
+  };
 
   // Initialize weights when participants change
   React.useEffect(() => {
@@ -36,6 +108,7 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
         initialWeights[u.uuid] = Number(share.toFixed(1));
       });
       setWeights(initialWeights);
+      setManualAmounts({});
     }
   }, [participants]);
 
@@ -47,30 +120,35 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
     if (!participants.length || !amountInput || totalWeight === 0) return [];
 
     const totalCents = Math.round(Number(amountInput) * 100);
+    const targetCents = Math.round(totalCents * (Math.min(100, totalWeight) / 100));
+
     const splits = participants.map((u) => {
       const weight = weights[u.uuid] ?? 0;
       const shareRatio = totalWeight > 0 ? weight / totalWeight : 0;
+      const exactCents = totalCents * (weight / 100);
+      const floorCents = Math.floor(exactCents);
       return {
         user_id: u.uuid,
-        cents: Math.floor(totalCents * shareRatio),
-        ratio: shareRatio
+        cents: floorCents,
+        ratio: shareRatio,
+        remainderFraction: exactCents - floorCents,
       };
     });
 
     // Distribute remaining cents due to flooring
     const distributedCents = splits.reduce((sum, s) => sum + s.cents, 0);
-    const remainingCents = totalCents - distributedCents;
+    const remainingCents = targetCents - distributedCents;
 
-    // Give remainder to those with highest ratio/weight to minimize impact
-    const sortedByWeight = [...splits].sort((a, b) => b.ratio - a.ratio);
+    // Give remainder to those with highest fractional remainder
+    const sortedByRemainder = [...splits].sort((a, b) => b.remainderFraction - a.remainderFraction);
     for (let i = 0; i < remainingCents; i++) {
-      sortedByWeight[i].cents += 1;
+      sortedByRemainder[i].cents += 1;
     }
 
-    return splits.map(s => ({
+    return splits.map((s) => ({
       user_id: s.user_id,
       amount: s.cents / 100,
-      ratio: s.ratio
+      ratio: s.ratio,
     }));
   }, [participants, amountInput, weights, totalWeight]);
 
@@ -89,6 +167,7 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
     setDescription("");
     setAmountInput("");
     setError(null);
+    setManualAmounts({});
     if (participants.length > 0) {
       const initialWeights: Record<string, number> = {};
       const share = 100 / participants.length;
@@ -104,7 +183,44 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
     onClose();
   };
 
+  const handleAbsoluteAmountChange = (userId: string, enteredAmount: number) => {
+    const total = Number(amountInput);
+    if (isNaN(total) || total <= 0 || !participants.length) return;
+
+    const clampedAmount = Math.max(0, enteredAmount);
+    const updatedManual = {
+      ...manualAmounts,
+      [userId]: clampedAmount,
+    };
+
+    const { nextWeights, updatedManualMap } = calculateWeightsWithManualAmounts(
+      updatedManual,
+      total,
+      weights,
+      participants
+    );
+
+    setWeights(nextWeights);
+    setManualAmounts(updatedManualMap);
+  };
+
+  const handleAmountInputChange = (newAmount: string) => {
+    setAmountInput(newAmount);
+    const total = parseFloat(newAmount);
+    if (!isNaN(total) && total > 0 && Object.keys(manualAmounts).length > 0) {
+      const { nextWeights, updatedManualMap } = calculateWeightsWithManualAmounts(
+        manualAmounts,
+        total,
+        weights,
+        participants
+      );
+      setWeights(nextWeights);
+      setManualAmounts(updatedManualMap);
+    }
+  };
+
   const handleWeightChange = (userId: string, newWeight: number) => {
+    setManualAmounts({});
     setWeights((prev) => {
       const otherUserIds = Object.keys(prev).filter((id) => id !== userId);
       if (otherUserIds.length === 0) {
@@ -177,15 +293,19 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
 
   return (
     <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/30" onClick={handleClose}/>
+      <div className="absolute inset-0 bg-black/30" onClick={handleClose} />
       <div className="absolute inset-0 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4">
           <div className="w-full max-w-md overflow-hidden rounded-lg bg-white dark:bg-gray-900 p-6 text-left shadow-xl">
-            <div className="text-lg font-medium text-gray-900 dark:text-gray-100">Add Expense</div>
+            <div className="text-lg font-medium text-gray-900 dark:text-gray-100">
+              Add Expense
+            </div>
 
             <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label className="block text-sm font-medium mb-1">
+                  Description
+                </label>
                 <input
                   type="text"
                   value={description}
@@ -198,14 +318,16 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Amount ({currency?.symbol})</label>
+                <label className="block text-sm font-medium mb-1">
+                  Amount ({currency?.symbol})
+                </label>
                 <input
                   type="number"
                   inputMode="decimal"
                   min="0"
                   step="0.01"
                   value={amountInput}
-                  onChange={(e) => setAmountInput(e.target.value)}
+                  onChange={(e) => handleAmountInputChange(e.target.value)}
                   className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                   required
@@ -214,35 +336,52 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-sm font-medium">Split Ratios</label>
+                  <label className="block text-sm font-medium">
+                    Split Ratios
+                  </label>
                   <button
                     type="button"
                     onClick={() => {
+                      setManualAmounts({});
                       const reset: Record<string, number> = {};
                       const share = 100 / participants.length;
-                      participants.forEach(u => reset[u.uuid] = Number(share.toFixed(1)));
+                      participants.forEach(
+                        (u) => (reset[u.uuid] = Number(share.toFixed(1))),
+                      );
                       setWeights(reset);
                     }}
                     className="text-xs text-blue-600 hover:text-blue-700 font-medium"
                   >
                     Reset to equal
                   </button>
+
+                  <div>
+                    <label className="block text-sm font-medium">
+                      {currency?.symbol}?
+                    </label>
+                    <input
+                      type="checkbox"
+                      checked={isInputingAbsoluteAmount}
+                      onChange={() =>
+                        setIsInputingAbsoluteAmount(!isInputingAbsoluteAmount)
+                      }
+                    />
+                  </div>
                 </div>
-                <div
-                  className="space-y-3 rounded-md border border-gray-200 dark:border-gray-800 p-3 bg-gray-50/50 dark:bg-gray-800/50">
+                <div className="space-y-3 rounded-md border border-gray-200 dark:border-gray-800 p-3 bg-gray-50/50 dark:bg-gray-800/50">
                   {participants.map((u) => {
                     const weight = weights[u.uuid] ?? 0;
-                    const percentage = totalWeight > 0 ? (weight / totalWeight) * 100 : 0;
-                    const split = calculatedSplits.find(s => s.user_id === u.uuid);
+                    const percentage =
+                      totalWeight > 0 ? (weight / totalWeight) * 100 : 0;
+                    const split = calculatedSplits.find(
+                      (s) => s.user_id === u.uuid,
+                    );
                     const amount = split ? split.amount : 0;
 
-                    return (
+                    return isInputingAbsoluteAmount ? (
                       <div key={u.uuid} className="flex flex-col gap-1">
                         <div className="flex justify-between text-xs font-medium">
                           <span>{u.name}</span>
-                          <span className="text-gray-500">
-                            {percentage.toFixed(1)}% ({currency?.symbol}{amount.toFixed(2)})
-                          </span>
                         </div>
                         <div className="flex items-center gap-3">
                           <input
@@ -252,33 +391,61 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
                             step="1"
                             value={weight}
                             onChange={(e) => {
-                              handleWeightChange(u.uuid, parseFloat(e.target.value));
+                              handleWeightChange(
+                                u.uuid,
+                                parseFloat(e.target.value),
+                              );
                             }}
                             className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
                           />
-                          <div className="relative">
-                            <input
-                              type="number"
-                              min="0"
-                              max="100"
-                              step="0.1"
-                              value={weight}
-                              onChange={(e) => {
-                                const val = parseFloat(e.target.value);
-                                handleWeightChange(u.uuid, isNaN(val) ? 0 : val);
-                              }}
-                              className="w-20 rounded-sm border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 pl-2 pr-6 py-0.5 text-right text-sm outline-hidden focus:ring-1 focus:ring-blue-500 appearance-none"
-                            />
-                            <span
-                              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none">%</span>
-                          </div>
+                          <AbsoluteSplitInput
+                            amount={amount}
+                            totalAmount={Number(amountInput)}
+                            symbol={currency?.symbol}
+                            onCommitAmount={(newAmount) =>
+                              handleAbsoluteAmountChange(u.uuid, newAmount)
+                            }
+                            onCommitWeight={(newWeight) =>
+                              handleWeightChange(u.uuid, newWeight)
+                            }
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div key={u.uuid} className="flex flex-col gap-1">
+                        <div className="flex justify-between text-xs font-medium">
+                          <span>{u.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="1"
+                            value={weight}
+                            onChange={(e) => {
+                              handleWeightChange(
+                                u.uuid,
+                                parseFloat(e.target.value),
+                              );
+                            }}
+                            className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                          />
+                          <PercentageSplitInput
+                            weight={weight}
+                            onCommitWeight={(newWeight) =>
+                              handleWeightChange(u.uuid, newWeight)
+                            }
+                          />
                         </div>
                       </div>
                     );
                   })}
                 </div>
                 {totalWeight === 0 && (
-                  <p className="mt-1 text-xs text-red-500">At least one person must have a share &gt; 0</p>
+                  <p className="mt-1 text-xs text-red-500">
+                    At least one person must have a share &gt; 0
+                  </p>
                 )}
               </div>
 
@@ -301,7 +468,7 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
                   disabled={!canSubmit || addExpense.isPending}
                   className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {addExpense.isPending ? "Adding…" : "Add Expense"}
+                  {addExpense.isPending ? 'Adding…' : 'Add Expense'}
                 </button>
               </div>
             </form>
