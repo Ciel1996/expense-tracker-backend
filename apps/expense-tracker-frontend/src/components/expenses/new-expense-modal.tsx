@@ -295,8 +295,8 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
     <div className="fixed inset-0 z-50">
       <div className="absolute inset-0 bg-black/30" onClick={handleClose} />
       <div className="absolute inset-0 overflow-y-auto">
-        <div className="flex min-h-full items-center justify-center p-4">
-          <div className="w-full max-w-md overflow-hidden rounded-lg bg-white dark:bg-gray-900 p-6 text-left shadow-xl">
+        <div className="flex min-h-full items-center justify-center p-4 min-[480px]:max-sm:items-stretch min-[480px]:max-sm:p-0">
+          <div className="w-full max-w-md overflow-hidden rounded-lg bg-white dark:bg-gray-900 p-6 text-left shadow-xl min-[480px]:max-sm:max-w-none min-[480px]:max-sm:rounded-none min-[480px]:max-sm:p-4 min-[480px]:max-sm:shadow-none">
             <div className="text-lg font-medium text-gray-900 dark:text-gray-100">
               Add Expense
             </div>
@@ -432,6 +432,8 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
                             className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
                           />
                           <PercentageSplitInput
+                            amount={amount}
+                            symbol={currency?.symbol}
                             weight={weight}
                             onCommitWeight={(newWeight) =>
                               handleWeightChange(u.uuid, newWeight)
