@@ -42,10 +42,11 @@ export const AbsoluteSplitInput: FC<AbsoluteSplitInputProps> = ({
   };
 
   return (
-    <div className="relative">
+    <div className="flex w-25 items-center rounded-sm border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus-within:ring-1 focus-within:ring-blue-500">
       <input
         type="number"
         step="0.01"
+        inputMode="decimal"
         value={isFocused ? localValue : amount.toFixed(2)}
         onFocus={() => {
           setIsFocused(true);
@@ -63,11 +64,13 @@ export const AbsoluteSplitInput: FC<AbsoluteSplitInputProps> = ({
           commit();
           setIsFocused(false);
         }}
-        className="w-25 rounded-sm border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 pl-2 pr-6 py-0.5 text-right text-sm outline-hidden focus:ring-1 focus:ring-blue-500 appearance-none"
+        className="min-w-0 flex-1 bg-transparent pl-2 py-0.5 text-right text-base pointer-fine:text-sm outline-hidden appearance-none"
       />
-      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none">
-        {symbol}
-      </span>
+      {symbol && (
+        <span className="shrink-0 pl-1.5 pr-2 text-xs text-gray-500 pointer-events-none select-none">
+          {symbol}
+        </span>
+      )}
     </div>
   );
 };
