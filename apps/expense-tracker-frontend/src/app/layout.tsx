@@ -10,6 +10,14 @@ export const metadata = {
   },
 };
 
+export const viewport = {
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f3f4f6" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
+};
+
 export default function RootLayout({children,}: {
   children: React.ReactNode;
 }) {

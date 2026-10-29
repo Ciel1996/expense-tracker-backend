@@ -62,7 +62,7 @@ export const PercentageSplitInput: FC<PercentageSplitInputProps> = ({
             commit();
             setIsFocused(false);
           }}
-          className="w-25 rounded-sm border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 pl-2 pr-6 py-0.5 text-right text-sm outline-hidden focus:ring-1 focus:ring-blue-500 appearance-none"
+          className="w-25 rounded-sm border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 pl-2 pr-6 py-0.5 text-right text-base pointer-fine:text-sm outline-hidden focus:ring-1 focus:ring-blue-500 appearance-none"
         />
         <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none">
           %
