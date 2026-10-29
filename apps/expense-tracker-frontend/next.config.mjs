@@ -12,6 +12,7 @@ const nextConfig = {
   experimental: {
     useTypeScriptCli: true,
   },
+  allowedDevOrigins: ['127.0.0.1'],
 };
 
 const plugins = [
