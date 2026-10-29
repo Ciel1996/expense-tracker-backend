@@ -37,6 +37,7 @@ export const PercentageSplitInput: FC<PercentageSplitInputProps> = ({
         min="0"
         max="100"
         step="0.1"
+        inputMode="decimal"
         value={
           isFocused ? parseFloat(localValue).toFixed(2) : weight.toFixed(2)
         }

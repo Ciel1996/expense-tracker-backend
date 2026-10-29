@@ -46,6 +46,7 @@ export const AbsoluteSplitInput: FC<AbsoluteSplitInputProps> = ({
       <input
         type="number"
         step="0.01"
+        inputMode="decimal"
         value={isFocused ? localValue : amount.toFixed(2)}
         onFocus={() => {
           setIsFocused(true);
