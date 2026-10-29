@@ -432,6 +432,8 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
                             className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
                           />
                           <PercentageSplitInput
+                            amount={amount}
+                            symbol={currency?.symbol}
                             weight={weight}
                             onCommitWeight={(newWeight) =>
                               handleWeightChange(u.uuid, newWeight)
