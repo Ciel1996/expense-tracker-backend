@@ -36,7 +36,7 @@
     "@nx/playwright": "23.3.0",
     "@nx/react": "^23.3.0",
     "@nx/web": "^23.3.0",
-    "@nx/workspace": "^23.3.0",
+    "@nx/workspace": "^24.0.2",
     "@playwright/test": "^1.62.1",
     "@swc-node/core": "^1.14.1",
     "@swc-node/register": "^1.11.1",
