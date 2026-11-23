@@ -1,0 +1,1 @@
+-- explicitly not setting old values, currencies are just a look up
