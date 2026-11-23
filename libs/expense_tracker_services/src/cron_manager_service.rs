@@ -46,6 +46,7 @@ pub mod cron_manager_service {
             self.started = false;
         }
 
+        #[cfg(test)]
         pub(crate) fn id(&self) -> Uuid {
             self.id
         }

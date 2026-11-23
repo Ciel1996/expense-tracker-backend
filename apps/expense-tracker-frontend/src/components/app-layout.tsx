@@ -28,7 +28,7 @@ export function AppLayout({ children }: PropsWithChildren) {
   const token = useAuth();
 
   return (
-    <div className="bg-gray-100 dark:bg-black text-gray-900 dark:text-gray-100 min-h-screen">
+    <div className="bg-gray-100 dark:bg-black text-gray-900 dark:text-gray-100 min-h-dvh">
       {token && (
         <div className="w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-2">
           <div className="flex justify-between items-center">

@@ -27,7 +27,10 @@
     "types": [
       "jest",
       "node"
-    ]
+    ],
+    "paths": {
+      "@./expense-tracker-client": ["../../libs/expense-tracker-client/index.ts"]
+    }
   },
   "include": [
     "**/*.js",

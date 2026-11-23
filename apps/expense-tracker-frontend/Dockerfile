@@ -2,7 +2,7 @@
 # Builds a standalone server and runs on a minimal Node runtime.
 
 # ---------- Build stage ----------
-FROM node:20-bookworm-slim AS builder
+FROM node:22-bookworm-slim AS builder
 
 # always use production to build
 ENV NODE_ENV=production \
@@ -17,7 +17,7 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 WORKDIR /workspace
 
 # Install dependencies first (better layer caching)
-COPY package.json package-lock.json ./
+COPY package*.json ./
 # Prefer locked, but fall back if lockfile is out of sync in CI/build envs
 RUN npm ci --prefer-offline --no-audit --no-fund || npm install --no-audit --no-fund
 
@@ -28,12 +28,15 @@ COPY . .
 # This prevents Nx from trying to build/check the rust project during the frontend build.
 RUN sed -i 's/"implicitDependencies": \["expense_tracker_api"\]/"implicitDependencies": []/' libs/expense-tracker-client/project.json
 
+# Ensure public directory exists for static asset scanning
+RUN mkdir -p apps/expense-tracker-frontend/public
+
 # This produces a standalone output under dist/apps/expense-tracker-frontend/.next/standalone
 RUN npx nx build expense-tracker-frontend --configuration=production --skip-nx-cache
 
 
 # ---------- Runtime stage ----------
-FROM node:20-bookworm-slim AS runner
+FROM node:22-bookworm-slim AS runner
 
 LABEL org.opencontainers.image.source=https://github.com/Ciel1996/expense-tracker-backend
 LABEL org.opencontainers.image.description="The frontend of Expense Tracker."
@@ -61,7 +64,7 @@ COPY --chown=node:node --from=builder /workspace/dist/apps/expense-tracker-front
 COPY --chown=node:node --from=builder /workspace/apps/expense-tracker-frontend/public /app/apps/expense-tracker-frontend/public
 
 # Add entrypoint script
-COPY --chown=node:node apps/expense-tracker-frontend/entrypoint.sh /app/entrypoint.sh
+COPY --chown=node:node --from=builder /workspace/apps/expense-tracker-frontend/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Ensure Node uses CommonJS in the standalone output by removing "type": "module" from /app/package.json

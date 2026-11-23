@@ -6,7 +6,6 @@ pub mod pot_template_service {
     use diesel::internal::derives::multiconnection::chrono::Datelike;
     use diesel::result::Error;
     use diesel_async::{AsyncConnection, RunQueryDsl};
-    use diesel_async::scoped_futures::ScopedFutureExt;
     use log::{debug, error, info, warn};
     use uuid::Uuid;
     use expense_tracker_db::currencies::currencies::Currency;
@@ -71,8 +70,7 @@ pub mod pot_template_service {
 
             // Using a transaction to ensure that the template is created together with the users in the template users table
             let result = conn
-                .transaction::<_, Error, _>(|conn| {
-                    async move {
+                .transaction::<_, Error, _>(async |conn| {
                         // cloning variables for later use and before they are moved
                         let currency_id_clone = new_template.default_currency_id().clone();
                         let new_template_clone = new_template.clone();
@@ -123,8 +121,6 @@ pub mod pot_template_service {
                             .await?;
 
                         Ok((template_pot, currency, loaded_users))
-                    }
-                        .scope_boxed()
                 })
                 .await
                 .map_err(not_found_error)?;

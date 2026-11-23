@@ -7,13 +7,10 @@
   "implicitDependencies": ["expense_tracker_api"],
   "targets": {
     "build": {
-      "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/dist/libs/expense-tracker-client"],
       "options": {
-        "outputPath": "dist/libs/expense-tracker-client",
-        "main": "libs/expense-tracker-client/src/index.ts",
-        "tsConfig": "libs/expense-tracker-client/tsconfig.lib.json",
-        "assets": ["libs/expense-tracker-client/*.md"]
+        "command": "tsc -p libs/expense-tracker-client/tsconfig.lib.json --outDir dist/libs/expense-tracker-client --rootDir libs/expense-tracker-client && cp libs/expense-tracker-client/package.json dist/libs/expense-tracker-client/"
       }
     },
     "orval": {

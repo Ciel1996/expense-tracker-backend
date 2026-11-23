@@ -13,7 +13,7 @@
       "options": {
         "root": "apps/expense-tracker-frontend",
         "outputPath": "dist/apps/expense-tracker-frontend",
-        "turbo": false
+        "webpack": true
       },
       "configurations": {
         "development": {},
@@ -50,7 +50,7 @@
       }
     },
     "lint": {
-      "executor": "@nx/eslint:linter",
+      "executor": "@nx/eslint:lint",
       "outputs": ["{options.outputFile}"]
     },
     "test": {
