@@ -29,7 +29,7 @@
     "@next/eslint-plugin-next": "16.4.3",
     "@nx/devkit": "^23.3.0",
     "@nx/eslint": "23.3.0",
-    "@nx/eslint-plugin": "23.3.0",
+    "@nx/eslint-plugin": "24.0.2",
     "@nx/jest": "23.3.0",
     "@nx/js": "23.3.0",
     "@nx/next": "^23.3.0",
