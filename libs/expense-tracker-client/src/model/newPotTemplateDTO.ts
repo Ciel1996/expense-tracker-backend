@@ -8,22 +8,22 @@
 
 export interface NewPotTemplateDTO {
   /**
-     * A cron expression that defines when the pot should be automatically created.
-     * The example shows how a cron expression must look that expresses "At 12:00 AM, on day 1 of the month"
-     * I recommend using tools like https://crontab.cronhub.io to generate and validate a cron expression.
-     * Expense-Tracker uses the local timezone to make it easier for the user to think in their local timezone.
-     */
+   * A cron expression that defines when the pot should be automatically created.
+   * The example shows how a cron expression must look that expresses "At 12:00 AM, on day 1 of the month"
+   * I recommend using tools like https://crontab.cronhub.io to generate and validate a cron expression.
+   * Expense-Tracker uses the local timezone to make it easier for the user to think in their local timezone.
+   */
   cron_expression: string;
   default_currency_id: number;
   /**
-     * Name for the pot template. Supports placeholders for the current month {month} and year {year}.
-     * @maxLength 24
-     */
+   * Name for the pot template. Supports placeholders for the current month {month} and year {year}.
+   * @maxLength 24
+   */
   name: string;
   /**
-     * A list of user ids that should be automatically added as members of this pot.
-     * The owner does not need to be part of this list, as they are automatically added
-     * by the service.
-     */
+   * A list of user ids that should be automatically added as members of this pot.
+   * The owner does not need to be part of this list, as they are automatically added
+   * by the service.
+   */
   user_ids: string[];
 }

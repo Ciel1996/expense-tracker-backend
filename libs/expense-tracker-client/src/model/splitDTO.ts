@@ -12,9 +12,9 @@
 export interface SplitDTO {
   amount: number;
   /**
-     * Is `true` by default, if the Split's `user_id` == the expenses `owner_id`! Otherwise
-     * `false`. This is because the owner of an expense has already paid their part!
-     */
+   * Is `true` by default, if the Split's `user_id` == the expenses `owner_id`! Otherwise
+   * `false`. This is because the owner of an expense has already paid their part!
+   */
   is_paid: boolean;
   user_id: string;
 }

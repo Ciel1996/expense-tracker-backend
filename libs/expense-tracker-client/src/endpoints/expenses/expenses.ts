@@ -5,35 +5,37 @@
  * A REST Api that offers various endpoints for handling shared expenses.
  * OpenAPI spec version: 1.3.7
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
   MutationFunction,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
-  UseQueryResult
+  UseQueryResult,
 } from '@tanstack/react-query';
 
-import type {
-  ExpenseDTO
-} from '../../model';
+import { useCallback } from 'react';
+
+import type { ExpenseDTO } from '../../model';
 
 import { useCustomClient } from '../../custom-client';
 import type { ErrorType } from '../../custom-client';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
-      type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
-
-
-
-const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
+const withQueryKey = <T extends object, K>(
+  query: T,
+  queryKey: K,
+): T & { queryKey: K } => {
   const result = { queryKey } as T & { queryKey: K };
   for (const key of Object.keys(query)) {
     // The explicit queryKey always wins, matching the previous
@@ -48,207 +50,259 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export type getExpenseByIdResponse200 = {
-  data: ExpenseDTO
-  status: 200
-}
-
-export type getExpenseByIdResponse404 = {
-  data: void
-  status: 404
-}
-
-export type getExpenseByIdResponseSuccess = (getExpenseByIdResponse200) & {
-  headers: Headers;
-};
-export type getExpenseByIdResponseError = (getExpenseByIdResponse404) & {
-  headers: Headers;
-};
-
-export type getExpenseByIdResponse = (getExpenseByIdResponseSuccess | getExpenseByIdResponseError)
-
-export const getGetExpenseByIdUrl = (expenseId: number,) => {
-
-
-
-
-  return `/api/v1/expenses/${expenseId}`
-}
-
 /**
  * @summary Gets the expense with the given id. Returns 404 if no expense with the given id exists
 or the bearer has no access to it.
  */
-export const useGetExpenseByIdHook = (): (expenseId: number, options?: RequestInit) => Promise<getExpenseByIdResponse> => {
+export const useGetExpenseByIdHook = () => {
+  const getExpenseById = useCustomClient<ExpenseDTO>();
 
-      const customFetcher = useCustomClient();
-      return (expenseId: number, options?: RequestInit) => {
+  return useCallback(
+    (expenseId: number, signal?: AbortSignal) => {
+      return getExpenseById({
+        url: `/api/v1/expenses/${expenseId}`,
+        method: 'GET',
+        signal,
+      });
+    },
+    [getExpenseById],
+  );
+};
 
-        return customFetcher(getGetExpenseByIdUrl(expenseId),
-  {
-    ...options,
-    method: 'GET'
+export const getGetExpenseByIdQueryKey = (expenseId: number) => {
+  return [`/api/v1/expenses/${expenseId}`] as const;
+};
 
-
-  }
-);
-      }
-  }
-
-
-
-
-
-export const getGetExpenseByIdQueryKey = (expenseId: number,) => {
-    return [
-    `/api/v1/expenses/${expenseId}`
-    ] as const;
-    }
-
-
-export const useGetExpenseByIdQueryOptions = <TData = Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>, TError = ErrorType<void>>(expenseId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>, TError, TData>, }
+export const useGetExpenseByIdQueryOptions = <
+  TData = Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>,
+  TError = ErrorType<void>,
+>(
+  expenseId: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>,
+        TError,
+        TData
+      >
+    >;
+  },
 ) => {
+  const { query: queryOptions } = options ?? {};
 
-const {query: queryOptions} = options ?? {};
+  const queryKey =
+    queryOptions?.queryKey ?? getGetExpenseByIdQueryKey(expenseId);
 
-  const queryKey =  queryOptions?.queryKey ?? getGetExpenseByIdQueryKey(expenseId);
+  const getExpenseById = useGetExpenseByIdHook();
 
-  const getExpenseById =  useGetExpenseByIdHook();
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>
+  > = ({ signal }) => getExpenseById(expenseId, signal);
 
-    const queryFn: QueryFunction<Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>> = ({ signal }) => getExpenseById(expenseId, { signal });
+  return {
+    queryKey,
+    queryFn,
+    enabled: expenseId !== null && expenseId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
 
+export type GetExpenseByIdQueryResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>
+>;
+export type GetExpenseByIdQueryError = ErrorType<void>;
 
-
-
-
-   return  { queryKey, queryFn, enabled: expenseId !== null && expenseId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetExpenseByIdQueryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>>
-export type GetExpenseByIdQueryError = ErrorType<void>
-
-
+export function useGetExpenseById<
+  TData = Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>,
+  TError = ErrorType<void>,
+>(
+  expenseId: number,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>
+        >,
+        'initialData'
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetExpenseById<
+  TData = Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>,
+  TError = ErrorType<void>,
+>(
+  expenseId: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>
+        >,
+        'initialData'
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetExpenseById<
+  TData = Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>,
+  TError = ErrorType<void>,
+>(
+  expenseId: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
 /**
  * @summary Gets the expense with the given id. Returns 404 if no expense with the given id exists
 or the bearer has no access to it.
  */
 
-export function useGetExpenseById<TData = Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>, TError = ErrorType<void>>(
- expenseId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>, TError, TData>, }
+export function useGetExpenseById<
+  TData = Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>,
+  TError = ErrorType<void>,
+>(
+  expenseId: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useGetExpenseByIdHook>>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = useGetExpenseByIdQueryOptions(expenseId, options);
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = useGetExpenseByIdQueryOptions(expenseId,options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
 
+/**
+ * @summary Pays the expense with the given `expense_id` if the user has access to it.
+ */
+export const usePayExpenseHook = () => {
+  const payExpense = useCustomClient<ExpenseDTO>();
 
-
-
-
-
-export type payExpenseResponse200 = {
-  data: ExpenseDTO
-  status: 200
-}
-
-export type payExpenseResponse403 = {
-  data: void
-  status: 403
-}
-
-export type payExpenseResponse404 = {
-  data: void
-  status: 404
-}
-
-export type payExpenseResponseSuccess = (payExpenseResponse200) & {
-  headers: Headers;
-};
-export type payExpenseResponseError = (payExpenseResponse403 | payExpenseResponse404) & {
-  headers: Headers;
+  return useCallback(
+    (expenseId: number, signal?: AbortSignal) => {
+      return payExpense({
+        url: `/api/v1/expenses/${expenseId}`,
+        method: 'PUT',
+        signal,
+      });
+    },
+    [payExpense],
+  );
 };
 
-export type payExpenseResponse = (payExpenseResponseSuccess | payExpenseResponseError)
+export const getPayExpenseMutationKey = () => ['payExpense'] as const;
 
-export const getPayExpenseUrl = (expenseId: number,) => {
+export const usePayExpenseMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>,
+    TError,
+    PayExpenseMutationVariables,
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>,
+  TError,
+  PayExpenseMutationVariables,
+  TContext
+> => {
+  const mutationKey = getPayExpenseMutationKey();
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      'mutationKey' in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
 
+  const payExpense = usePayExpenseHook();
 
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>,
+    PayExpenseMutationVariables
+  > = (props) => {
+    const { expenseId } = props ?? {};
 
+    return payExpense(expenseId);
+  };
 
-  return `/api/v1/expenses/${expenseId}`
-}
+  return { mutationFn, ...mutationOptions };
+};
+
+export type PayExpenseMutationResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>
+>;
+
+export type PayExpenseMutationError = ErrorType<void>;
+export type PayExpenseMutationVariables = { expenseId: number };
 
 /**
  * @summary Pays the expense with the given `expense_id` if the user has access to it.
  */
-export const usePayExpenseHook = (): (expenseId: number, options?: RequestInit) => Promise<payExpenseResponse> => {
-
-      const customFetcher = useCustomClient();
-      return (expenseId: number, options?: RequestInit) => {
-
-        return customFetcher(getPayExpenseUrl(expenseId),
-  {
-    ...options,
-    method: 'PUT'
-
-
-  }
-);
-      }
-  }
-
-
-
-
-
-export const getPayExpenseMutationKey = () => ['payExpense'] as const;
-
-export const usePayExpenseMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>, TError,PayExpenseMutationVariables, TContext>, }
-): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>, TError,PayExpenseMutationVariables, TContext> => {
-
-const mutationKey = getPayExpenseMutationKey();
-const {mutation: mutationOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }};
-
-      const payExpense =  usePayExpenseHook()
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>, PayExpenseMutationVariables> = (props) => {
-          const {expenseId} = props ?? {};
-
-          return  payExpense(expenseId,)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type PayExpenseMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>>
-
-    export type PayExpenseMutationError = ErrorType<void>
-    export type PayExpenseMutationVariables = {expenseId: number}
-
-    /**
- * @summary Pays the expense with the given `expense_id` if the user has access to it.
- */
-export const usePayExpense = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>, TError,PayExpenseMutationVariables, TContext>, }
- ): UseMutationResult<
-        Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>,
-        TError,
-        PayExpenseMutationVariables,
-        TContext
-      > => {
-      return useMutation(usePayExpenseMutationOptions(options));
-    }
+export const usePayExpense = <TError = ErrorType<void>, TContext = unknown>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>,
+      TError,
+      PayExpenseMutationVariables,
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<ReturnType<typeof usePayExpenseHook>>>,
+  TError,
+  PayExpenseMutationVariables,
+  TContext
+> => {
+  return useMutation(usePayExpenseMutationOptions(options), queryClient);
+};

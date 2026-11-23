@@ -20,9 +20,9 @@ export interface ExpenseDTO {
   pot_id: number;
   splits: SplitDTO[];
   /**
-     * If negative: you have to pay `owner_id` this amount of money, otherwise
-     * you can expect others to pay you the given amount.
-     */
+   * If negative: you have to pay `owner_id` this amount of money, otherwise
+   * you can expect others to pay you the given amount.
+   */
   sum: number;
   total_amount: number;
 }

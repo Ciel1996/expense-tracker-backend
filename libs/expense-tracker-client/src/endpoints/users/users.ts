@@ -5,31 +5,34 @@
  * A REST Api that offers various endpoints for handling shared expenses.
  * OpenAPI spec version: 1.3.7
  */
-import {
-  useQuery
-} from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseQueryOptions,
-  UseQueryResult
+  UseQueryResult,
 } from '@tanstack/react-query';
 
-import type {
-  UserDTO
-} from '../../model';
+import { useCallback } from 'react';
+
+import type { UserDTO } from '../../model';
 
 import { useCustomClient } from '../../custom-client';
 import type { ErrorType } from '../../custom-client';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
-      type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
-
-
-
-const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
+const withQueryKey = <T extends object, K>(
+  query: T,
+  queryKey: K,
+): T & { queryKey: K } => {
   const result = { queryKey } as T & { queryKey: K };
   for (const key of Object.keys(query)) {
     // The explicit queryKey always wins, matching the previous
@@ -44,203 +47,308 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export type currentUserResponse200 = {
-  data: UserDTO
-  status: 200
-}
-
-export type currentUserResponse201 = {
-  data: UserDTO
-  status: 201
-}
-
-export type currentUserResponse500 = {
-  data: void
-  status: 500
-}
-
-export type currentUserResponseSuccess = (currentUserResponse200 | currentUserResponse201) & {
-  headers: Headers;
-};
-export type currentUserResponseError = (currentUserResponse500) & {
-  headers: Headers;
-};
-
-export type currentUserResponse = (currentUserResponseSuccess | currentUserResponseError)
-
-export const getCurrentUserUrl = () => {
-
-
-
-
-  return `/api/v1/current_user`
-}
-
 /**
  * @summary Creates a new user from the given DTO.
  */
-export const useCurrentUserHook = (): ( options?: RequestInit) => Promise<currentUserResponse> => {
+export const useCurrentUserHook = () => {
+  const currentUser = useCustomClient<UserDTO>();
 
-      const customFetcher = useCustomClient();
-      return ( options?: RequestInit) => {
-
-        return customFetcher(getCurrentUserUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);
-      }
-  }
-
-
-
-
+  return useCallback(
+    (signal?: AbortSignal) => {
+      return currentUser({
+        url: `/api/v1/current_user`,
+        method: 'GET',
+        signal,
+      });
+    },
+    [currentUser],
+  );
+};
 
 export const getCurrentUserQueryKey = () => {
-    return [
-    `/api/v1/current_user`
-    ] as const;
-    }
+  return [`/api/v1/current_user`] as const;
+};
 
+export const useCurrentUserQueryOptions = <
+  TData = Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>,
+  TError = ErrorType<void>,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
 
-export const useCurrentUserQueryOptions = <TData = Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>, TError, TData>, }
-) => {
+  const queryKey = queryOptions?.queryKey ?? getCurrentUserQueryKey();
 
-const {query: queryOptions} = options ?? {};
+  const currentUser = useCurrentUserHook();
 
-  const queryKey =  queryOptions?.queryKey ?? getCurrentUserQueryKey();
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>
+  > = ({ signal }) => currentUser(signal);
 
-  const currentUser =  useCurrentUserHook();
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
 
-    const queryFn: QueryFunction<Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>> = ({ signal }) => currentUser({ signal });
+export type CurrentUserQueryResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>
+>;
+export type CurrentUserQueryError = ErrorType<void>;
 
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type CurrentUserQueryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>>
-export type CurrentUserQueryError = ErrorType<void>
-
-
+export function useCurrentUser<
+  TData = Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>,
+  TError = ErrorType<void>,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>
+        >,
+        'initialData'
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCurrentUser<
+  TData = Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>,
+  TError = ErrorType<void>,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>
+        >,
+        'initialData'
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCurrentUser<
+  TData = Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>,
+  TError = ErrorType<void>,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
 /**
  * @summary Creates a new user from the given DTO.
  */
 
-export function useCurrentUser<TData = Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>, TError = ErrorType<void>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>, TError, TData>, }
+export function useCurrentUser<
+  TData = Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>,
+  TError = ErrorType<void>,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useCurrentUserHook>>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = useCurrentUserQueryOptions(options);
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = useCurrentUserQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
-}
-
-
-
-
-
-
-export type getUsersResponse200 = {
-  data: UserDTO[]
-  status: 200
-}
-
-export type getUsersResponseSuccess = (getUsersResponse200) & {
-  headers: Headers;
-};
-;
-
-export type getUsersResponse = (getUsersResponseSuccess)
-
-export const getGetUsersUrl = () => {
-
-
-
-
-  return `/api/v1/users`
 }
 
 /**
  * @summary Returns a list of a users registered in the system. Needs a bearer token to track
 who requested it.
  */
-export const useGetUsersHook = (): ( options?: RequestInit) => Promise<getUsersResponse> => {
+export const useGetUsersHook = () => {
+  const getUsers = useCustomClient<UserDTO[]>();
 
-      const customFetcher = useCustomClient();
-      return ( options?: RequestInit) => {
-
-        return customFetcher(getGetUsersUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);
-      }
-  }
-
-
-
-
+  return useCallback(
+    (signal?: AbortSignal) => {
+      return getUsers({ url: `/api/v1/users`, method: 'GET', signal });
+    },
+    [getUsers],
+  );
+};
 
 export const getGetUsersQueryKey = () => {
-    return [
-    `/api/v1/users`
-    ] as const;
-    }
+  return [`/api/v1/users`] as const;
+};
 
+export const useGetUsersQueryOptions = <
+  TData = Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
 
-export const useGetUsersQueryOptions = <TData = Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>, TError, TData>, }
-) => {
+  const queryKey = queryOptions?.queryKey ?? getGetUsersQueryKey();
 
-const {query: queryOptions} = options ?? {};
+  const getUsers = useGetUsersHook();
 
-  const queryKey =  queryOptions?.queryKey ?? getGetUsersQueryKey();
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>
+  > = ({ signal }) => getUsers(signal);
 
-  const getUsers =  useGetUsersHook();
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
 
-    const queryFn: QueryFunction<Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>> = ({ signal }) => getUsers({ signal });
+export type GetUsersQueryResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>
+>;
+export type GetUsersQueryError = ErrorType<unknown>;
 
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type GetUsersQueryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>>
-export type GetUsersQueryError = ErrorType<unknown>
-
-
+export function useGetUsers<
+  TData = Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>,
+  TError = ErrorType<unknown>,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>
+        >,
+        'initialData'
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetUsers<
+  TData = Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>,
+  TError = ErrorType<unknown>,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>
+        >,
+        'initialData'
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useGetUsers<
+  TData = Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>,
+  TError = ErrorType<unknown>,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
 /**
  * @summary Returns a list of a users registered in the system. Needs a bearer token to track
 who requested it.
  */
 
-export function useGetUsers<TData = Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>, TError, TData>, }
+export function useGetUsers<
+  TData = Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>,
+  TError = ErrorType<unknown>,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useGetUsersHook>>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = useGetUsersQueryOptions(options);
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = useGetUsersQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
-
-
-
-

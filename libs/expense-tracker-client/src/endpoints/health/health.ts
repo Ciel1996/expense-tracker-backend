@@ -5,27 +5,32 @@
  * A REST Api that offers various endpoints for handling shared expenses.
  * OpenAPI spec version: 1.3.7
  */
-import {
-  useQuery
-} from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
   QueryFunction,
   QueryKey,
+  UndefinedInitialDataOptions,
   UseQueryOptions,
-  UseQueryResult
+  UseQueryResult,
 } from '@tanstack/react-query';
+
+import { useCallback } from 'react';
 
 import { useCustomClient } from '../../custom-client';
 import type { ErrorType } from '../../custom-client';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
-      type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
-
-
-
-const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
+const withQueryKey = <T extends object, K>(
+  query: T,
+  queryKey: K,
+): T & { queryKey: K } => {
   const result = { queryKey } as T & { queryKey: K };
   for (const key of Object.keys(query)) {
     // The explicit queryKey always wins, matching the previous
@@ -40,96 +45,152 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   return result;
 };
 
-export type healthCheckResponse200 = {
-  data: string
-  status: 200
-}
-
-export type healthCheckResponseSuccess = (healthCheckResponse200) & {
-  headers: Headers;
-};
-;
-
-export type healthCheckResponse = (healthCheckResponseSuccess)
-
-export const getHealthCheckUrl = () => {
-
-
-
-
-  return `/api/v1/health`
-}
-
 /**
  * @summary HealthCheck Url
  */
-export const useHealthCheckHook = (): ( options?: RequestInit) => Promise<healthCheckResponse> => {
+export const useHealthCheckHook = () => {
+  const healthCheck = useCustomClient<string>();
 
-      const customFetcher = useCustomClient();
-      return ( options?: RequestInit) => {
-
-        return customFetcher(getHealthCheckUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);
-      }
-  }
-
-
-
-
+  return useCallback(
+    (signal?: AbortSignal) => {
+      return healthCheck({ url: `/api/v1/health`, method: 'GET', signal });
+    },
+    [healthCheck],
+  );
+};
 
 export const getHealthCheckQueryKey = () => {
-    return [
-    `/api/v1/health`
-    ] as const;
-    }
+  return [`/api/v1/health`] as const;
+};
 
+export const useHealthCheckQueryOptions = <
+  TData = Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
 
-export const useHealthCheckQueryOptions = <TData = Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>, TError, TData>, }
-) => {
+  const queryKey = queryOptions?.queryKey ?? getHealthCheckQueryKey();
 
-const {query: queryOptions} = options ?? {};
+  const healthCheck = useHealthCheckHook();
 
-  const queryKey =  queryOptions?.queryKey ?? getHealthCheckQueryKey();
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>
+  > = ({ signal }) => healthCheck(signal);
 
-  const healthCheck =  useHealthCheckHook();
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
 
-    const queryFn: QueryFunction<Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>> = ({ signal }) => healthCheck({ signal });
+export type HealthCheckQueryResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>
+>;
+export type HealthCheckQueryError = ErrorType<unknown>;
 
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type HealthCheckQueryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>>
-export type HealthCheckQueryError = ErrorType<unknown>
-
-
+export function useHealthCheck<
+  TData = Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>,
+  TError = ErrorType<unknown>,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>
+        >,
+        'initialData'
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useHealthCheck<
+  TData = Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>,
+  TError = ErrorType<unknown>,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>,
+          TError,
+          Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>
+        >,
+        'initialData'
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useHealthCheck<
+  TData = Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>,
+  TError = ErrorType<unknown>,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
 /**
  * @summary HealthCheck Url
  */
 
-export function useHealthCheck<TData = Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>, TError, TData>, }
+export function useHealthCheck<
+  TData = Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>,
+  TError = ErrorType<unknown>,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<ReturnType<typeof useHealthCheckHook>>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = useHealthCheckQueryOptions(options);
 
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = useHealthCheckQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
-
-
-
-

@@ -10,10 +10,10 @@ import type { UserDTO } from './userDTO';
 
 export interface PotTemplateDTO {
   /**
-     * The example shows how a cron expression must look that expresses "At 12:00 AM, on day 1 of the month"
-     * I recommend using tools like https://crontab.cronhub.io to generate and validate a cron expression.
-     * Expense-Tracker uses the local timezone to make it easier for the user to think in their local timezone.
-     */
+   * The example shows how a cron expression must look that expresses "At 12:00 AM, on day 1 of the month"
+   * I recommend using tools like https://crontab.cronhub.io to generate and validate a cron expression.
+   * Expense-Tracker uses the local timezone to make it easier for the user to think in their local timezone.
+   */
   cron_expression: string;
   default_currency: CurrencyDTO;
   id: number;
