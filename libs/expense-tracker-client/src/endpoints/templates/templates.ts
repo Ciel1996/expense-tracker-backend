@@ -5,7 +5,10 @@
  * A REST Api that offers various endpoints for handling shared expenses.
  * OpenAPI spec version: 1.3.7
  */
-import { useMutation, useQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery
+} from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -18,29 +21,31 @@ import type {
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
-  UseQueryResult,
+  UseQueryResult
 } from '@tanstack/react-query';
 
-import { useCallback } from 'react';
+import {
+  useCallback
+} from 'react';
 
 import type {
   NewPotTemplateDTO,
   PotTemplateDTO,
   PotTemplateUpdateDTO,
-  UserListDTO,
+  UserListDTO
 } from '../../model';
 
 import { useCustomClient } from '../../custom-client';
-import type { ErrorType, BodyType } from '../../custom-client';
+import type { ErrorType , BodyType } from '../../custom-client';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
-type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+      type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
-const withQueryKey = <T extends object, K>(
-  query: T,
-  queryKey: K,
-): T & { queryKey: K } => {
+
+
+
+const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
   const result = { queryKey } as T & { queryKey: K };
   for (const key of Object.keys(query)) {
     // The explicit queryKey always wins, matching the previous
@@ -59,808 +64,547 @@ const withQueryKey = <T extends object, K>(
  * @summary Gets a list of all pot templates that the bearer is owning.
  */
 export const useGetPotTemplatesHook = () => {
-  const getPotTemplates = useCustomClient<PotTemplateDTO[]>();
+        const getPotTemplates = useCustomClient<PotTemplateDTO[]>();
 
-  return useCallback(
-    (signal?: AbortSignal) => {
-      return getPotTemplates({
-        url: `/api/v1/template`,
-        method: 'GET',
-        signal,
-      });
+        return useCallback((
+
+ signal?: AbortSignal
+) => {
+
+
+        return getPotTemplates(
+          {url: `/api/v1/template`, method: 'GET', signal
     },
-    [getPotTemplates],
-  );
-};
+          );
+        }, [getPotTemplates])
+      }
+
+
+
 
 export const getGetPotTemplatesQueryKey = () => {
-  return [`/api/v1/template`] as const;
-};
+    return [
+    `/api/v1/template`
+    ] as const;
+    }
 
-export const useGetPotTemplatesQueryOptions = <
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
-  TError = ErrorType<unknown>,
->(options?: {
-  query?: Partial<
-    UseQueryOptions<
-      Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
-      TError,
-      TData
-    >
-  >;
-}) => {
-  const { query: queryOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetPotTemplatesQueryKey();
+export const useGetPotTemplatesQueryOptions = <TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>, TError, TData>>, }
+) => {
 
-  const getPotTemplates = useGetPotTemplatesHook();
+const {query: queryOptions} = options ?? {};
 
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>
-  > = ({ signal }) => getPotTemplates(signal);
+  const queryKey =  queryOptions?.queryKey ?? getGetPotTemplatesQueryKey();
 
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
+  const getPotTemplates =  useGetPotTemplatesHook();
 
-export type GetPotTemplatesQueryResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>
->;
-export type GetPotTemplatesQueryError = ErrorType<unknown>;
+    const queryFn: QueryFunction<Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>> = ({ signal }) => getPotTemplates(signal);
 
-export function useGetPotTemplates<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
-  TError = ErrorType<unknown>,
->(
-  options: {
-    query: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPotTemplatesQueryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>>
+export type GetPotTemplatesQueryError = ErrorType<unknown>
+
+
+export function useGetPotTemplates<TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
           TError,
           Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>
-        >,
-        'initialData'
-      >;
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetPotTemplates<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
-  TError = ErrorType<unknown>,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPotTemplates<TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
           TError,
           Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>
-        >,
-        'initialData'
-      >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetPotTemplates<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
-  TError = ErrorType<unknown>,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPotTemplates<TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Gets a list of all pot templates that the bearer is owning.
  */
 
-export function useGetPotTemplates<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
-  TError = ErrorType<unknown>,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = useGetPotTemplatesQueryOptions(options);
+export function useGetPotTemplates<TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotTemplatesHook>>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
+  const queryOptions = useGetPotTemplatesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
+
+
+
+
+
 
 /**
  * @summary Creates a pot template from the given DTO for the bearer.
  */
 export const useCreatePotTemplateHook = () => {
-  const createPotTemplate = useCustomClient<PotTemplateDTO>();
+        const createPotTemplate = useCustomClient<PotTemplateDTO>();
 
-  return useCallback(
-    (newPotTemplateDTO: BodyType<NewPotTemplateDTO>, signal?: AbortSignal) => {
-      return createPotTemplate({
-        url: `/api/v1/template`,
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        data: newPotTemplateDTO,
-        signal,
-      });
+        return useCallback((
+    newPotTemplateDTO: BodyType<NewPotTemplateDTO>,
+ signal?: AbortSignal
+) => {
+
+
+        return createPotTemplate(
+          {url: `/api/v1/template`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: newPotTemplateDTO, signal
     },
-    [createPotTemplate],
-  );
-};
+          );
+        }, [createPotTemplate])
+      }
 
-export const getCreatePotTemplateMutationKey = () =>
-  ['createPotTemplate'] as const;
 
-export const useCreatePotTemplateMutationOptions = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useCreatePotTemplateHook>>>,
-    TError,
-    CreatePotTemplateMutationVariables,
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<ReturnType<typeof useCreatePotTemplateHook>>>,
-  TError,
-  CreatePotTemplateMutationVariables,
-  TContext
-> => {
-  const mutationKey = getCreatePotTemplateMutationKey();
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      'mutationKey' in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
 
-  const createPotTemplate = useCreatePotTemplateHook();
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<ReturnType<typeof useCreatePotTemplateHook>>>,
-    CreatePotTemplateMutationVariables
-  > = (props) => {
-    const { data } = props ?? {};
+export const getCreatePotTemplateMutationKey = () => ['createPotTemplate'] as const;
 
-    return createPotTemplate(data);
-  };
+export const useCreatePotTemplateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useCreatePotTemplateHook>>>, TError,CreatePotTemplateMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useCreatePotTemplateHook>>>, TError,CreatePotTemplateMutationVariables, TContext> => {
 
-  return { mutationFn, ...mutationOptions };
-};
+const mutationKey = getCreatePotTemplateMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
-export type CreatePotTemplateMutationResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useCreatePotTemplateHook>>>
->;
-export type CreatePotTemplateMutationBody = BodyType<NewPotTemplateDTO>;
-export type CreatePotTemplateMutationError = ErrorType<unknown>;
-export type CreatePotTemplateMutationVariables = {
-  data: BodyType<NewPotTemplateDTO>;
-};
+      const createPotTemplate =  useCreatePotTemplateHook()
 
-/**
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useCreatePotTemplateHook>>>, CreatePotTemplateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPotTemplate(data,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePotTemplateMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useCreatePotTemplateHook>>>>
+    export type CreatePotTemplateMutationBody = BodyType<NewPotTemplateDTO>
+    export type CreatePotTemplateMutationError = ErrorType<unknown>
+    export type CreatePotTemplateMutationVariables = {data: BodyType<NewPotTemplateDTO>}
+
+    /**
  * @summary Creates a pot template from the given DTO for the bearer.
  */
-export const useCreatePotTemplate = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<ReturnType<typeof useCreatePotTemplateHook>>>,
-      TError,
-      CreatePotTemplateMutationVariables,
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<ReturnType<typeof useCreatePotTemplateHook>>>,
-  TError,
-  CreatePotTemplateMutationVariables,
-  TContext
-> => {
-  return useMutation(useCreatePotTemplateMutationOptions(options), queryClient);
-};
-/**
+export const useCreatePotTemplate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useCreatePotTemplateHook>>>, TError,CreatePotTemplateMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useCreatePotTemplateHook>>>,
+        TError,
+        CreatePotTemplateMutationVariables,
+        TContext
+      > => {
+      return useMutation(useCreatePotTemplateMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Gets a pot template by id that the bearer is owning.
  */
 export const useGetPotTemplateByIdHook = () => {
-  const getPotTemplateById = useCustomClient<PotTemplateDTO>();
+        const getPotTemplateById = useCustomClient<PotTemplateDTO>();
 
-  return useCallback(
-    (templateId: number, signal?: AbortSignal) => {
-      return getPotTemplateById({
-        url: `/api/v1/template/${templateId}`,
-        method: 'GET',
-        signal,
-      });
-    },
-    [getPotTemplateById],
-  );
-};
-
-export const getGetPotTemplateByIdQueryKey = (templateId: number) => {
-  return [`/api/v1/template/${templateId}`] as const;
-};
-
-export const useGetPotTemplateByIdQueryOptions = <
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
-  TError = ErrorType<unknown>,
->(
-  templateId: number,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
-        TError,
-        TData
-      >
-    >;
-  },
+        return useCallback((
+    templateId: number,
+ signal?: AbortSignal
 ) => {
-  const { query: queryOptions } = options ?? {};
 
-  const queryKey =
-    queryOptions?.queryKey ?? getGetPotTemplateByIdQueryKey(templateId);
 
-  const getPotTemplateById = useGetPotTemplateByIdHook();
+        return getPotTemplateById(
+          {url: `/api/v1/template/${templateId}`, method: 'GET', signal
+    },
+          );
+        }, [getPotTemplateById])
+      }
 
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>
-  > = ({ signal }) => getPotTemplateById(templateId, signal);
 
-  return {
-    queryKey,
-    queryFn,
-    enabled: templateId !== null && templateId !== undefined,
-    ...queryOptions,
-  } as UseQueryOptions<
-    Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
 
-export type GetPotTemplateByIdQueryResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>
->;
-export type GetPotTemplateByIdQueryError = ErrorType<unknown>;
 
-export function useGetPotTemplateById<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
-  TError = ErrorType<unknown>,
->(
-  templateId: number,
-  options: {
-    query: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
+export const getGetPotTemplateByIdQueryKey = (templateId: number,) => {
+    return [
+    `/api/v1/template/${templateId}`
+    ] as const;
+    }
+
+
+export const useGetPotTemplateByIdQueryOptions = <TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>, TError = ErrorType<unknown>>(templateId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPotTemplateByIdQueryKey(templateId);
+
+  const getPotTemplateById =  useGetPotTemplateByIdHook();
+
+    const queryFn: QueryFunction<Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>> = ({ signal }) => getPotTemplateById(templateId, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: templateId !== null && templateId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPotTemplateByIdQueryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>>
+export type GetPotTemplateByIdQueryError = ErrorType<unknown>
+
+
+export function useGetPotTemplateById<TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>, TError = ErrorType<unknown>>(
+ templateId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
           TError,
           Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>
-        >,
-        'initialData'
-      >;
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetPotTemplateById<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
-  TError = ErrorType<unknown>,
->(
-  templateId: number,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPotTemplateById<TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>, TError = ErrorType<unknown>>(
+ templateId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
           TError,
           Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>
-        >,
-        'initialData'
-      >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetPotTemplateById<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
-  TError = ErrorType<unknown>,
->(
-  templateId: number,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPotTemplateById<TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>, TError = ErrorType<unknown>>(
+ templateId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Gets a pot template by id that the bearer is owning.
  */
 
-export function useGetPotTemplateById<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
-  TError = ErrorType<unknown>,
->(
-  templateId: number,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = useGetPotTemplateByIdQueryOptions(templateId, options);
+export function useGetPotTemplateById<TData = Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>, TError = ErrorType<unknown>>(
+ templateId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotTemplateByIdHook>>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
+  const queryOptions = useGetPotTemplateByIdQueryOptions(templateId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
+
+
+
+
+
 
 /**
  * @summary Updates template name, template currency and cron expression if the user is the owner of the template.
  */
 export const useUpdateTemplateHook = () => {
-  const updateTemplate = useCustomClient<void>();
+        const updateTemplate = useCustomClient<void>();
 
-  return useCallback(
-    (
-      templateId: number,
-      potTemplateUpdateDTO: BodyType<PotTemplateUpdateDTO>,
-      signal?: AbortSignal,
-    ) => {
-      return updateTemplate({
-        url: `/api/v1/template/${templateId}`,
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        data: potTemplateUpdateDTO,
-        signal,
-      });
+        return useCallback((
+    templateId: number,
+    potTemplateUpdateDTO: BodyType<PotTemplateUpdateDTO>,
+ signal?: AbortSignal
+) => {
+
+
+        return updateTemplate(
+          {url: `/api/v1/template/${templateId}`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: potTemplateUpdateDTO, signal
     },
-    [updateTemplate],
-  );
-};
+          );
+        }, [updateTemplate])
+      }
+
+
+
 
 export const getUpdateTemplateMutationKey = () => ['updateTemplate'] as const;
 
-export const useUpdateTemplateMutationOptions = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>,
-    TError,
-    UpdateTemplateMutationVariables,
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>,
-  TError,
-  UpdateTemplateMutationVariables,
-  TContext
-> => {
-  const mutationKey = getUpdateTemplateMutationKey();
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      'mutationKey' in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
+export const useUpdateTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>, TError,UpdateTemplateMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>, TError,UpdateTemplateMutationVariables, TContext> => {
 
-  const updateTemplate = useUpdateTemplateHook();
+const mutationKey = getUpdateTemplateMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>,
-    UpdateTemplateMutationVariables
-  > = (props) => {
-    const { templateId, data } = props ?? {};
+      const updateTemplate =  useUpdateTemplateHook()
 
-    return updateTemplate(templateId, data);
-  };
 
-  return { mutationFn, ...mutationOptions };
-};
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>, UpdateTemplateMutationVariables> = (props) => {
+          const {templateId,data} = props ?? {};
 
-export type UpdateTemplateMutationResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>
->;
-export type UpdateTemplateMutationBody = BodyType<PotTemplateUpdateDTO>;
-export type UpdateTemplateMutationError = ErrorType<void>;
-export type UpdateTemplateMutationVariables = {
-  templateId: number;
-  data: BodyType<PotTemplateUpdateDTO>;
-};
+          return  updateTemplate(templateId,data,)
+        }
 
-/**
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTemplateMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>>
+    export type UpdateTemplateMutationBody = BodyType<PotTemplateUpdateDTO>
+    export type UpdateTemplateMutationError = ErrorType<void>
+    export type UpdateTemplateMutationVariables = {templateId: number;data: BodyType<PotTemplateUpdateDTO>}
+
+    /**
  * @summary Updates template name, template currency and cron expression if the user is the owner of the template.
  */
-export const useUpdateTemplate = <TError = ErrorType<void>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>,
-      TError,
-      UpdateTemplateMutationVariables,
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>,
-  TError,
-  UpdateTemplateMutationVariables,
-  TContext
-> => {
-  return useMutation(useUpdateTemplateMutationOptions(options), queryClient);
-};
-/**
+export const useUpdateTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>, TError,UpdateTemplateMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useUpdateTemplateHook>>>,
+        TError,
+        UpdateTemplateMutationVariables,
+        TContext
+      > => {
+      return useMutation(useUpdateTemplateMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Deletes the given template if the user is the owner of the template.
  */
 export const useDeletePotTemplateHook = () => {
-  const deletePotTemplate = useCustomClient<void>();
+        const deletePotTemplate = useCustomClient<void>();
 
-  return useCallback(
-    (templateId: number, signal?: AbortSignal) => {
-      return deletePotTemplate({
-        url: `/api/v1/template/${templateId}`,
-        method: 'DELETE',
-        signal,
-      });
+        return useCallback((
+    templateId: number,
+ signal?: AbortSignal
+) => {
+
+
+        return deletePotTemplate(
+          {url: `/api/v1/template/${templateId}`, method: 'DELETE', signal
     },
-    [deletePotTemplate],
-  );
-};
+          );
+        }, [deletePotTemplate])
+      }
 
-export const getDeletePotTemplateMutationKey = () =>
-  ['deletePotTemplate'] as const;
 
-export const useDeletePotTemplateMutationOptions = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useDeletePotTemplateHook>>>,
-    TError,
-    DeletePotTemplateMutationVariables,
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<ReturnType<typeof useDeletePotTemplateHook>>>,
-  TError,
-  DeletePotTemplateMutationVariables,
-  TContext
-> => {
-  const mutationKey = getDeletePotTemplateMutationKey();
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      'mutationKey' in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
 
-  const deletePotTemplate = useDeletePotTemplateHook();
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<ReturnType<typeof useDeletePotTemplateHook>>>,
-    DeletePotTemplateMutationVariables
-  > = (props) => {
-    const { templateId } = props ?? {};
+export const getDeletePotTemplateMutationKey = () => ['deletePotTemplate'] as const;
 
-    return deletePotTemplate(templateId);
-  };
+export const useDeletePotTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useDeletePotTemplateHook>>>, TError,DeletePotTemplateMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useDeletePotTemplateHook>>>, TError,DeletePotTemplateMutationVariables, TContext> => {
 
-  return { mutationFn, ...mutationOptions };
-};
+const mutationKey = getDeletePotTemplateMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
-export type DeletePotTemplateMutationResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useDeletePotTemplateHook>>>
->;
+      const deletePotTemplate =  useDeletePotTemplateHook()
 
-export type DeletePotTemplateMutationError = ErrorType<void>;
-export type DeletePotTemplateMutationVariables = { templateId: number };
 
-/**
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useDeletePotTemplateHook>>>, DeletePotTemplateMutationVariables> = (props) => {
+          const {templateId} = props ?? {};
+
+          return  deletePotTemplate(templateId,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePotTemplateMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useDeletePotTemplateHook>>>>
+
+    export type DeletePotTemplateMutationError = ErrorType<void>
+    export type DeletePotTemplateMutationVariables = {templateId: number}
+
+    /**
  * @summary Deletes the given template if the user is the owner of the template.
  */
-export const useDeletePotTemplate = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<ReturnType<typeof useDeletePotTemplateHook>>>,
-      TError,
-      DeletePotTemplateMutationVariables,
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<ReturnType<typeof useDeletePotTemplateHook>>>,
-  TError,
-  DeletePotTemplateMutationVariables,
-  TContext
-> => {
-  return useMutation(useDeletePotTemplateMutationOptions(options), queryClient);
-};
-/**
+export const useDeletePotTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useDeletePotTemplateHook>>>, TError,DeletePotTemplateMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useDeletePotTemplateHook>>>,
+        TError,
+        DeletePotTemplateMutationVariables,
+        TContext
+      > => {
+      return useMutation(useDeletePotTemplateMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Adds the given users to the given template if the calling user is the owner of the template.
  */
 export const useAddUsersToTemplateHook = () => {
-  const addUsersToTemplate = useCustomClient<void>();
+        const addUsersToTemplate = useCustomClient<void>();
 
-  return useCallback(
-    (
-      templateId: number,
-      userListDTO: BodyType<UserListDTO>,
-      signal?: AbortSignal,
-    ) => {
-      return addUsersToTemplate({
-        url: `/api/v1/template/${templateId}/users/add`,
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        data: userListDTO,
-        signal,
-      });
+        return useCallback((
+    templateId: number,
+    userListDTO: BodyType<UserListDTO>,
+ signal?: AbortSignal
+) => {
+
+
+        return addUsersToTemplate(
+          {url: `/api/v1/template/${templateId}/users/add`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: userListDTO, signal
     },
-    [addUsersToTemplate],
-  );
-};
+          );
+        }, [addUsersToTemplate])
+      }
 
-export const getAddUsersToTemplateMutationKey = () =>
-  ['addUsersToTemplate'] as const;
 
-export const useAddUsersToTemplateMutationOptions = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useAddUsersToTemplateHook>>>,
-    TError,
-    AddUsersToTemplateMutationVariables,
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<ReturnType<typeof useAddUsersToTemplateHook>>>,
-  TError,
-  AddUsersToTemplateMutationVariables,
-  TContext
-> => {
-  const mutationKey = getAddUsersToTemplateMutationKey();
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      'mutationKey' in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
 
-  const addUsersToTemplate = useAddUsersToTemplateHook();
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<ReturnType<typeof useAddUsersToTemplateHook>>>,
-    AddUsersToTemplateMutationVariables
-  > = (props) => {
-    const { templateId, data } = props ?? {};
+export const getAddUsersToTemplateMutationKey = () => ['addUsersToTemplate'] as const;
 
-    return addUsersToTemplate(templateId, data);
-  };
+export const useAddUsersToTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useAddUsersToTemplateHook>>>, TError,AddUsersToTemplateMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useAddUsersToTemplateHook>>>, TError,AddUsersToTemplateMutationVariables, TContext> => {
 
-  return { mutationFn, ...mutationOptions };
-};
+const mutationKey = getAddUsersToTemplateMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
-export type AddUsersToTemplateMutationResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useAddUsersToTemplateHook>>>
->;
-export type AddUsersToTemplateMutationBody = BodyType<UserListDTO>;
-export type AddUsersToTemplateMutationError = ErrorType<void>;
-export type AddUsersToTemplateMutationVariables = {
-  templateId: number;
-  data: BodyType<UserListDTO>;
-};
+      const addUsersToTemplate =  useAddUsersToTemplateHook()
 
-/**
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useAddUsersToTemplateHook>>>, AddUsersToTemplateMutationVariables> = (props) => {
+          const {templateId,data} = props ?? {};
+
+          return  addUsersToTemplate(templateId,data,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddUsersToTemplateMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useAddUsersToTemplateHook>>>>
+    export type AddUsersToTemplateMutationBody = BodyType<UserListDTO>
+    export type AddUsersToTemplateMutationError = ErrorType<void>
+    export type AddUsersToTemplateMutationVariables = {templateId: number;data: BodyType<UserListDTO>}
+
+    /**
  * @summary Adds the given users to the given template if the calling user is the owner of the template.
  */
-export const useAddUsersToTemplate = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<ReturnType<typeof useAddUsersToTemplateHook>>>,
-      TError,
-      AddUsersToTemplateMutationVariables,
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<ReturnType<typeof useAddUsersToTemplateHook>>>,
-  TError,
-  AddUsersToTemplateMutationVariables,
-  TContext
-> => {
-  return useMutation(
-    useAddUsersToTemplateMutationOptions(options),
-    queryClient,
-  );
-};
-/**
+export const useAddUsersToTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useAddUsersToTemplateHook>>>, TError,AddUsersToTemplateMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useAddUsersToTemplateHook>>>,
+        TError,
+        AddUsersToTemplateMutationVariables,
+        TContext
+      > => {
+      return useMutation(useAddUsersToTemplateMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Removes the given users from the given template if the calling user is the owner of the template.
  */
 export const useRemoveUsersFromTemplateHook = () => {
-  const removeUsersFromTemplate = useCustomClient<void>();
+        const removeUsersFromTemplate = useCustomClient<void>();
 
-  return useCallback(
-    (
-      templateId: number,
-      userListDTO: BodyType<UserListDTO>,
-      signal?: AbortSignal,
-    ) => {
-      return removeUsersFromTemplate({
-        url: `/api/v1/template/${templateId}/users/remove`,
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        data: userListDTO,
-        signal,
-      });
+        return useCallback((
+    templateId: number,
+    userListDTO: BodyType<UserListDTO>,
+ signal?: AbortSignal
+) => {
+
+
+        return removeUsersFromTemplate(
+          {url: `/api/v1/template/${templateId}/users/remove`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: userListDTO, signal
     },
-    [removeUsersFromTemplate],
-  );
-};
+          );
+        }, [removeUsersFromTemplate])
+      }
 
-export const getRemoveUsersFromTemplateMutationKey = () =>
-  ['removeUsersFromTemplate'] as const;
 
-export const useRemoveUsersFromTemplateMutationOptions = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useRemoveUsersFromTemplateHook>>>,
-    TError,
-    RemoveUsersFromTemplateMutationVariables,
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<ReturnType<typeof useRemoveUsersFromTemplateHook>>>,
-  TError,
-  RemoveUsersFromTemplateMutationVariables,
-  TContext
-> => {
-  const mutationKey = getRemoveUsersFromTemplateMutationKey();
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      'mutationKey' in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
 
-  const removeUsersFromTemplate = useRemoveUsersFromTemplateHook();
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<ReturnType<typeof useRemoveUsersFromTemplateHook>>>,
-    RemoveUsersFromTemplateMutationVariables
-  > = (props) => {
-    const { templateId, data } = props ?? {};
+export const getRemoveUsersFromTemplateMutationKey = () => ['removeUsersFromTemplate'] as const;
 
-    return removeUsersFromTemplate(templateId, data);
-  };
+export const useRemoveUsersFromTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useRemoveUsersFromTemplateHook>>>, TError,RemoveUsersFromTemplateMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useRemoveUsersFromTemplateHook>>>, TError,RemoveUsersFromTemplateMutationVariables, TContext> => {
 
-  return { mutationFn, ...mutationOptions };
-};
+const mutationKey = getRemoveUsersFromTemplateMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
-export type RemoveUsersFromTemplateMutationResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useRemoveUsersFromTemplateHook>>>
->;
-export type RemoveUsersFromTemplateMutationBody = BodyType<UserListDTO>;
-export type RemoveUsersFromTemplateMutationError = ErrorType<void>;
-export type RemoveUsersFromTemplateMutationVariables = {
-  templateId: number;
-  data: BodyType<UserListDTO>;
-};
+      const removeUsersFromTemplate =  useRemoveUsersFromTemplateHook()
 
-/**
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useRemoveUsersFromTemplateHook>>>, RemoveUsersFromTemplateMutationVariables> = (props) => {
+          const {templateId,data} = props ?? {};
+
+          return  removeUsersFromTemplate(templateId,data,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveUsersFromTemplateMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useRemoveUsersFromTemplateHook>>>>
+    export type RemoveUsersFromTemplateMutationBody = BodyType<UserListDTO>
+    export type RemoveUsersFromTemplateMutationError = ErrorType<void>
+    export type RemoveUsersFromTemplateMutationVariables = {templateId: number;data: BodyType<UserListDTO>}
+
+    /**
  * @summary Removes the given users from the given template if the calling user is the owner of the template.
  */
-export const useRemoveUsersFromTemplate = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<ReturnType<typeof useRemoveUsersFromTemplateHook>>>,
-      TError,
-      RemoveUsersFromTemplateMutationVariables,
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<ReturnType<typeof useRemoveUsersFromTemplateHook>>>,
-  TError,
-  RemoveUsersFromTemplateMutationVariables,
-  TContext
-> => {
-  return useMutation(
-    useRemoveUsersFromTemplateMutationOptions(options),
-    queryClient,
-  );
-};
+export const useRemoveUsersFromTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useRemoveUsersFromTemplateHook>>>, TError,RemoveUsersFromTemplateMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useRemoveUsersFromTemplateHook>>>,
+        TError,
+        RemoveUsersFromTemplateMutationVariables,
+        TContext
+      > => {
+      return useMutation(useRemoveUsersFromTemplateMutationOptions(options), queryClient);
+    }

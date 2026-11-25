@@ -20,9 +20,9 @@ export interface PotDTO {
   id: number;
   name: string;
   /**
-   * Indicates the amount of money, the user is owed or owes others. If positive, other users
-   * need to pay that amount to the user. If negative, the user has to pay the given amount.
-   */
+     * Indicates the amount of money, the user is owed or owes others. If positive, other users
+     * need to pay that amount to the user. If negative, the user has to pay the given amount.
+     */
   net_balance: number;
   owner_id: string;
   users: UserDTO[];

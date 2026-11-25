@@ -5,7 +5,10 @@
  * A REST Api that offers various endpoints for handling shared expenses.
  * OpenAPI spec version: 1.3.7
  */
-import { useMutation, useQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery
+} from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -18,24 +21,29 @@ import type {
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
-  UseQueryResult,
+  UseQueryResult
 } from '@tanstack/react-query';
 
-import { useCallback } from 'react';
+import {
+  useCallback
+} from 'react';
 
-import type { CurrencyDTO, NewCurrencyDTO } from '../../model';
+import type {
+  CurrencyDTO,
+  NewCurrencyDTO
+} from '../../model';
 
 import { useCustomClient } from '../../custom-client';
-import type { ErrorType, BodyType } from '../../custom-client';
+import type { ErrorType , BodyType } from '../../custom-client';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
-type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+      type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
-const withQueryKey = <T extends object, K>(
-  query: T,
-  queryKey: K,
-): T & { queryKey: K } => {
+
+
+
+const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
   const result = { queryKey } as T & { queryKey: K };
   for (const key of Object.keys(query)) {
     // The explicit queryKey always wins, matching the previous
@@ -54,244 +62,166 @@ const withQueryKey = <T extends object, K>(
  * @summary Gets a list of all currently known currencies.
  */
 export const useGetCurrenciesHook = () => {
-  const getCurrencies = useCustomClient<CurrencyDTO[]>();
+        const getCurrencies = useCustomClient<CurrencyDTO[]>();
 
-  return useCallback(
-    (signal?: AbortSignal) => {
-      return getCurrencies({
-        url: `/api/v1/currencies`,
-        method: 'GET',
-        signal,
-      });
+        return useCallback((
+
+ signal?: AbortSignal
+) => {
+
+
+        return getCurrencies(
+          {url: `/api/v1/currencies`, method: 'GET', signal
     },
-    [getCurrencies],
-  );
-};
+          );
+        }, [getCurrencies])
+      }
+
+
+
 
 export const getGetCurrenciesQueryKey = () => {
-  return [`/api/v1/currencies`] as const;
-};
+    return [
+    `/api/v1/currencies`
+    ] as const;
+    }
 
-export const useGetCurrenciesQueryOptions = <
-  TData = Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>,
-  TError = ErrorType<unknown>,
->(options?: {
-  query?: Partial<
-    UseQueryOptions<
-      Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>,
-      TError,
-      TData
-    >
-  >;
-}) => {
-  const { query: queryOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetCurrenciesQueryKey();
+export const useGetCurrenciesQueryOptions = <TData = Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>, TError, TData>>, }
+) => {
 
-  const getCurrencies = useGetCurrenciesHook();
+const {query: queryOptions} = options ?? {};
 
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>
-  > = ({ signal }) => getCurrencies(signal);
+  const queryKey =  queryOptions?.queryKey ?? getGetCurrenciesQueryKey();
 
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
+  const getCurrencies =  useGetCurrenciesHook();
 
-export type GetCurrenciesQueryResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>
->;
-export type GetCurrenciesQueryError = ErrorType<unknown>;
+    const queryFn: QueryFunction<Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>> = ({ signal }) => getCurrencies(signal);
 
-export function useGetCurrencies<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>,
-  TError = ErrorType<unknown>,
->(
-  options: {
-    query: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetCurrenciesQueryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>>
+export type GetCurrenciesQueryError = ErrorType<unknown>
+
+
+export function useGetCurrencies<TData = Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>,
           TError,
           Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>
-        >,
-        'initialData'
-      >;
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetCurrencies<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>,
-  TError = ErrorType<unknown>,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCurrencies<TData = Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>,
           TError,
           Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>
-        >,
-        'initialData'
-      >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetCurrencies<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>,
-  TError = ErrorType<unknown>,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCurrencies<TData = Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Gets a list of all currently known currencies.
  */
 
-export function useGetCurrencies<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>,
-  TError = ErrorType<unknown>,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = useGetCurrenciesQueryOptions(options);
+export function useGetCurrencies<TData = Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetCurrenciesHook>>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
+  const queryOptions = useGetCurrenciesQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
+
+
+
+
+
 
 /**
  * @summary Creates a new currency, if symbol is not yet in use.
  */
 export const useCreateCurrencyHook = () => {
-  const createCurrency = useCustomClient<NewCurrencyDTO>();
+        const createCurrency = useCustomClient<NewCurrencyDTO>();
 
-  return useCallback(
-    (newCurrencyDTO: BodyType<NewCurrencyDTO>, signal?: AbortSignal) => {
-      return createCurrency({
-        url: `/api/v1/currencies`,
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        data: newCurrencyDTO,
-        signal,
-      });
+        return useCallback((
+    newCurrencyDTO: BodyType<NewCurrencyDTO>,
+ signal?: AbortSignal
+) => {
+
+
+        return createCurrency(
+          {url: `/api/v1/currencies`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: newCurrencyDTO, signal
     },
-    [createCurrency],
-  );
-};
+          );
+        }, [createCurrency])
+      }
+
+
+
 
 export const getCreateCurrencyMutationKey = () => ['createCurrency'] as const;
 
-export const useCreateCurrencyMutationOptions = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useCreateCurrencyHook>>>,
-    TError,
-    CreateCurrencyMutationVariables,
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<ReturnType<typeof useCreateCurrencyHook>>>,
-  TError,
-  CreateCurrencyMutationVariables,
-  TContext
-> => {
-  const mutationKey = getCreateCurrencyMutationKey();
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      'mutationKey' in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
+export const useCreateCurrencyMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useCreateCurrencyHook>>>, TError,CreateCurrencyMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useCreateCurrencyHook>>>, TError,CreateCurrencyMutationVariables, TContext> => {
 
-  const createCurrency = useCreateCurrencyHook();
+const mutationKey = getCreateCurrencyMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<ReturnType<typeof useCreateCurrencyHook>>>,
-    CreateCurrencyMutationVariables
-  > = (props) => {
-    const { data } = props ?? {};
+      const createCurrency =  useCreateCurrencyHook()
 
-    return createCurrency(data);
-  };
 
-  return { mutationFn, ...mutationOptions };
-};
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useCreateCurrencyHook>>>, CreateCurrencyMutationVariables> = (props) => {
+          const {data} = props ?? {};
 
-export type CreateCurrencyMutationResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useCreateCurrencyHook>>>
->;
-export type CreateCurrencyMutationBody = BodyType<NewCurrencyDTO>;
-export type CreateCurrencyMutationError = ErrorType<void>;
-export type CreateCurrencyMutationVariables = {
-  data: BodyType<NewCurrencyDTO>;
-};
+          return  createCurrency(data,)
+        }
 
-/**
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCurrencyMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useCreateCurrencyHook>>>>
+    export type CreateCurrencyMutationBody = BodyType<NewCurrencyDTO>
+    export type CreateCurrencyMutationError = ErrorType<void>
+    export type CreateCurrencyMutationVariables = {data: BodyType<NewCurrencyDTO>}
+
+    /**
  * @summary Creates a new currency, if symbol is not yet in use.
  */
-export const useCreateCurrency = <TError = ErrorType<void>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<ReturnType<typeof useCreateCurrencyHook>>>,
-      TError,
-      CreateCurrencyMutationVariables,
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<ReturnType<typeof useCreateCurrencyHook>>>,
-  TError,
-  CreateCurrencyMutationVariables,
-  TContext
-> => {
-  return useMutation(useCreateCurrencyMutationOptions(options), queryClient);
-};
+export const useCreateCurrency = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useCreateCurrencyHook>>>, TError,CreateCurrencyMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useCreateCurrencyHook>>>,
+        TError,
+        CreateCurrencyMutationVariables,
+        TContext
+      > => {
+      return useMutation(useCreateCurrencyMutationOptions(options), queryClient);
+    }

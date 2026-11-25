@@ -5,7 +5,10 @@
  * A REST Api that offers various endpoints for handling shared expenses.
  * OpenAPI spec version: 1.3.7
  */
-import { useMutation, useQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery
+} from '@tanstack/react-query';
 import type {
   DataTag,
   DefinedInitialDataOptions,
@@ -18,10 +21,12 @@ import type {
   UseMutationOptions,
   UseMutationResult,
   UseQueryOptions,
-  UseQueryResult,
+  UseQueryResult
 } from '@tanstack/react-query';
 
-import { useCallback } from 'react';
+import {
+  useCallback
+} from 'react';
 
 import type {
   AddUserToPotDTO,
@@ -29,20 +34,20 @@ import type {
   NewExpenseDTO,
   NewPotDTO,
   PotDTO,
-  RemoveUserFromPotDTO,
+  RemoveUserFromPotDTO
 } from '../../model';
 
 import { useCustomClient } from '../../custom-client';
-import type { ErrorType, BodyType } from '../../custom-client';
+import type { ErrorType , BodyType } from '../../custom-client';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
-type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+      type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
-const withQueryKey = <T extends object, K>(
-  query: T,
-  queryKey: K,
-): T & { queryKey: K } => {
+
+
+
+const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKey: K } => {
   const result = { queryKey } as T & { queryKey: K };
   for (const key of Object.keys(query)) {
     // The explicit queryKey always wins, matching the previous
@@ -61,1040 +66,750 @@ const withQueryKey = <T extends object, K>(
  * @summary Gets the list of all pots the bearer can view.
  */
 export const useGetPotsHook = () => {
-  const getPots = useCustomClient<PotDTO[]>();
+        const getPots = useCustomClient<PotDTO[]>();
 
-  return useCallback(
-    (signal?: AbortSignal) => {
-      return getPots({ url: `/api/v1/pots`, method: 'GET', signal });
+        return useCallback((
+
+ signal?: AbortSignal
+) => {
+
+
+        return getPots(
+          {url: `/api/v1/pots`, method: 'GET', signal
     },
-    [getPots],
-  );
-};
+          );
+        }, [getPots])
+      }
+
+
+
 
 export const getGetPotsQueryKey = () => {
-  return [`/api/v1/pots`] as const;
-};
+    return [
+    `/api/v1/pots`
+    ] as const;
+    }
 
-export const useGetPotsQueryOptions = <
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>,
-  TError = ErrorType<unknown>,
->(options?: {
-  query?: Partial<
-    UseQueryOptions<
-      Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>,
-      TError,
-      TData
-    >
-  >;
-}) => {
-  const { query: queryOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetPotsQueryKey();
+export const useGetPotsQueryOptions = <TData = Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>, TError = ErrorType<unknown>>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>, TError, TData>>, }
+) => {
 
-  const getPots = useGetPotsHook();
+const {query: queryOptions} = options ?? {};
 
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>
-  > = ({ signal }) => getPots(signal);
+  const queryKey =  queryOptions?.queryKey ?? getGetPotsQueryKey();
 
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
+  const getPots =  useGetPotsHook();
 
-export type GetPotsQueryResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>
->;
-export type GetPotsQueryError = ErrorType<unknown>;
+    const queryFn: QueryFunction<Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>> = ({ signal }) => getPots(signal);
 
-export function useGetPots<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>,
-  TError = ErrorType<unknown>,
->(
-  options: {
-    query: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPotsQueryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>>
+export type GetPotsQueryError = ErrorType<unknown>
+
+
+export function useGetPots<TData = Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>, TError = ErrorType<unknown>>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>,
           TError,
           Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>
-        >,
-        'initialData'
-      >;
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetPots<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>,
-  TError = ErrorType<unknown>,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPots<TData = Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>,
           TError,
           Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>
-        >,
-        'initialData'
-      >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetPots<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>,
-  TError = ErrorType<unknown>,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPots<TData = Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Gets the list of all pots the bearer can view.
  */
 
-export function useGetPots<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>,
-  TError = ErrorType<unknown>,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = useGetPotsQueryOptions(options);
+export function useGetPots<TData = Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>, TError = ErrorType<unknown>>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotsHook>>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
+  const queryOptions = useGetPotsQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
+
+
+
+
+
 
 /**
  * @summary Creates a pot from the given DTO for the bearer.
  */
 export const useCreatePotHook = () => {
-  const createPot = useCustomClient<PotDTO>();
+        const createPot = useCustomClient<PotDTO>();
 
-  return useCallback(
-    (newPotDTO: BodyType<NewPotDTO>, signal?: AbortSignal) => {
-      return createPot({
-        url: `/api/v1/pots`,
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        data: newPotDTO,
-        signal,
-      });
+        return useCallback((
+    newPotDTO: BodyType<NewPotDTO>,
+ signal?: AbortSignal
+) => {
+
+
+        return createPot(
+          {url: `/api/v1/pots`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: newPotDTO, signal
     },
-    [createPot],
-  );
-};
+          );
+        }, [createPot])
+      }
+
+
+
 
 export const getCreatePotMutationKey = () => ['createPot'] as const;
 
-export const useCreatePotMutationOptions = <
-  TError = ErrorType<unknown>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useCreatePotHook>>>,
-    TError,
-    CreatePotMutationVariables,
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<ReturnType<typeof useCreatePotHook>>>,
-  TError,
-  CreatePotMutationVariables,
-  TContext
-> => {
-  const mutationKey = getCreatePotMutationKey();
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      'mutationKey' in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
+export const useCreatePotMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useCreatePotHook>>>, TError,CreatePotMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useCreatePotHook>>>, TError,CreatePotMutationVariables, TContext> => {
 
-  const createPot = useCreatePotHook();
+const mutationKey = getCreatePotMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<ReturnType<typeof useCreatePotHook>>>,
-    CreatePotMutationVariables
-  > = (props) => {
-    const { data } = props ?? {};
+      const createPot =  useCreatePotHook()
 
-    return createPot(data);
-  };
 
-  return { mutationFn, ...mutationOptions };
-};
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useCreatePotHook>>>, CreatePotMutationVariables> = (props) => {
+          const {data} = props ?? {};
 
-export type CreatePotMutationResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useCreatePotHook>>>
->;
-export type CreatePotMutationBody = BodyType<NewPotDTO>;
-export type CreatePotMutationError = ErrorType<unknown>;
-export type CreatePotMutationVariables = { data: BodyType<NewPotDTO> };
+          return  createPot(data,)
+        }
 
-/**
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePotMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useCreatePotHook>>>>
+    export type CreatePotMutationBody = BodyType<NewPotDTO>
+    export type CreatePotMutationError = ErrorType<unknown>
+    export type CreatePotMutationVariables = {data: BodyType<NewPotDTO>}
+
+    /**
  * @summary Creates a pot from the given DTO for the bearer.
  */
-export const useCreatePot = <TError = ErrorType<unknown>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<ReturnType<typeof useCreatePotHook>>>,
-      TError,
-      CreatePotMutationVariables,
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<ReturnType<typeof useCreatePotHook>>>,
-  TError,
-  CreatePotMutationVariables,
-  TContext
-> => {
-  return useMutation(useCreatePotMutationOptions(options), queryClient);
-};
-/**
+export const useCreatePot = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useCreatePotHook>>>, TError,CreatePotMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useCreatePotHook>>>,
+        TError,
+        CreatePotMutationVariables,
+        TContext
+      > => {
+      return useMutation(useCreatePotMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Gets the sum of all expenses for the given user of the given pot.
  */
 export const useGetPotExpensesHook = () => {
-  const getPotExpenses = useCustomClient<ExpenseDTO[]>();
+        const getPotExpenses = useCustomClient<ExpenseDTO[]>();
 
-  return useCallback(
-    (potId: number, signal?: AbortSignal) => {
-      return getPotExpenses({
-        url: `/api/v1/pots/${potId}`,
-        method: 'GET',
-        signal,
-      });
-    },
-    [getPotExpenses],
-  );
-};
-
-export const getGetPotExpensesQueryKey = (potId: number) => {
-  return [`/api/v1/pots/${potId}`] as const;
-};
-
-export const useGetPotExpensesQueryOptions = <
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>,
-  TError = ErrorType<void>,
->(
-  potId: number,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>,
-        TError,
-        TData
-      >
-    >;
-  },
+        return useCallback((
+    potId: number,
+ signal?: AbortSignal
 ) => {
-  const { query: queryOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetPotExpensesQueryKey(potId);
 
-  const getPotExpenses = useGetPotExpensesHook();
+        return getPotExpenses(
+          {url: `/api/v1/pots/${potId}`, method: 'GET', signal
+    },
+          );
+        }, [getPotExpenses])
+      }
 
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>
-  > = ({ signal }) => getPotExpenses(potId, signal);
 
-  return {
-    queryKey,
-    queryFn,
-    enabled: potId !== null && potId !== undefined,
-    ...queryOptions,
-  } as UseQueryOptions<
-    Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
 
-export type GetPotExpensesQueryResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>
->;
-export type GetPotExpensesQueryError = ErrorType<void>;
 
-export function useGetPotExpenses<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>,
-  TError = ErrorType<void>,
->(
-  potId: number,
-  options: {
-    query: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
+export const getGetPotExpensesQueryKey = (potId: number,) => {
+    return [
+    `/api/v1/pots/${potId}`
+    ] as const;
+    }
+
+
+export const useGetPotExpensesQueryOptions = <TData = Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>, TError = ErrorType<void>>(potId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPotExpensesQueryKey(potId);
+
+  const getPotExpenses =  useGetPotExpensesHook();
+
+    const queryFn: QueryFunction<Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>> = ({ signal }) => getPotExpenses(potId, signal);
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: potId !== null && potId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetPotExpensesQueryResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>>
+export type GetPotExpensesQueryError = ErrorType<void>
+
+
+export function useGetPotExpenses<TData = Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>, TError = ErrorType<void>>(
+ potId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>,
           TError,
           Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>
-        >,
-        'initialData'
-      >;
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetPotExpenses<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>,
-  TError = ErrorType<void>,
->(
-  potId: number,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPotExpenses<TData = Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>, TError = ErrorType<void>>(
+ potId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>,
           TError,
           Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>
-        >,
-        'initialData'
-      >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useGetPotExpenses<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>,
-  TError = ErrorType<void>,
->(
-  potId: number,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
+        > , 'initialData'
+      >, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPotExpenses<TData = Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>, TError = ErrorType<void>>(
+ potId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>, TError, TData>>, }
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
  * @summary Gets the sum of all expenses for the given user of the given pot.
  */
 
-export function useGetPotExpenses<
-  TData = Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>,
-  TError = ErrorType<void>,
->(
-  potId: number,
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = useGetPotExpensesQueryOptions(potId, options);
+export function useGetPotExpenses<TData = Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>, TError = ErrorType<void>>(
+ potId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<ReturnType<typeof useGetPotExpensesHook>>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
+  const queryOptions = useGetPotExpensesQueryOptions(potId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 
   return withQueryKey(query, queryOptions.queryKey);
 }
+
+
+
+
+
 
 /**
  * @summary Adds the given users to the pot if Bearer is the owner of that pot.
  */
 export const useAddUsersToPotHook = () => {
-  const addUsersToPot = useCustomClient<void>();
+        const addUsersToPot = useCustomClient<void>();
 
-  return useCallback(
-    (
-      potId: number,
-      addUserToPotDTO: BodyType<AddUserToPotDTO[]>,
-      signal?: AbortSignal,
-    ) => {
-      return addUsersToPot({
-        url: `/api/v1/pots/${potId}`,
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        data: addUserToPotDTO,
-        signal,
-      });
+        return useCallback((
+    potId: number,
+    addUserToPotDTO: BodyType<AddUserToPotDTO[]>,
+ signal?: AbortSignal
+) => {
+
+
+        return addUsersToPot(
+          {url: `/api/v1/pots/${potId}`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: addUserToPotDTO, signal
     },
-    [addUsersToPot],
-  );
-};
+          );
+        }, [addUsersToPot])
+      }
+
+
+
 
 export const getAddUsersToPotMutationKey = () => ['addUsersToPot'] as const;
 
-export const useAddUsersToPotMutationOptions = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>,
-    TError,
-    AddUsersToPotMutationVariables,
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>,
-  TError,
-  AddUsersToPotMutationVariables,
-  TContext
-> => {
-  const mutationKey = getAddUsersToPotMutationKey();
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      'mutationKey' in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
+export const useAddUsersToPotMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>, TError,AddUsersToPotMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>, TError,AddUsersToPotMutationVariables, TContext> => {
 
-  const addUsersToPot = useAddUsersToPotHook();
+const mutationKey = getAddUsersToPotMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>,
-    AddUsersToPotMutationVariables
-  > = (props) => {
-    const { potId, data } = props ?? {};
+      const addUsersToPot =  useAddUsersToPotHook()
 
-    return addUsersToPot(potId, data);
-  };
 
-  return { mutationFn, ...mutationOptions };
-};
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>, AddUsersToPotMutationVariables> = (props) => {
+          const {potId,data} = props ?? {};
 
-export type AddUsersToPotMutationResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>
->;
-export type AddUsersToPotMutationBody = BodyType<AddUserToPotDTO[]>;
-export type AddUsersToPotMutationError = ErrorType<void>;
-export type AddUsersToPotMutationVariables = {
-  potId: number;
-  data: BodyType<AddUserToPotDTO[]>;
-};
+          return  addUsersToPot(potId,data,)
+        }
 
-/**
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddUsersToPotMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>>
+    export type AddUsersToPotMutationBody = BodyType<AddUserToPotDTO[]>
+    export type AddUsersToPotMutationError = ErrorType<void>
+    export type AddUsersToPotMutationVariables = {potId: number;data: BodyType<AddUserToPotDTO[]>}
+
+    /**
  * @summary Adds the given users to the pot if Bearer is the owner of that pot.
  */
-export const useAddUsersToPot = <TError = ErrorType<void>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>,
-      TError,
-      AddUsersToPotMutationVariables,
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>,
-  TError,
-  AddUsersToPotMutationVariables,
-  TContext
-> => {
-  return useMutation(useAddUsersToPotMutationOptions(options), queryClient);
-};
-/**
+export const useAddUsersToPot = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>, TError,AddUsersToPotMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useAddUsersToPotHook>>>,
+        TError,
+        AddUsersToPotMutationVariables,
+        TContext
+      > => {
+      return useMutation(useAddUsersToPotMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Adds a new expense in the name of the user from the Bearer token to the pot with the given
 pot_id if it exists.
  */
 export const useAddExpenseHook = () => {
-  const addExpense = useCustomClient<ExpenseDTO>();
+        const addExpense = useCustomClient<ExpenseDTO>();
 
-  return useCallback(
-    (
-      potId: number,
-      newExpenseDTO: BodyType<NewExpenseDTO>,
-      signal?: AbortSignal,
-    ) => {
-      return addExpense({
-        url: `/api/v1/pots/${potId}`,
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        data: newExpenseDTO,
-        signal,
-      });
+        return useCallback((
+    potId: number,
+    newExpenseDTO: BodyType<NewExpenseDTO>,
+ signal?: AbortSignal
+) => {
+
+
+        return addExpense(
+          {url: `/api/v1/pots/${potId}`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: newExpenseDTO, signal
     },
-    [addExpense],
-  );
-};
+          );
+        }, [addExpense])
+      }
+
+
+
 
 export const getAddExpenseMutationKey = () => ['addExpense'] as const;
 
-export const useAddExpenseMutationOptions = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useAddExpenseHook>>>,
-    TError,
-    AddExpenseMutationVariables,
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<ReturnType<typeof useAddExpenseHook>>>,
-  TError,
-  AddExpenseMutationVariables,
-  TContext
-> => {
-  const mutationKey = getAddExpenseMutationKey();
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      'mutationKey' in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
+export const useAddExpenseMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useAddExpenseHook>>>, TError,AddExpenseMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useAddExpenseHook>>>, TError,AddExpenseMutationVariables, TContext> => {
 
-  const addExpense = useAddExpenseHook();
+const mutationKey = getAddExpenseMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<ReturnType<typeof useAddExpenseHook>>>,
-    AddExpenseMutationVariables
-  > = (props) => {
-    const { potId, data } = props ?? {};
+      const addExpense =  useAddExpenseHook()
 
-    return addExpense(potId, data);
-  };
 
-  return { mutationFn, ...mutationOptions };
-};
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useAddExpenseHook>>>, AddExpenseMutationVariables> = (props) => {
+          const {potId,data} = props ?? {};
 
-export type AddExpenseMutationResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useAddExpenseHook>>>
->;
-export type AddExpenseMutationBody = BodyType<NewExpenseDTO>;
-export type AddExpenseMutationError = ErrorType<void>;
-export type AddExpenseMutationVariables = {
-  potId: number;
-  data: BodyType<NewExpenseDTO>;
-};
+          return  addExpense(potId,data,)
+        }
 
-/**
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddExpenseMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useAddExpenseHook>>>>
+    export type AddExpenseMutationBody = BodyType<NewExpenseDTO>
+    export type AddExpenseMutationError = ErrorType<void>
+    export type AddExpenseMutationVariables = {potId: number;data: BodyType<NewExpenseDTO>}
+
+    /**
  * @summary Adds a new expense in the name of the user from the Bearer token to the pot with the given
 pot_id if it exists.
  */
-export const useAddExpense = <TError = ErrorType<void>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<ReturnType<typeof useAddExpenseHook>>>,
-      TError,
-      AddExpenseMutationVariables,
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<ReturnType<typeof useAddExpenseHook>>>,
-  TError,
-  AddExpenseMutationVariables,
-  TContext
-> => {
-  return useMutation(useAddExpenseMutationOptions(options), queryClient);
-};
-/**
+export const useAddExpense = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useAddExpenseHook>>>, TError,AddExpenseMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useAddExpenseHook>>>,
+        TError,
+        AddExpenseMutationVariables,
+        TContext
+      > => {
+      return useMutation(useAddExpenseMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Deletes the given pot if it does not contain any outstanding expenses and the caller
 is the pot's owner.
  */
 export const useDeletePotHook = () => {
-  const deletePot = useCustomClient<void>();
+        const deletePot = useCustomClient<void>();
 
-  return useCallback(
-    (potId: number, signal?: AbortSignal) => {
-      return deletePot({
-        url: `/api/v1/pots/${potId}`,
-        method: 'DELETE',
-        signal,
-      });
+        return useCallback((
+    potId: number,
+ signal?: AbortSignal
+) => {
+
+
+        return deletePot(
+          {url: `/api/v1/pots/${potId}`, method: 'DELETE', signal
     },
-    [deletePot],
-  );
-};
+          );
+        }, [deletePot])
+      }
+
+
+
 
 export const getDeletePotMutationKey = () => ['deletePot'] as const;
 
-export const useDeletePotMutationOptions = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useDeletePotHook>>>,
-    TError,
-    DeletePotMutationVariables,
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<ReturnType<typeof useDeletePotHook>>>,
-  TError,
-  DeletePotMutationVariables,
-  TContext
-> => {
-  const mutationKey = getDeletePotMutationKey();
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      'mutationKey' in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
+export const useDeletePotMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useDeletePotHook>>>, TError,DeletePotMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useDeletePotHook>>>, TError,DeletePotMutationVariables, TContext> => {
 
-  const deletePot = useDeletePotHook();
+const mutationKey = getDeletePotMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<ReturnType<typeof useDeletePotHook>>>,
-    DeletePotMutationVariables
-  > = (props) => {
-    const { potId } = props ?? {};
+      const deletePot =  useDeletePotHook()
 
-    return deletePot(potId);
-  };
 
-  return { mutationFn, ...mutationOptions };
-};
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useDeletePotHook>>>, DeletePotMutationVariables> = (props) => {
+          const {potId} = props ?? {};
 
-export type DeletePotMutationResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useDeletePotHook>>>
->;
+          return  deletePot(potId,)
+        }
 
-export type DeletePotMutationError = ErrorType<void>;
-export type DeletePotMutationVariables = { potId: number };
 
-/**
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePotMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useDeletePotHook>>>>
+
+    export type DeletePotMutationError = ErrorType<void>
+    export type DeletePotMutationVariables = {potId: number}
+
+    /**
  * @summary Deletes the given pot if it does not contain any outstanding expenses and the caller
 is the pot's owner.
  */
-export const useDeletePot = <TError = ErrorType<void>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<ReturnType<typeof useDeletePotHook>>>,
-      TError,
-      DeletePotMutationVariables,
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<ReturnType<typeof useDeletePotHook>>>,
-  TError,
-  DeletePotMutationVariables,
-  TContext
-> => {
-  return useMutation(useDeletePotMutationOptions(options), queryClient);
-};
-export const useArchiveHook = () => {
-  const archive = useCustomClient<void>();
+export const useDeletePot = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useDeletePotHook>>>, TError,DeletePotMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useDeletePotHook>>>,
+        TError,
+        DeletePotMutationVariables,
+        TContext
+      > => {
+      return useMutation(useDeletePotMutationOptions(options), queryClient);
+    }
+    export const useArchiveHook = () => {
+        const archive = useCustomClient<void>();
 
-  return useCallback(
-    (potId: number, signal?: AbortSignal) => {
-      return archive({
-        url: `/api/v1/pots/${potId}/archive`,
-        method: 'PUT',
-        signal,
-      });
+        return useCallback((
+    potId: number,
+ signal?: AbortSignal
+) => {
+
+
+        return archive(
+          {url: `/api/v1/pots/${potId}/archive`, method: 'PUT', signal
     },
-    [archive],
-  );
-};
+          );
+        }, [archive])
+      }
+
+
+
 
 export const getArchiveMutationKey = () => ['archive'] as const;
 
-export const useArchiveMutationOptions = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>,
-    TError,
-    ArchiveMutationVariables,
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>,
-  TError,
-  ArchiveMutationVariables,
-  TContext
-> => {
-  const mutationKey = getArchiveMutationKey();
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      'mutationKey' in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
+export const useArchiveMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>, TError,ArchiveMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>, TError,ArchiveMutationVariables, TContext> => {
 
-  const archive = useArchiveHook();
+const mutationKey = getArchiveMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>,
-    ArchiveMutationVariables
-  > = (props) => {
-    const { potId } = props ?? {};
+      const archive =  useArchiveHook()
 
-    return archive(potId);
-  };
 
-  return { mutationFn, ...mutationOptions };
-};
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>, ArchiveMutationVariables> = (props) => {
+          const {potId} = props ?? {};
 
-export type ArchiveMutationResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>
->;
+          return  archive(potId,)
+        }
 
-export type ArchiveMutationError = ErrorType<void>;
-export type ArchiveMutationVariables = { potId: number };
 
-export const useArchive = <TError = ErrorType<void>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>,
-      TError,
-      ArchiveMutationVariables,
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>,
-  TError,
-  ArchiveMutationVariables,
-  TContext
-> => {
-  return useMutation(useArchiveMutationOptions(options), queryClient);
-};
-/**
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ArchiveMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>>
+
+    export type ArchiveMutationError = ErrorType<void>
+    export type ArchiveMutationVariables = {potId: number}
+
+    export const useArchive = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>, TError,ArchiveMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useArchiveHook>>>,
+        TError,
+        ArchiveMutationVariables,
+        TContext
+      > => {
+      return useMutation(useArchiveMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Marks the given pot as paid. Only the pot owner can do this.
 This is a function used to mark the pot as paid with a single button click.
 No restore is possible as of now. So the pot is considered final.
  */
 export const usePayPotHook = () => {
-  const payPot = useCustomClient<void>();
+        const payPot = useCustomClient<void>();
 
-  return useCallback(
-    (potId: number, signal?: AbortSignal) => {
-      return payPot({
-        url: `/api/v1/pots/${potId}/pay`,
-        method: 'PUT',
-        signal,
-      });
+        return useCallback((
+    potId: number,
+ signal?: AbortSignal
+) => {
+
+
+        return payPot(
+          {url: `/api/v1/pots/${potId}/pay`, method: 'PUT', signal
     },
-    [payPot],
-  );
-};
+          );
+        }, [payPot])
+      }
+
+
+
 
 export const getPayPotMutationKey = () => ['payPot'] as const;
 
-export const usePayPotMutationOptions = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>,
-    TError,
-    PayPotMutationVariables,
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>,
-  TError,
-  PayPotMutationVariables,
-  TContext
-> => {
-  const mutationKey = getPayPotMutationKey();
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      'mutationKey' in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
+export const usePayPotMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>, TError,PayPotMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>, TError,PayPotMutationVariables, TContext> => {
 
-  const payPot = usePayPotHook();
+const mutationKey = getPayPotMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>,
-    PayPotMutationVariables
-  > = (props) => {
-    const { potId } = props ?? {};
+      const payPot =  usePayPotHook()
 
-    return payPot(potId);
-  };
 
-  return { mutationFn, ...mutationOptions };
-};
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>, PayPotMutationVariables> = (props) => {
+          const {potId} = props ?? {};
 
-export type PayPotMutationResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>
->;
+          return  payPot(potId,)
+        }
 
-export type PayPotMutationError = ErrorType<void>;
-export type PayPotMutationVariables = { potId: number };
 
-/**
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PayPotMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>>
+
+    export type PayPotMutationError = ErrorType<void>
+    export type PayPotMutationVariables = {potId: number}
+
+    /**
  * @summary Marks the given pot as paid. Only the pot owner can do this.
 This is a function used to mark the pot as paid with a single button click.
 No restore is possible as of now. So the pot is considered final.
  */
-export const usePayPot = <TError = ErrorType<void>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>,
-      TError,
-      PayPotMutationVariables,
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>,
-  TError,
-  PayPotMutationVariables,
-  TContext
-> => {
-  return useMutation(usePayPotMutationOptions(options), queryClient);
-};
-/**
+export const usePayPot = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>, TError,PayPotMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof usePayPotHook>>>,
+        TError,
+        PayPotMutationVariables,
+        TContext
+      > => {
+      return useMutation(usePayPotMutationOptions(options), queryClient);
+    }
+    /**
  * @summary Removes the given user from the pot, if Bearer is the owner of that pot.
  */
 export const useRemoveUserFromPotHook = () => {
-  const removeUserFromPot = useCustomClient<void>();
+        const removeUserFromPot = useCustomClient<void>();
 
-  return useCallback(
-    (
-      potId: number,
-      removeUserFromPotDTO: BodyType<RemoveUserFromPotDTO>,
-      signal?: AbortSignal,
-    ) => {
-      return removeUserFromPot({
-        url: `/api/v1/pots/${potId}/remove_user`,
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        data: removeUserFromPotDTO,
-        signal,
-      });
+        return useCallback((
+    potId: number,
+    removeUserFromPotDTO: BodyType<RemoveUserFromPotDTO>,
+ signal?: AbortSignal
+) => {
+
+
+        return removeUserFromPot(
+          {url: `/api/v1/pots/${potId}/remove_user`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: removeUserFromPotDTO, signal
     },
-    [removeUserFromPot],
-  );
-};
+          );
+        }, [removeUserFromPot])
+      }
 
-export const getRemoveUserFromPotMutationKey = () =>
-  ['removeUserFromPot'] as const;
 
-export const useRemoveUserFromPotMutationOptions = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useRemoveUserFromPotHook>>>,
-    TError,
-    RemoveUserFromPotMutationVariables,
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<ReturnType<typeof useRemoveUserFromPotHook>>>,
-  TError,
-  RemoveUserFromPotMutationVariables,
-  TContext
-> => {
-  const mutationKey = getRemoveUserFromPotMutationKey();
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      'mutationKey' in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
 
-  const removeUserFromPot = useRemoveUserFromPotHook();
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<ReturnType<typeof useRemoveUserFromPotHook>>>,
-    RemoveUserFromPotMutationVariables
-  > = (props) => {
-    const { potId, data } = props ?? {};
+export const getRemoveUserFromPotMutationKey = () => ['removeUserFromPot'] as const;
 
-    return removeUserFromPot(potId, data);
-  };
+export const useRemoveUserFromPotMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useRemoveUserFromPotHook>>>, TError,RemoveUserFromPotMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useRemoveUserFromPotHook>>>, TError,RemoveUserFromPotMutationVariables, TContext> => {
 
-  return { mutationFn, ...mutationOptions };
-};
+const mutationKey = getRemoveUserFromPotMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
-export type RemoveUserFromPotMutationResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useRemoveUserFromPotHook>>>
->;
-export type RemoveUserFromPotMutationBody = BodyType<RemoveUserFromPotDTO>;
-export type RemoveUserFromPotMutationError = ErrorType<void>;
-export type RemoveUserFromPotMutationVariables = {
-  potId: number;
-  data: BodyType<RemoveUserFromPotDTO>;
-};
+      const removeUserFromPot =  useRemoveUserFromPotHook()
 
-/**
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useRemoveUserFromPotHook>>>, RemoveUserFromPotMutationVariables> = (props) => {
+          const {potId,data} = props ?? {};
+
+          return  removeUserFromPot(potId,data,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveUserFromPotMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useRemoveUserFromPotHook>>>>
+    export type RemoveUserFromPotMutationBody = BodyType<RemoveUserFromPotDTO>
+    export type RemoveUserFromPotMutationError = ErrorType<void>
+    export type RemoveUserFromPotMutationVariables = {potId: number;data: BodyType<RemoveUserFromPotDTO>}
+
+    /**
  * @summary Removes the given user from the pot, if Bearer is the owner of that pot.
  */
-export const useRemoveUserFromPot = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<ReturnType<typeof useRemoveUserFromPotHook>>>,
-      TError,
-      RemoveUserFromPotMutationVariables,
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<ReturnType<typeof useRemoveUserFromPotHook>>>,
-  TError,
-  RemoveUserFromPotMutationVariables,
-  TContext
-> => {
-  return useMutation(useRemoveUserFromPotMutationOptions(options), queryClient);
-};
-export const useUnarchiveHook = () => {
-  const unarchive = useCustomClient<void>();
+export const useRemoveUserFromPot = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useRemoveUserFromPotHook>>>, TError,RemoveUserFromPotMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useRemoveUserFromPotHook>>>,
+        TError,
+        RemoveUserFromPotMutationVariables,
+        TContext
+      > => {
+      return useMutation(useRemoveUserFromPotMutationOptions(options), queryClient);
+    }
+    export const useUnarchiveHook = () => {
+        const unarchive = useCustomClient<void>();
 
-  return useCallback(
-    (potId: number, signal?: AbortSignal) => {
-      return unarchive({
-        url: `/api/v1/pots/${potId}/unarchive`,
-        method: 'PUT',
-        signal,
-      });
+        return useCallback((
+    potId: number,
+ signal?: AbortSignal
+) => {
+
+
+        return unarchive(
+          {url: `/api/v1/pots/${potId}/unarchive`, method: 'PUT', signal
     },
-    [unarchive],
-  );
-};
+          );
+        }, [unarchive])
+      }
+
+
+
 
 export const getUnarchiveMutationKey = () => ['unarchive'] as const;
 
-export const useUnarchiveMutationOptions = <
-  TError = ErrorType<void>,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>,
-    TError,
-    UnarchiveMutationVariables,
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>,
-  TError,
-  UnarchiveMutationVariables,
-  TContext
-> => {
-  const mutationKey = getUnarchiveMutationKey();
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      'mutationKey' in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
+export const useUnarchiveMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>, TError,UnarchiveMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>, TError,UnarchiveMutationVariables, TContext> => {
 
-  const unarchive = useUnarchiveHook();
+const mutationKey = getUnarchiveMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>,
-    UnarchiveMutationVariables
-  > = (props) => {
-    const { potId } = props ?? {};
+      const unarchive =  useUnarchiveHook()
 
-    return unarchive(potId);
-  };
 
-  return { mutationFn, ...mutationOptions };
-};
+      const mutationFn: MutationFunction<Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>, UnarchiveMutationVariables> = (props) => {
+          const {potId} = props ?? {};
 
-export type UnarchiveMutationResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>
->;
+          return  unarchive(potId,)
+        }
 
-export type UnarchiveMutationError = ErrorType<void>;
-export type UnarchiveMutationVariables = { potId: number };
 
-export const useUnarchive = <TError = ErrorType<void>, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>,
-      TError,
-      UnarchiveMutationVariables,
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>,
-  TError,
-  UnarchiveMutationVariables,
-  TContext
-> => {
-  return useMutation(useUnarchiveMutationOptions(options), queryClient);
-};
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnarchiveMutationResult = NonNullable<Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>>
+
+    export type UnarchiveMutationError = ErrorType<void>
+    export type UnarchiveMutationVariables = {potId: number}
+
+    export const useUnarchive = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>, TError,UnarchiveMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<ReturnType<typeof useUnarchiveHook>>>,
+        TError,
+        UnarchiveMutationVariables,
+        TContext
+      > => {
+      return useMutation(useUnarchiveMutationOptions(options), queryClient);
+    }
