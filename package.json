@@ -67,7 +67,7 @@
     "jest-util": "30.4.1",
     "jsonc-eslint-parser": "^3.3.0",
     "minimatch": "^10.2.1",
-    "nx": "^23.3.0",
+    "nx": "^24.0.6",
     "orval": "^8.22.0",
     "postcss": "8.5.33",
     "prettier": "^3.9.4",
