@@ -24,6 +24,7 @@ diesel::table! {
         pot_id -> Int4,
         description -> Text,
         currency_id -> Int4,
+        expense_date -> Timestamptz,
     }
 }
 
