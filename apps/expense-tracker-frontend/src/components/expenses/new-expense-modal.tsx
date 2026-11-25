@@ -20,6 +20,7 @@ interface NewExpenseModalProps {
 export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, potId}) => {
   const [description, setDescription] = useState("");
   const [amountInput, setAmountInput] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [weights, setWeights] = useState<Record<string, number>>({});
   const [manualAmounts, setManualAmounts] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
@@ -166,6 +167,7 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
   const resetForm = () => {
     setDescription("");
     setAmountInput("");
+    setDate(new Date().toISOString().slice(0, 10));
     setError(null);
     setManualAmounts({});
     if (participants.length > 0) {
@@ -277,6 +279,7 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
           currency_id: currency.id,
           description: description.trim(),
           splits: splits,
+          date: new Date(date).toISOString(),
         },
       });
 
@@ -313,6 +316,19 @@ export const NewExpenseModal: FC<NewExpenseModalProps> = ({open, onClose, pot, p
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
                   placeholder="Dinner, tickets, etc."
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Date
+                </label>
+                <input
+                  type="datetime-local"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 outline-hidden focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>

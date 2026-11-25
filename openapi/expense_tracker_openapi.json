@@ -10,7 +10,7 @@
       "name": "GPL-3.0-or-later",
       "identifier": "GPL-3.0-or-later"
     },
-    "version": "1.3.2"
+    "version": "1.3.7"
   },
   "paths": {
     "/api/v1/currencies": {
@@ -1004,11 +1004,16 @@
           "currency",
           "splits",
           "sum",
-          "total_amount"
+          "total_amount",
+          "date"
         ],
         "properties": {
           "currency": {
             "$ref": "#/components/schemas/CurrencyDTO"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
           },
           "description": {
             "type": "string"
@@ -1070,6 +1075,13 @@
           "currency_id": {
             "type": "integer",
             "format": "int32"
+          },
+          "date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           },
           "description": {
             "type": "string",

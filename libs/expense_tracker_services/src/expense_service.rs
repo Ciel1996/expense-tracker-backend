@@ -126,6 +126,7 @@ pub mod expense_service {
                         .and(user_id.eq(requester_id)),
                 )
                 .select(Expense::as_select())
+                .order(expense_tracker_db::schema::expenses::expense_date.asc())
                 .get_results::<Expense>(&mut conn)
                 .await
                 .map_err(internal_error)?;

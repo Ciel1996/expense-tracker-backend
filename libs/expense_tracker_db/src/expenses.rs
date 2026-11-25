@@ -16,6 +16,7 @@ pub mod expenses {
         owner_id: Uuid,
         description: String,
         currency_id: i32,
+        expense_date: chrono::DateTime<chrono::Utc>
     }
 
     /// This struct is used to create a new expense in the database.
@@ -26,6 +27,7 @@ pub mod expenses {
         pot_id: i32,
         description: String,
         currency_id: i32,
+        expense_date: Option<chrono::DateTime<chrono::Utc>>
     }
 
     impl Expense {
@@ -36,6 +38,7 @@ pub mod expenses {
             owner_id: Uuid,
             description: String,
             currency_id: i32,
+            expense_date: Option<chrono::DateTime<chrono::Utc>>
         ) -> Expense {
             Expense {
                 id,
@@ -43,6 +46,7 @@ pub mod expenses {
                 owner_id,
                 description,
                 currency_id,
+                expense_date: expense_date.unwrap_or_else(|| chrono::Utc::now()),
             }
         }
 
@@ -69,15 +73,25 @@ pub mod expenses {
         pub fn currency_id(&self) -> i32 {
             self.currency_id
         }
+
+        pub fn expense_date(&self) -> chrono::DateTime<chrono::Utc> {
+            self.expense_date
+        }
     }
 
     impl NewExpense {
-        pub fn new(owner_id: Uuid, pot_id: i32, description: String, currency_id: i32) -> Self {
+        pub fn new(
+            owner_id: Uuid,
+            pot_id: i32,
+            description: String,
+            currency_id: i32,
+            expense_date: Option<chrono::DateTime<chrono::Utc>>) -> Self {
             Self {
                 owner_id,
                 pot_id,
                 description,
                 currency_id,
+                expense_date
             }
         }
     }
