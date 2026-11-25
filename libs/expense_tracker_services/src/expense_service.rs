@@ -1,7 +1,7 @@
 pub mod expense_service {
     use crate::currency_service::currency_service;
     use crate::currency_service::currency_service::CurrencyService;
-    
+
     use crate::{check_error, internal_error, not_found_error, ExpenseError};
     use diesel::result::Error;
     use diesel::{BoolExpressionMethods, ExpressionMethods, JoinOnDsl, QueryDsl, SelectableHelper};
@@ -46,7 +46,7 @@ pub mod expense_service {
             let new_expense_clone = new_expense.clone();
 
             let result = conn
-                .transaction::<_, Error, _>(async |conn| 
+                .transaction::<_, Error, _>(async |conn|
                     {
                         let expense = diesel::insert_into(expenses)
                             .values(new_expense_clone)

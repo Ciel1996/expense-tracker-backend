@@ -139,9 +139,3 @@ export function useHealthCheck<TData = Awaited<ReturnType<ReturnType<typeof useH
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
-
-
-
-

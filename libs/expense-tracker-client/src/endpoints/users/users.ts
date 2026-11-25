@@ -143,12 +143,6 @@ export function useCurrentUser<TData = Awaited<ReturnType<ReturnType<typeof useC
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
-
-
-
-
 /**
  * @summary Returns a list of a users registered in the system. Needs a bearer token to track
 who requested it.
@@ -241,9 +235,3 @@ export function useGetUsers<TData = Awaited<ReturnType<ReturnType<typeof useGetU
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
-
-
-
-
