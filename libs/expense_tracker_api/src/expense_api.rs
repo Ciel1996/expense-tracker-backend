@@ -31,7 +31,8 @@ pub mod expense_api {
         /// If negative: you have to pay `owner_id` this amount of money, otherwise
         /// you can expect others to pay you the given amount.
         sum: f64,
-        total_amount: f64
+        total_amount: f64,
+        date: chrono::DateTime<chrono::Utc>,
     }
 
     impl ExpenseDTO {
@@ -50,6 +51,7 @@ pub mod expense_api {
                 splits: SplitDTO::from_vec_split(splits.clone()),
                 sum: get_sum(expense.owner_id(), requester_id, &splits),
                 total_amount: get_total_amount(&splits),
+                date: expense.expense_date(),
             }
         }
 
@@ -149,6 +151,7 @@ pub mod expense_api {
         description: String,
         currency_id: i32,
         splits: Vec<NewSplitDTO>,
+        date: Option<chrono::DateTime<chrono::Utc>>,
     }
 
     impl NewExpenseDTO {
@@ -159,6 +162,7 @@ pub mod expense_api {
                 owning_pot_id,
                 self.description.clone(),
                 self.currency_id,
+                self.date.clone()
             )
         }
 
@@ -181,6 +185,7 @@ pub mod expense_api {
                 description: self.description.clone(),
                 currency_id: self.currency_id,
                 splits: self.splits.clone(),
+                date: self.date.clone(),
             }
         }
     }
